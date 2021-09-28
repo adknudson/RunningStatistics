@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace RunningStats
+namespace RunningStatistics
 {
     public interface IOnlineStatBuilder
     {
@@ -12,6 +12,7 @@ namespace RunningStats
         void BuildMoments();
         void BuildHistogram(IList<double> edges, bool left = true, bool closed = true);
         void BuildCountmap();
+        void BuildOrderStatistics(int b);
     }
 
 
@@ -54,6 +55,10 @@ namespace RunningStats
         public void BuildCountmap()
         {
             this._stats.Add(new Countmap());
+        }
+        public void BuildOrderStatistics(int b = 100)
+        {
+            this._stats.Add(new OrderStatistics(b));
         }
 
 

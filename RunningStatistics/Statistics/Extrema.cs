@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RunningStats
+namespace RunningStatistics
 {
     public class Extrema : TypedStatistic<(double, double, int, int)>
     {
@@ -101,6 +102,14 @@ namespace RunningStats
         public static Extrema operator +(Extrema a, Extrema b)
         {
             return Merge(a, b);
+        }
+
+        public override void Write(StreamWriter stream)
+        {
+            stream.WriteLine($"Minimum\t{Min}");
+            stream.WriteLine($"Maximum\t{Max}");
+            stream.WriteLine($"MinimumCount\t{CountMin}");
+            stream.WriteLine($"MaximumCount\t{CountMax}");
         }
     }
 }

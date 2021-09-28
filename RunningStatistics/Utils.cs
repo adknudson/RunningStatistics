@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace RunningStats
+namespace RunningStatistics
 {
-    public static class Utils
+    internal static class Utils
     {
         internal static double Mean(IList<double> xs)
         {
@@ -103,7 +103,7 @@ namespace RunningStats
             return ms;
         }
 
-        public static IList<string> GetPrintableBins(Histogram h)
+        internal static IList<string> GetPrintableBins(Histogram h)
         {
             int nbins = h.Edges.Count - 1;
             IList<string> bins = new List<string>(nbins);
@@ -139,6 +139,18 @@ namespace RunningStats
             }
 
             return bins;
+        }
+
+        internal static double SortedQuantile(IList<double> xs, double p)
+        {
+            if (p < 0.0 || p > 1.0)
+            {
+                throw new Exception($"p must be in range [0, 1]. Got {p}.");
+            }
+
+            int n = xs.Count;
+            int i = (int)Math.Floor((n - 1) * p);
+            return xs[i];
         }
     }
 }

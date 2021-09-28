@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RunningStats
+namespace RunningStatistics
 {
     public class Moments : TypedStatistic<(double, double, double, double)>
     {
@@ -98,6 +99,13 @@ namespace RunningStats
         public static Moments operator +(Moments a, Moments b)
         {
             return Merge(a, b);
+        }
+        public override void Write(StreamWriter stream)
+        {
+            stream.WriteLine($"Mean\t{Mean}");
+            stream.WriteLine($"Variance\t{Variance}");
+            stream.WriteLine($"Skewness\t{Skewness}");
+            stream.WriteLine($"Kurtosis\t{Kurtosis}");
         }
     }
 }

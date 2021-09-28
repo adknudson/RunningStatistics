@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
-namespace RunningStats
+namespace RunningStatistics
 {
     public class Histogram : TypedStatistic<IList<int>>
     {
@@ -25,7 +26,7 @@ namespace RunningStats
 
 
 
-        public Histogram(IList<double> edges, bool left = true, bool closed = true)
+        public Histogram(IList<double> edges, bool left = true, bool closed = true) : base()
         {
             _edges = edges.OrderBy(e => e).ToList();
 
@@ -35,9 +36,8 @@ namespace RunningStats
             _binCounts = Utils.Fill<int>(0, NumBins);
             _outOfBoundsCounts = Utils.Fill<int>(0, 2);
         }
-        public Histogram(Histogram a)
+        public Histogram(Histogram a) : base(a)
         {
-            _n = a._n;
             _edges = new List<double>(a._edges);
             _left = a._left;
             _closed = a._closed;
@@ -148,6 +148,15 @@ namespace RunningStats
 
 
             return _left ? Utils.SearchSortedLast(_edges, y) : Utils.SearchSortedFirst(_edges, y) - 1;
+        }
+
+        public override void Write(StreamWriter stream)
+        {
+            IList<string> printableBins = Utils.GetPrintableBins(this);
+            foreach (var (bin, count) in Enumerable.Zip(printableBins, _binCounts))
+            {
+                stream.WriteLine($"{bin}\t{count}");
+            }
         }
     }
 }

@@ -1,12 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System.IO;
+using System.Collections.Generic;
 
-namespace RunningStats
+namespace RunningStatistics
 {
     public interface IStatistic
     {
         public void Fit(double y);
         public void Fit(IList<double> ys);
+        public void Write(StreamWriter stream);
     }
+
+
+
     public abstract class TypedStatistic<TReturn> : IStatistic
     {
         protected int _n;
@@ -31,5 +36,6 @@ namespace RunningStats
 
         public int Count { get => _n; }
         public abstract TReturn Value { get; }
+        public abstract void Write(StreamWriter stream);
     }
 }

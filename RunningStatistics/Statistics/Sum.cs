@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RunningStats
+namespace RunningStatistics
 {
     public class Sum : TypedStatistic<double>
     {
@@ -53,6 +54,11 @@ namespace RunningStats
         public static Sum operator +(Sum a, Sum b)
         {
             return Merge(a, b);
+        }
+
+        public override void Write(StreamWriter stream)
+        {
+            stream.WriteLine($"Sum\t{Value}");
         }
     }
 }

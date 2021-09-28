@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
-namespace RunningStats
+namespace RunningStatistics
 {
     public class Variance : TypedStatistic<double>
     {
@@ -84,5 +85,9 @@ namespace RunningStats
             return Merge(a, b);
         }
 
+        public override void Write(StreamWriter stream)
+        {
+            stream.WriteLine($"Variance\t{Value}");
+        }
     }
 }

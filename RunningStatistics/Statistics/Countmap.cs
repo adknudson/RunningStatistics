@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RunningStats
+namespace RunningStatistics
 {
     public class Countmap : TypedStatistic<Dictionary<double, int>>
     {
@@ -63,6 +64,15 @@ namespace RunningStats
         public static Countmap operator +(Countmap a, Countmap b)
         {
             return Merge(a, b);
+        }
+
+        public override void Write(StreamWriter stream)
+        {
+            SortedDictionary<double, int> sortedCountmap = new(_counter);
+            foreach (var kvp in sortedCountmap)
+            {
+                stream.WriteLine($"{kvp.Key}\t{kvp.Value}");
+            }
         }
     }
 }

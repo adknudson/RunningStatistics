@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
-namespace RunningStats
+namespace RunningStatistics
 {
     public class Mean : TypedStatistic<double>
     {
@@ -47,6 +48,11 @@ namespace RunningStats
         public static Mean operator +(Mean a, Mean b)
         {
             return Merge(a, b);
+        }
+
+        public override void Write(StreamWriter stream)
+        {
+            stream.WriteLine($"Mean\t{Value}");
         }
     }
 }
