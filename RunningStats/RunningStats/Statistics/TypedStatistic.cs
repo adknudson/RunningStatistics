@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace OnlineStatistics
+namespace RunningStats
 {
     public interface IStatistic
     {

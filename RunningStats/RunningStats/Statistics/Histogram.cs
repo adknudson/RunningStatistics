@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace OnlineStatistics
+namespace RunningStats
 {
     public class Histogram : TypedStatistic<IList<int>>
     {

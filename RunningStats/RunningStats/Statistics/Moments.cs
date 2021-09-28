@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OnlineStatistics
+namespace RunningStats
 {
     public class Moments : TypedStatistic<(double, double, double, double)>
     {

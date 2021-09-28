@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace OnlineStatistics
+namespace RunningStats
 {
     public class Mean : TypedStatistic<double>
     {

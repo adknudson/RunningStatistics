@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OnlineStatistics.Statistics
+namespace RunningStats.Statistics
 {
     public class OrderStatistics : TypedStatistic<IList<double>>
     {
