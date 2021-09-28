@@ -19,10 +19,8 @@ namespace RunningStatistics.Test
                 os.Fit(rng.NextDouble() * 100);
             }
 
-            using (StreamWriter file = new("../../output.txt"))
-            {
-                os.Write(file, ps);
-            }
+            using StreamWriter file = new("../../output.txt");
+            os.Write(file, ps);
         }
     }
 }

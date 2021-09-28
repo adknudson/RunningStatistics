@@ -7,9 +7,9 @@ namespace RunningStatistics
 {
     public class OrderStatistics : TypedStatistic<IList<double>>
     {
-        private IList<double> _values;
+        private readonly IList<double> _values;
         private IList<double> _buffer;
-        private Extrema _extrema;
+        private readonly Extrema _extrema;
         private readonly int _b;
 
 
