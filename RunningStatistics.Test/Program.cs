@@ -1,7 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace RunningStatistics.Test
 {
@@ -9,18 +7,27 @@ namespace RunningStatistics.Test
     {
         static void Main()
         {
-            OrderStatistics os = new(500);
-            Random rng = new();
-            int n = 10_000_000;
-            IList<double> ps = Enumerable.Range(0, 101).Select(s => (double)s / 100).ToList();
+            var rng = new Random();
+            long n = (long)100e6;
 
-            for (int i = 0; i < n; i++)
+
+            RunningStatsDirector director = new();
+            RunningStatsBuilder builder = new();
+            director.Builder = builder;
+
+            director.BuildAllSimpleStats();
+            builder.BuildOrderStatistics(200);
+            var rs = builder.GetRunningStats();
+
+
+            for (long i = 0; i < n; i++)
             {
-                os.Fit(rng.NextDouble() * 100);
+                rs.Fit(rng.NextDouble() * 100);
             }
 
+
             using StreamWriter file = new("../../output.txt");
-            os.Write(file, ps);
+            rs.Write(file);
         }
     }
 }
