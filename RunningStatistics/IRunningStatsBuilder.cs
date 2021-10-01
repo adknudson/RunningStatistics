@@ -12,6 +12,6 @@ namespace RunningStatistics
         void BuildMoments();
         void BuildHistogram(IList<double> edges, bool left = true, bool closed = true);
         void BuildCountmap();
-        void BuildOrderStatistics(int b);
+        void BuildOrderStatistics(int b, IList<double> defaultQuantiles = null);
     }
 }

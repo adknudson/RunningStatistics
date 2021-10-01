@@ -11,6 +11,7 @@ namespace RunningStatistics
         private IList<double> _buffer;
         private readonly Extrema _extrema;
         private readonly int _b;
+        private readonly IList<double> _defaultQuantiles;
 
 
 
@@ -22,8 +23,17 @@ namespace RunningStatistics
 
 
 
-        public OrderStatistics(int b) : base()
+        public OrderStatistics(int b, IList<double> defaultQuantiles = null) : base()
         {
+            if (defaultQuantiles == null)
+            {
+                _defaultQuantiles = Constant.defaultQuantiles;
+            }
+            else
+            {
+                _defaultQuantiles = new List<double>(defaultQuantiles);
+            }
+
             _b = b;
             _values = Utils.Fill<double>(0.0, b);
             _buffer = Utils.Fill<double>(0.0, b);
@@ -98,8 +108,7 @@ namespace RunningStatistics
         }
         public override void Write(StreamWriter stream)
         {
-            IList<double> defaultQuantiles = new List<double> { 0.0, 0.25, 0.5, 0.75, 1.0 };
-            Write(stream, defaultQuantiles);
+            Write(stream, _defaultQuantiles);
         }
     }
 }

@@ -50,9 +50,9 @@ namespace RunningStatistics
         {
             this._stats.Add(new Countmap());
         }
-        public void BuildOrderStatistics(int b = 200)
+        public void BuildOrderStatistics(int b = 200, IList<double> defaultQuantiles = null)
         {
-            this._stats.Add(new OrderStatistics(b));
+            this._stats.Add(new OrderStatistics(b, defaultQuantiles));
         }
 
 
