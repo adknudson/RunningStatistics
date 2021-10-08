@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RunningStatistics
 {
     public class Countmap : TypedStatistic<Dictionary<double, int>>
     {
-        private readonly Dictionary<double, int> _counter;
+        private Dictionary<double, int> _counter;
 
 
 
@@ -45,12 +42,23 @@ namespace RunningStatistics
                 _counter[y] = k;
             }
         }
+
+
+
         public void Merge(Countmap b)
         {
             foreach (KeyValuePair<double, int> kvp in b._counter)
             {
                 Fit(kvp.Key, kvp.Value);
             }
+        }
+
+
+
+        public override void Reset()
+        {
+            base.Reset();
+            _counter = new();
         }
 
 
@@ -68,6 +76,7 @@ namespace RunningStatistics
 
         public override void Write(StreamWriter stream)
         {
+            base.Write(stream);
             SortedDictionary<double, int> sortedCountmap = new(_counter);
             foreach (var kvp in sortedCountmap)
             {

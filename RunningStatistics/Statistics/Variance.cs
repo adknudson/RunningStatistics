@@ -74,6 +74,15 @@ namespace RunningStatistics
 
 
 
+        public override void Reset()
+        {
+            base.Reset();
+            _variance = 0.0;
+            _mean = 0.0;
+        }
+
+
+
         public static Variance Merge(Variance a, Variance b)
         {
             Variance merged = new(a);
@@ -87,6 +96,7 @@ namespace RunningStatistics
 
         public override void Write(StreamWriter stream)
         {
+            base.Write(stream);
             stream.WriteLine($"Variance\t{Value}");
         }
     }

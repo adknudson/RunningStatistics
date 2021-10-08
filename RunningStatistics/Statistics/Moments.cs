@@ -90,6 +90,17 @@ namespace RunningStatistics
 
 
 
+        public override void Reset()
+        {
+            base.Reset();
+            _mean = 0.0;
+            _variance = 0.0;
+            _skewness = 0.0;
+            _kurtosis = 0.0;
+        }
+
+
+
         public static Moments Merge(Moments a, Moments b)
         {
             Moments merged = new(a);
@@ -102,6 +113,7 @@ namespace RunningStatistics
         }
         public override void Write(StreamWriter stream)
         {
+            base.Write(stream);
             stream.WriteLine($"Mean\t{Mean}");
             stream.WriteLine($"Variance\t{Variance}");
             stream.WriteLine($"Skewness\t{Skewness}");

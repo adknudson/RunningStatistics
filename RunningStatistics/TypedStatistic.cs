@@ -3,19 +3,10 @@ using System.Collections.Generic;
 
 namespace RunningStatistics
 {
-    public interface IStatistic
-    {
-        public void Fit(double y);
-        public void Fit(IList<double> ys);
-        public void Write(StreamWriter stream);
-    }
-
-
-
     public abstract class TypedStatistic<TReturn> : IStatistic
     {
         protected int _n;
-        
+
         public TypedStatistic()
         {
             _n = 0;
@@ -33,9 +24,16 @@ namespace RunningStatistics
                 Fit(y);
             }
         }
+        public virtual void Reset()
+        {
+            _n = 0;
+        }
 
         public int Count { get => _n; }
         public abstract TReturn Value { get; }
-        public abstract void Write(StreamWriter stream);
+        public virtual void Write(StreamWriter stream)
+        {
+            stream.WriteLine($"Count={_n} ({_n:n0})");
+        }
     }
 }

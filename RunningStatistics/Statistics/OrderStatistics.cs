@@ -7,9 +7,9 @@ namespace RunningStatistics
 {
     public class OrderStatistics : TypedStatistic<IList<double>>
     {
-        private readonly IList<double> _values;
+        private IList<double> _values;
         private IList<double> _buffer;
-        private readonly Extrema _extrema;
+        private Extrema _extrema;
         private readonly int _b;
         private readonly IList<double> _defaultQuantiles;
 
@@ -77,11 +77,22 @@ namespace RunningStatistics
                 throw new Exception($"The two OrderStatistics objects must have the same batch size. Got {_b} and {b._b}.");
             }
 
+            _n += b._n;
             _extrema.Merge(b._extrema);
             for (int k = 0; k < _b; k++)
             {
                 _values[k] = Utils.Smooth(_values[k], b._values[k], _b / b._b);
             }
+        }
+
+
+
+        public override void Reset()
+        {
+            base.Reset();
+            _values = Utils.Fill<double>(0.0, _b);
+            _buffer = Utils.Fill<double>(0.0, _b);
+            _extrema = new();
         }
 
 
@@ -101,6 +112,7 @@ namespace RunningStatistics
 
         public void Write(StreamWriter stream, IList<double> quantiles)
         {
+            base.Write(stream);
             foreach (double p in quantiles)
             {
                 stream.WriteLine($"{p}\t{Quantile(p)}");

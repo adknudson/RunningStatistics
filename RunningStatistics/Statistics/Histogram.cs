@@ -8,8 +8,8 @@ namespace RunningStatistics
     public class Histogram : TypedStatistic<IList<int>>
     {
         private readonly IList<double> _edges;
-        private readonly IList<int> _binCounts;
-        private readonly IList<int> _outOfBoundsCounts;
+        private IList<int> _binCounts;
+        private IList<int> _outOfBoundsCounts;
         private readonly bool _left;
         private readonly bool _closed;
 
@@ -68,6 +68,8 @@ namespace RunningStatistics
 
         public void Merge(Histogram b)
         {
+            _n += b._n;
+
             bool edgesAreMatching = true;
             if (_edges.Count == b._edges.Count)
             {
@@ -87,7 +89,7 @@ namespace RunningStatistics
 
             if (edgesAreMatching)
             {
-                for (int j = 0; j < _edges.Count; j++)
+                for (int j = 0; j < NumBins; j++)
                 {
                     _binCounts[j] += b._binCounts[j];
                 }
@@ -101,6 +103,15 @@ namespace RunningStatistics
                     Fit(midpoints[j], b._binCounts[j]);
                 }
             }
+        }
+
+
+
+        public override void Reset()
+        {
+            base.Reset();
+            _binCounts = Utils.Fill<int>(0, NumBins);
+            _outOfBoundsCounts = Utils.Fill<int>(0, 2);
         }
 
 
@@ -152,6 +163,7 @@ namespace RunningStatistics
 
         public override void Write(StreamWriter stream)
         {
+            base.Write(stream);
             IList<string> printableBins = Utils.GetPrintableBins(this);
             foreach (var (bin, count) in Enumerable.Zip(printableBins, _binCounts))
             {

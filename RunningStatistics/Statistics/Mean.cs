@@ -38,6 +38,13 @@ namespace RunningStatistics
         }
 
 
+        public override void Reset()
+        {
+            base.Reset();
+            _mean = 0.0;
+        }
+
+
 
         public static Mean Merge(Mean a, Mean b)
         {
@@ -52,6 +59,7 @@ namespace RunningStatistics
 
         public override void Write(StreamWriter stream)
         {
+            base.Write(stream);
             stream.WriteLine($"Mean\t{Value}");
         }
     }

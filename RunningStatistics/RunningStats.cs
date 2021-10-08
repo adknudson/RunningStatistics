@@ -10,6 +10,7 @@ namespace RunningStatistics
 
 
         public IStatistic this[int i] { get => _stats[i]; }
+        public int Count => _stats.Count;
 
 
 
@@ -33,6 +34,16 @@ namespace RunningStatistics
             foreach (var stat in _stats)
             {
                 stat.Fit(xs);
+            }
+        }
+
+
+
+        public void Reset()
+        {
+            foreach (var stat in _stats)
+            {
+                stat.Reset();
             }
         }
 

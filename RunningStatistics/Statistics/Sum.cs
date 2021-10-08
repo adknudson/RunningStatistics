@@ -44,6 +44,13 @@ namespace RunningStatistics
 
 
 
+        public override void Reset()
+        {
+            base.Reset();
+            _sum = 0.0;
+        }
+
+
 
         public static Sum Merge(Sum a, Sum b)
         {
@@ -58,6 +65,7 @@ namespace RunningStatistics
 
         public override void Write(StreamWriter stream)
         {
+            base.Write(stream);
             stream.WriteLine($"Sum\t{Value}");
         }
     }

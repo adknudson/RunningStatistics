@@ -93,6 +93,17 @@ namespace RunningStatistics
 
 
 
+        public override void Reset()
+        {
+            base.Reset();
+            _min = double.PositiveInfinity;
+            _max = double.NegativeInfinity;
+            _nMin = 0;
+            _nMax = 0;
+        }
+
+
+
         public static Extrema Merge(Extrema a, Extrema b)
         {
             Extrema merged = new(a);
@@ -106,6 +117,7 @@ namespace RunningStatistics
 
         public override void Write(StreamWriter stream)
         {
+            base.Write(stream);
             stream.WriteLine($"Minimum\t{Min}");
             stream.WriteLine($"Maximum\t{Max}");
             stream.WriteLine($"MinimumCount\t{CountMin}");
