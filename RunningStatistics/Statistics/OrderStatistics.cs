@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace RunningStatistics
 {
-    public class OrderStatistics : TypedStatistic<IList<double>>
+    public class OrderStatistics : AbstractStatistic<double, IList<double>>
     {
         private IList<double> _values;
         private IList<double> _buffer;

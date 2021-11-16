@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RunningStatistics
 {
-    public class Sum : TypedStatistic<double>
+    public class Sum : AbstractStatistic<double, double>
     {
         private double _sum;
 

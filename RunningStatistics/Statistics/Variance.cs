@@ -4,7 +4,7 @@ using System.IO;
 
 namespace RunningStatistics
 {
-    public class Variance : TypedStatistic<double>
+    public class Variance : AbstractStatistic<double, double >
     {
         private double _variance;
         private double _mean;

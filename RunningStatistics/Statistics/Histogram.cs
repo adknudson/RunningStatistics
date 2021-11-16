@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace RunningStatistics
 {
-    public class Histogram : TypedStatistic<IList<int>>
+    public class Histogram : AbstractStatistic<double, IList<int>>
     {
         private readonly IList<double> _edges;
         private IList<int> _binCounts;
@@ -26,6 +26,12 @@ namespace RunningStatistics
 
 
 
+        /// <summary>
+        /// Create a histogram with bins defined by edges.
+        /// </summary>
+        /// <param name="edges">The end points and partitions of the bins.</param>
+        /// <param name="left">Should the edges be left closed (left=true) or right closed (left=false).</param>
+        /// <param name="closed">Should the end points both be closed (closed=true) or half open (closed=false).</param>
         public Histogram(IList<double> edges, bool left = true, bool closed = true) : base()
         {
             _edges = edges.OrderBy(e => e).ToList();

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RunningStatistics
 {
-    public class Moments : TypedStatistic<(double, double, double, double)>
+    public class Moments : AbstractStatistic<double, (double, double, double, double)>
     {
         private double _mean;
         private double _variance;

@@ -4,7 +4,7 @@ using System.IO;
 
 namespace RunningStatistics
 {
-    public class Mean : TypedStatistic<double>
+    public class Mean : AbstractStatistic<double, double>
     {
         private double _mean;
         public override double Value { get => _n == 0 ? double.NaN : _mean; }

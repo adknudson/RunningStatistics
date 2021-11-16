@@ -3,23 +3,23 @@ using System.Collections.Generic;
 
 namespace RunningStatistics
 {
-    public abstract class TypedStatistic<TReturn> : IStatistic
+    public abstract class AbstractStatistic<T, TReturn> : IStatistic<T>
     {
         protected int _n;
 
-        public TypedStatistic()
+        public AbstractStatistic()
         {
             _n = 0;
         }
-        public TypedStatistic(TypedStatistic<TReturn> a)
+        public AbstractStatistic(AbstractStatistic<T, TReturn> a)
         {
             _n = a._n;
         }
 
-        public abstract void Fit(double y);
-        public virtual void Fit(IList<double> ys)
+        public abstract void Fit(T y);
+        public virtual void Fit(IList<T> ys)
         {
-            foreach (double y in ys)
+            foreach (var y in ys)
             {
                 Fit(y);
             }
@@ -29,7 +29,7 @@ namespace RunningStatistics
             _n = 0;
         }
 
-        public int Count { get => _n; }
+        public int Nobs { get => _n; }
         public abstract TReturn Value { get; }
         public virtual void Write(StreamWriter stream)
         {

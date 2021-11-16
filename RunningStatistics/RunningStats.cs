@@ -3,25 +3,25 @@ using System.Collections.Generic;
 
 namespace RunningStatistics
 {
-    public class RunningStats
+    public class RunningStats<T>
     {
-        private readonly List<IStatistic> _stats = new();
+        private readonly List<IStatistic<T>> _stats = new();
 
 
 
-        public IStatistic this[int i] { get => _stats[i]; }
+        public IStatistic<T> this[int i] { get => _stats[i]; }
         public int Count => _stats.Count;
 
 
 
-        public void Add(IStatistic stat)
+        public void Add(IStatistic<T> stat)
         {
             this._stats.Add(stat);
         }
 
 
 
-        public void Fit(double x)
+        public void Fit(T x)
         {
             foreach (var stat in _stats)
             {
@@ -29,7 +29,7 @@ namespace RunningStatistics
             }
         }
 
-        public void Fit(IList<double> xs)
+        public void Fit(IList<T> xs)
         {
             foreach (var stat in _stats)
             {
@@ -51,7 +51,7 @@ namespace RunningStatistics
 
         public void Write(StreamWriter stream)
         {
-            foreach (IStatistic stat in _stats)
+            foreach (var stat in _stats)
             {
                 stream.WriteLine(stat.ToString());
                 stat.Write(stream);

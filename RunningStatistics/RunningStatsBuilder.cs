@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace RunningStatistics
 {
     public class RunningStatsBuilder : IRunningStatsBuilder
     {
-        private RunningStats _stats = new();
+        private RunningStats<double> _stats = new();
 
 
 
@@ -48,7 +49,7 @@ namespace RunningStatistics
         }
         public void BuildCountmap()
         {
-            this._stats.Add(new Countmap());
+            this._stats.Add(new Countmap<double>());
         }
         public void BuildOrderStatistics(int b = 200, IList<double> defaultQuantiles = null)
         {
@@ -57,9 +58,9 @@ namespace RunningStatistics
 
 
 
-        public RunningStats GetRunningStats()
+        public RunningStats<double> GetRunningStats()
         {
-            RunningStats stats = this._stats;
+            RunningStats<double> stats = this._stats;
             this.Reset();
             return stats;
         }

@@ -5,6 +5,11 @@
         private IRunningStatsBuilder _builder;
         public IRunningStatsBuilder Builder { set { _builder = value; } }
 
+        public RunningStatsDirector(IRunningStatsBuilder builder)
+        {
+            _builder = builder;
+        }
+
 
         public void BuildMeanVariance()
         {

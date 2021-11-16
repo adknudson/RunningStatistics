@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO;
 
 namespace RunningStatistics
 {
-    public class Extrema : TypedStatistic<(double, double, int, int)>
+    public class Extrema : AbstractStatistic<double, (double, double, int, int)>
     {
         private double _min;
         private double _max;

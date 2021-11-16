@@ -4,13 +4,28 @@ using System.IO;
 
 namespace RunningStatistics
 {
-    public class Countmap : TypedStatistic<Dictionary<double, int>>
+    public class Countmap<T> : AbstractStatistic<T, Dictionary<T, int>>
     {
-        private Dictionary<double, int> _counter;
+        private Dictionary<T, int> _counter;
 
 
 
-        public override Dictionary<double, int> Value { get => _counter; }
+        public override Dictionary<T, int> Value { get => _counter; }
+        public int this[T key]
+        {
+            get
+            {
+                if (_counter.TryGetValue(key, out int count))
+                {
+                    return count;
+                }
+                else
+                {
+                    _counter[key] = 0;
+                    return 0;
+                }
+            }
+        }
 
 
 
@@ -18,18 +33,18 @@ namespace RunningStatistics
         {
             _counter = new();
         }
-        public Countmap(Countmap a) : base(a)
+        public Countmap(Countmap<T> a) : base(a)
         {
-            _counter = new Dictionary<double, int>(a._counter);
+            _counter = new Dictionary<T, int>(a._counter);
         }
 
 
 
-        public override void Fit(double y)
+        public override void Fit(T y)
         {
             Fit(y, 1);
         }
-        private void Fit(double y, int k)
+        private void Fit(T y, int k)
         {
             _n += k;
 
@@ -45,9 +60,9 @@ namespace RunningStatistics
 
 
 
-        public void Merge(Countmap b)
+        public void Merge(Countmap<T> b)
         {
-            foreach (KeyValuePair<double, int> kvp in b._counter)
+            foreach (KeyValuePair<T, int> kvp in b._counter)
             {
                 Fit(kvp.Key, kvp.Value);
             }
@@ -63,13 +78,13 @@ namespace RunningStatistics
 
 
 
-        public static Countmap Merge(Countmap a, Countmap b)
+        public static Countmap<T> Merge(Countmap<T> a, Countmap<T> b)
         {
-            Countmap merged = new(a);
+            Countmap<T> merged = new(a);
             merged.Merge(b);
             return merged;
         }
-        public static Countmap operator +(Countmap a, Countmap b)
+        public static Countmap<T> operator +(Countmap<T> a, Countmap<T> b)
         {
             return Merge(a, b);
         }
@@ -77,7 +92,7 @@ namespace RunningStatistics
         public override void Write(StreamWriter stream)
         {
             base.Write(stream);
-            SortedDictionary<double, int> sortedCountmap = new(_counter);
+            SortedDictionary<T, int> sortedCountmap = new(_counter);
             foreach (var kvp in sortedCountmap)
             {
                 stream.WriteLine($"{kvp.Key}\t{kvp.Value}");
