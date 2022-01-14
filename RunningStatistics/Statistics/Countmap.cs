@@ -1,17 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace RunningStatistics
 {
-    public class Countmap<T> : AbstractStatistic<T, Dictionary<T, int>>
+    /// <summary>
+    /// A dictionary that maps unique values to its number of occurences.
+    /// </summary>
+    /// <typeparam name="TKey">The observation type.</typeparam>
+    public class Countmap<TKey> : AbstractStatistic<TKey, Dictionary<TKey, int>>
     {
-        private Dictionary<T, int> _counter;
+        private Dictionary<TKey, int> _counter;
 
+        public override Dictionary<TKey, int> Value { get => _counter; }
 
+        /// <summary>
+        /// Return the normalized counts so that they sum to one.
+        /// </summary>
+        public Dictionary<TKey, double> Probabilities
+        {
+            get
+            {
+                Dictionary<TKey, double> _probs = new();
+                foreach (var (key, obs) in _counter)
+                {
+                    _probs[key] = (double)obs / Count;
+                }
+                return _probs;
+            }
+        }
 
-        public override Dictionary<T, int> Value { get => _counter; }
-        public int this[T key]
+        /// <summary>
+        /// Get the count for a specified key. Returns 0 if the key is not found.
+        /// </summary>
+        public int this[TKey key]
         {
             get
             {
@@ -27,26 +49,35 @@ namespace RunningStatistics
             }
         }
 
-
+        /// <summary>
+        /// Get the value with the most occurences.
+        /// </summary>
+        public TKey Mode { get => _counter.Aggregate((x, y) => x.Value > y.Value ? x : y).Key; }
 
         public Countmap() : base()
         {
             _counter = new();
         }
-        public Countmap(Countmap<T> a) : base(a)
+
+        public Countmap(Countmap<TKey> a) : base(a)
         {
-            _counter = new Dictionary<T, int>(a._counter);
+            _counter = new Dictionary<TKey, int>(a._counter);
         }
 
-
-
-        public override void Fit(T y)
+        /// <summary>
+        /// Increment a count by one.
+        /// </summary>
+        public override void Fit(TKey y)
         {
             Fit(y, 1);
         }
-        private void Fit(T y, int k)
+
+        /// <summary>
+        /// Increment a count by a value other than one.
+        /// </summary>
+        public void Fit(TKey y, int k)
         {
-            _n += k;
+            _nobs += k;
 
             if (_counter.ContainsKey(y))
             {
@@ -58,17 +89,13 @@ namespace RunningStatistics
             }
         }
 
-
-
-        public void Merge(Countmap<T> b)
+        public void Merge(Countmap<TKey> b)
         {
-            foreach (KeyValuePair<T, int> kvp in b._counter)
+            foreach ((TKey key, int value) in b._counter)
             {
-                Fit(kvp.Key, kvp.Value);
+                Fit(key, value);
             }
         }
-
-
 
         public override void Reset()
         {
@@ -76,26 +103,24 @@ namespace RunningStatistics
             _counter = new();
         }
 
-
-
-        public static Countmap<T> Merge(Countmap<T> a, Countmap<T> b)
+        public static Countmap<TKey> Merge(Countmap<TKey> a, Countmap<TKey> b)
         {
-            Countmap<T> merged = new(a);
+            Countmap<TKey> merged = new(a);
             merged.Merge(b);
             return merged;
         }
-        public static Countmap<T> operator +(Countmap<T> a, Countmap<T> b)
+        public static Countmap<TKey> operator +(Countmap<TKey> a, Countmap<TKey> b)
         {
             return Merge(a, b);
         }
 
-        public override void Write(StreamWriter stream)
+        public override void Print(StreamWriter stream)
         {
-            base.Write(stream);
-            SortedDictionary<T, int> sortedCountmap = new(_counter);
-            foreach (var kvp in sortedCountmap)
+            base.Print(stream);
+            SortedDictionary<TKey, int> sortedCountmap = new(_counter);
+            foreach ((TKey key, int value) in sortedCountmap)
             {
-                stream.WriteLine($"{kvp.Key}\t{kvp.Value}");
+                stream.WriteLine($"{key}\t{value}");
             }
         }
     }

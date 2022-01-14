@@ -1,17 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RunningStatistics
 {
+    /// <summary>
+    /// Tracks the overall sum, stored as a <see cref="double"/>.
+    /// </summary>
     public class Sum : AbstractStatistic<double, double>
     {
         private double _sum;
 
+
+
         public override double Value { get => _sum; }
+
+        public double Mean { get => _sum / (double)_nobs; }
 
 
 
@@ -19,35 +23,10 @@ namespace RunningStatistics
         {
             _sum = 0.0;
         }
+
         public Sum(Sum a) : base(a)
         {
             _sum = a._sum;
-        }
-
-
-
-        public override void Fit(double y)
-        {
-            _n += 1;
-            _sum += y;
-        }
-        public override void Fit(IList<double> ys)
-        {
-            _n += ys.Count;
-            _sum += Utils.Sum(ys);
-        }
-        public void Merge(Sum b)
-        {
-            _n += b._n;
-            _sum += b._sum;
-        }
-
-
-
-        public override void Reset()
-        {
-            base.Reset();
-            _sum = 0.0;
         }
 
 
@@ -58,15 +37,40 @@ namespace RunningStatistics
             a.Merge(b);
             return merged;
         }
+
+        public override void Fit(double y)
+        {
+            _nobs += 1;
+            _sum += y;
+        }
+
+        public override void Fit(IEnumerable<double> ys)
+        {
+            _nobs += ys.Count();
+            _sum += ys.Sum();
+        }
+
+        public void Merge(Sum b)
+        {
+            _nobs += b._nobs;
+            _sum += b._sum;
+        }
+
+        public override void Print(StreamWriter stream)
+        {
+            base.Print(stream);
+            stream.WriteLine($"Sum\t{Value}");
+        }
+
+        public override void Reset()
+        {
+            base.Reset();
+            _sum = 0.0;
+        }
+
         public static Sum operator +(Sum a, Sum b)
         {
             return Merge(a, b);
-        }
-
-        public override void Write(StreamWriter stream)
-        {
-            base.Write(stream);
-            stream.WriteLine($"Sum\t{Value}");
         }
     }
 }

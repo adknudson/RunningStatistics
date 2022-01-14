@@ -2,14 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <Version>0.1.0</Version>
     <Company>Scientific Games</Company>
     <Description>A library of online algorithms for statistical measures.</Description>
-    <PackageLicenseFile></PackageLicenseFile>
-    <PackageProjectUrl>https://github.com/adknudson/RunningStatistics</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/adknudson/RunningStatistics</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageTags>Statistics</PackageTags>
   </PropertyGroup>
 
 </Project>

@@ -1,49 +1,66 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RunningStatistics
 {
+    /// <summary>
+    /// Tracks the first four non-central moments, stored as a <see cref="double"/>.
+    /// </summary>
     public class Moments : AbstractStatistic<double, (double, double, double, double)>
     {
-        private double _mean;
-        private double _variance;
-        private double _skewness;
         private double _kurtosis;
 
+        private double _mean;
 
+        private double _skewness;
 
-        public double Mean { get => _n == 0 ? double.NaN : _mean; }
-        public double Variance
-        {
-            get
-            {
-                double v = _variance - _mean * _mean;
-                return Utils.BesselCorrection(_n) * v;
-            }
-        }
-        public double Skewness
-        {
-            get
-            {
-                double vr = _variance - _mean * _mean;
-                return (_skewness - 3.0 * _mean * vr - _mean * _mean * _mean) / Math.Pow(vr, 1.5);
-            }
-        }
+        private double _variance;
+
+        /// <summary>
+        /// Returns the (excess) kurtosis.
+        /// </summary>
         public double Kurtosis
         {
             get
             {
                 double meanSquared = _mean * _mean;
                 double variance = _variance - meanSquared;
-                return (_kurtosis - 4.0 * _mean * _skewness + 6.0 * meanSquared * _variance - 3.0 * meanSquared * meanSquared) / (variance * variance) - 3.0;
+                return _nobs == 0 ? double.NaN : (_kurtosis - 4.0 * _mean * _skewness + 6.0 * meanSquared * _variance - 3.0 * meanSquared * meanSquared) / (variance * variance) - 3.0;
             }
         }
-        public double ExcessKurtosis { get => Kurtosis - 3.0; }
+
+        public double Mean { get => _nobs == 0 ? double.NaN : _mean; }
+
+        public double Skewness
+        {
+            get
+            {
+                double vr = _variance - _mean * _mean;
+                return _nobs == 0 ? double.NaN : (_skewness - 3.0 * _mean * vr - _mean * _mean * _mean) / Math.Pow(vr, 1.5);
+            }
+        }
+
+        /// <summary>
+        /// Returns the mean, variance, skewness, and (excess) kurtosis.
+        /// </summary>
         public override (double, double, double, double) Value { get => (Mean, Variance, Skewness, Kurtosis); }
+
+        /// <summary>
+        /// The bias-corrected variance.
+        /// </summary>
+        public double Variance
+        {
+            get
+            {
+                double v = _variance - _mean * _mean;
+                return _nobs == 0 ? double.NaN : Utils.BesselCorrection(_nobs) * v;
+            }
+        }
+
+        /// <summary>
+        /// The sample standard deviation.
+        /// </summary>
+        public double StdDev { get => Math.Sqrt(Variance); }
 
 
 
@@ -54,6 +71,7 @@ namespace RunningStatistics
             _skewness = 0.0;
             _kurtosis = 0.0;
         }
+
         public Moments(Moments a) : base(a)
         {
             _mean = a._mean;
@@ -64,11 +82,18 @@ namespace RunningStatistics
 
 
 
+        public static Moments Merge(Moments a, Moments b)
+        {
+            Moments merged = new(a);
+            merged.Merge(b);
+            return merged;
+        }
+
         public override void Fit(double y)
         {
-            ++_n;
+            ++_nobs;
 
-            double g = 1.0 / _n;
+            double g = 1.0 / _nobs;
             double y2 = y * y;
 
             _mean = Utils.Smooth(_mean, y, g);
@@ -76,19 +101,30 @@ namespace RunningStatistics
             _skewness = Utils.Smooth(_skewness, y * y2, g);
             _kurtosis = Utils.Smooth(_kurtosis, y2 * y2, g);
         }
+
         public void Merge(Moments b)
         {
-            _n += b._n;
+            _nobs += b._nobs;
 
-            double g = b._n / _n;
+            if (_nobs > 0)
+            {
+                double g = (double)b._nobs / _nobs;
 
-            _mean = Utils.Smooth(_mean, b._mean, g);
-            _variance = Utils.Smooth(_variance, b._variance, g);
-            _skewness = Utils.Smooth(_skewness, b._skewness, g);
-            _kurtosis = Utils.Smooth(_kurtosis, b._kurtosis, g);
+                _mean = Utils.Smooth(_mean, b._mean, g);
+                _variance = Utils.Smooth(_variance, b._variance, g);
+                _skewness = Utils.Smooth(_skewness, b._skewness, g);
+                _kurtosis = Utils.Smooth(_kurtosis, b._kurtosis, g);
+            }
         }
 
-
+        public override void Print(StreamWriter stream)
+        {
+            base.Print(stream);
+            stream.WriteLine($"Mean\t{Mean}");
+            stream.WriteLine($"Variance\t{Variance}");
+            stream.WriteLine($"Skewness\t{Skewness}");
+            stream.WriteLine($"Kurtosis\t{Kurtosis}");
+        }
 
         public override void Reset()
         {
@@ -99,25 +135,9 @@ namespace RunningStatistics
             _kurtosis = 0.0;
         }
 
-
-
-        public static Moments Merge(Moments a, Moments b)
-        {
-            Moments merged = new(a);
-            merged.Merge(b);
-            return merged;
-        }
         public static Moments operator +(Moments a, Moments b)
         {
             return Merge(a, b);
-        }
-        public override void Write(StreamWriter stream)
-        {
-            base.Write(stream);
-            stream.WriteLine($"Mean\t{Mean}");
-            stream.WriteLine($"Variance\t{Variance}");
-            stream.WriteLine($"Skewness\t{Skewness}");
-            stream.WriteLine($"Kurtosis\t{Kurtosis}");
         }
     }
 }
