@@ -30,31 +30,31 @@ namespace RunningStatistics.Test
         {
             Sum s = new();
 
-            for (int i = 1; i <= n; i++)
+            for (var i = 1; i <= n; i++)
             {
                 s.Fit(i);
             }
 
-            Assert.Equal(n * (n + 1) / 2, s.Value);
+            Assert.Equal(n * (n + 1) >> 2, s.Value);
         }
 
         [Fact]
         public void SumOfPartsEqualsSumOfWhole()
         {
-            int n = 2000;
+            const int n = 2000;
             var rng = new Random();
 
             Sum a = new(), b = new(), c = new();
 
             double v;
-            for (int i = 0; i < n; i++)
+            for (var i = 0; i < n; i++)
             {
                 v = rng.NextDouble();
                 a.Fit(v);
                 c.Fit(v);
             }
 
-            for (int i = 0; i < n; i++)
+            for (var i = 0; i < n; i++)
             {
                 v = rng.NextDouble();
                 b.Fit(v);

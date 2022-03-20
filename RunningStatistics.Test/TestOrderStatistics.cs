@@ -8,10 +8,10 @@ namespace RunningStatistics.Test
         [Fact]
         public void QuantileOfEmptyIsZero()
         {
-            OrderStatistics o = new(20);
+            EmpiricalCdf o = new(20);
             var rng = new Random();
 
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
                 o.Fit(rng.NextDouble());
             }
@@ -22,7 +22,7 @@ namespace RunningStatistics.Test
         [Fact]
         public void MergeEmptyIsZero()
         {
-            OrderStatistics a = new(20), b = new(20);
+            EmpiricalCdf a = new(20), b = new(20);
             a.Merge(b);
 
             Assert.Equal(0.0, a.Quantile(0.5));
@@ -31,27 +31,27 @@ namespace RunningStatistics.Test
         [Fact]
         public void MergeDifferentBuffersThrowsError()
         {
-            OrderStatistics a = new(10), b = new(20);
+            EmpiricalCdf a = new(10), b = new(20);
             Assert.Throws<Exception>(() => a.Merge(b));
         }
 
         [Fact]
         public void MergePartsEqualsMergeAll()
         {
-            int n = 50_000;
+            var n = 50_000;
             var rng = new Random();
 
-            OrderStatistics a = new(200), b = new(200), c = new(200);
+            EmpiricalCdf a = new(200), b = new(200), c = new(200);
 
             double v;
-            for (int i = 0; i < n; i++)
+            for (var i = 0; i < n; i++)
             {
                 v = rng.NextDouble();
                 a.Fit(v);
                 c.Fit(v);
             }
 
-            for (int i = 0; i < n; i++)
+            for (var i = 0; i < n; i++)
             {
                 v = rng.NextDouble();
                 b.Fit(v);
@@ -67,12 +67,12 @@ namespace RunningStatistics.Test
         [Fact]
         public void TestUnitUniform()
         {
-            int n = 1_000_000;
+            var n = 1_000_000;
             var rng = new Random();
 
-            OrderStatistics o = new(200);
+            EmpiricalCdf o = new(200);
 
-            for (int i = 0; i < n; i++)
+            for (var i = 0; i < n; i++)
             {
                 o.Fit(rng.NextDouble());
             }
@@ -87,17 +87,17 @@ namespace RunningStatistics.Test
         [Fact]
         public void TestNormal()
         {
-            int n = 1_000_000;
+            var n = 1_000_000;
             var rng = new Random();
 
-            OrderStatistics o = new(200);
+            EmpiricalCdf o = new(200);
 
-            for (int i = 0; i < n; i++)
+            for (var i = 0; i < n; i++)
             {
                 o.Fit(rng.RandNorm());
             }
 
-            double rel_err = Utils.RelError(-2.326347874040846, o.Quantile(0.01));
+            var rel_err = Utils.RelError(-2.326347874040846, o.Quantile(0.01));
             Assert.Equal(0.0, rel_err, 1);
 
             Assert.Equal(-1.2815515655446004, o.Quantile(0.10), 1);
@@ -113,13 +113,13 @@ namespace RunningStatistics.Test
         [Fact]
         public void TestLogNormal()
         {
-            int n = 1_000_000;
+            var n = 1_000_000;
             var rng = new Random();
             double mu = 0.0, sd = 0.1;
 
-            OrderStatistics o = new(200);
+            EmpiricalCdf o = new(200);
 
-            for (int i = 0; i < n; i++)
+            for (var i = 0; i < n; i++)
             {
                 o.Fit(rng.RandLogNorm(mu, sd));
             }

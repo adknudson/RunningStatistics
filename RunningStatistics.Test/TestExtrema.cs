@@ -17,8 +17,7 @@ namespace RunningStatistics.Test
         [Fact]
         public void MergeEmptyAreInf()
         {
-            Extrema a, b;
-            a = new(); b = new(); a.Merge(b);
+            Extrema a = new(); Extrema b = new(); a.Merge(b);
 
             Assert.Equal(double.PositiveInfinity, a.Min);
             Assert.Equal(double.NegativeInfinity, a.Max);
@@ -37,21 +36,20 @@ namespace RunningStatistics.Test
         [Fact]
         public void MergePartsEqualsMergeAll()
         {
-            int n = 2000;
+            const int n = 2000;
             var rng = new Random();
 
-            Extrema a, b, c;
-            a = new(); b = new(); c = new();
+            Extrema a = new(); Extrema b = new(); Extrema c = new();
 
             double v;
-            for (int i = 0; i < n; i++)
+            for (var i = 0; i < n; i++)
             {
                 v = rng.NextDouble();
                 a.Fit(v);
                 c.Fit(v);
             }
 
-            for (int i = 0; i < n; i++)
+            for (var i = 0; i < n; i++)
             {
                 v = rng.NextDouble();
                 b.Fit(v);

@@ -7,17 +7,17 @@ namespace RunningStatistics.Test
     public class TestHistogram
     {
         // |-inf, 0|, |0, 10|, |10, 100|
-        double[] edges = { double.NegativeInfinity, 0, 10, 100 };
+        private readonly double[] _edges = { double.NegativeInfinity, 0, 10, 100 };
 
         [Fact]
         public void EmptyHistIsZero()
         {
             // (-inf, 0], (0, 10], (10, 100]
-            Histogram h = new(edges, false, false);
+            Histogram h = new(_edges, false, false);
 
             Assert.Equal(0, h.Count);
 
-            foreach (var (bin, count) in h)
+            foreach (var (_, count) in h)
             {
                 Assert.Equal(0, count);
             }
@@ -26,21 +26,21 @@ namespace RunningStatistics.Test
         [Fact]
         public void MergePartsEqualsMergeAll()
         {
-            int n = 2000;
+            const int n = 2000;
             var rng = new Random();
-            double[] small_edges = { 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
+            double[] smallEdges = { 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
 
-            Histogram a = new(small_edges), b = new(small_edges), c = new(small_edges);
+            Histogram a = new(smallEdges), b = new(smallEdges), c = new(smallEdges);
 
             double v;
-            for (int i = 0; i < n; i++)
+            for (var i = 0; i < n; i++)
             {
                 v = rng.NextDouble();
                 a.Fit(v);
                 c.Fit(v);
             }
 
-            for (int i = 0; i < n; i++)
+            for (var i = 0; i < n; i++)
             {
                 v = rng.NextDouble();
                 b.Fit(v);
@@ -49,9 +49,9 @@ namespace RunningStatistics.Test
 
             a.Merge(b);
 
-            foreach (var ((bina, counta), (binb, countb)) in a.Zip(c))
+            foreach (var ((_, countA), (_, countB)) in a.Zip(c))
             {
-                Assert.Equal(counta, countb);
+                Assert.Equal(countA, countB);
             }
         }
 
@@ -59,7 +59,7 @@ namespace RunningStatistics.Test
         public void LeftClosed()
         {
             // [-inf, 0), [0, 10), [10, 100]
-            Histogram h = new(edges, true, true);
+            Histogram h = new(_edges);
 
             h.Fit(-1);
             h.Fit(1);
@@ -67,10 +67,10 @@ namespace RunningStatistics.Test
             h.Fit(1000);
 
             // One value out of bounds on the upper end
-            Assert.Equal(0, h.OutOfBoundsCounts[0]);
-            Assert.Equal(1, h.OutOfBoundsCounts[1]);
+            Assert.Equal(0, h.OutOfBoundsCounts.Lower);
+            Assert.Equal(1, h.OutOfBoundsCounts.Upper);
 
-            foreach (var (bin, count) in h)
+            foreach (var (_, count) in h)
             {
                 Assert.Equal(1, count);
             }
@@ -80,7 +80,7 @@ namespace RunningStatistics.Test
         public void LeftOpen()
         {
             // [-inf, 0), [0, 10), [10, 100)
-            Histogram h = new(edges, true, false);
+            Histogram h = new(_edges, true, false);
 
             h.Fit(-1);
             h.Fit(1);
@@ -88,10 +88,10 @@ namespace RunningStatistics.Test
             h.Fit(100);
 
             // One value out of bounds on the upper end
-            Assert.Equal(0, h.OutOfBoundsCounts[0]);
-            Assert.Equal(1, h.OutOfBoundsCounts[1]);
+            Assert.Equal(0, h.OutOfBoundsCounts.Lower);
+            Assert.Equal(1, h.OutOfBoundsCounts.Upper);
 
-            foreach (var (bin, count) in h)
+            foreach (var (_, count) in h)
             {
                 Assert.Equal(1, count);
             }
@@ -101,7 +101,7 @@ namespace RunningStatistics.Test
         public void RightClosed()
         {
             // [-inf, 0], (0, 10], (10, 100]
-            Histogram h = new(edges, false, true);
+            Histogram h = new(_edges, false);
 
             h.Fit(double.NegativeInfinity);
             h.Fit(10);
@@ -109,10 +109,10 @@ namespace RunningStatistics.Test
             h.Fit(101);
 
             // One value out of bounds on the upper end
-            Assert.Equal(0, h.OutOfBoundsCounts[0]);
-            Assert.Equal(1, h.OutOfBoundsCounts[1]);
+            Assert.Equal(0, h.OutOfBoundsCounts.Lower);
+            Assert.Equal(1, h.OutOfBoundsCounts.Upper);
 
-            foreach (var (bin, count) in h)
+            foreach (var (_, count) in h)
             {
                 Assert.Equal(1, count);
             }
@@ -122,7 +122,7 @@ namespace RunningStatistics.Test
         public void RightOpen()
         {
             // (-inf, 0], (0, 10], (10, 100]
-            Histogram h = new(edges, false, false);
+            Histogram h = new(_edges, false, false);
 
             h.Fit(double.NegativeInfinity);
             h.Fit(0.0);
@@ -131,10 +131,10 @@ namespace RunningStatistics.Test
             h.Fit(double.PositiveInfinity);
 
             // Two values out of bounds on both ends (one each)
-            Assert.Equal(1, h.OutOfBoundsCounts[0]);
-            Assert.Equal(1, h.OutOfBoundsCounts[1]);
+            Assert.Equal(1, h.OutOfBoundsCounts.Lower);
+            Assert.Equal(1, h.OutOfBoundsCounts.Upper);
 
-            foreach (var (bin, count) in h)
+            foreach (var (_, count) in h)
             {
                 Assert.Equal(1, count);
             }

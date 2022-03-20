@@ -2,142 +2,116 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RunningStatistics
+namespace RunningStatistics;
+
+internal static class Utils
 {
-    internal static class Utils
+    internal static double BesselCorrection(long n)
     {
-        internal static double BesselCorrection(int n)
-        {
-            return (double)n / (n - 1);
-        }
+        return (double)n / (n - 1);
+    }
 
-        internal static IList<T> Fill<T>(T x, int n)
+    internal static IList<string> GetPrintableBins(IList<double> edges, bool left, bool closed)
+    {
+        var numBins = edges.Count - 1;
+        IList<string> bins = new List<string>(numBins);
+
+        int startIdx, endIdx;
+        string leftBrace, rightBrace, endBrace;
+
+        if (left)
         {
-            List<T> xs = new(n);
-            for (int i = 0; i < n; ++i)
+            startIdx = 0;
+            endIdx = numBins - 1; // last bin is the special case
+            leftBrace = "[";
+            rightBrace = ")";
+            endBrace = closed ? "]" : ")";
+            for (var i = startIdx; i < endIdx; i++)
             {
-                xs.Add(x);
+                bins.Add($"{leftBrace}{edges[i]:F2}, {edges[i + 1]:F2}{rightBrace}");
             }
-            return xs;
+            bins.Add($"{leftBrace}{edges[numBins - 1]:F2}, {edges[numBins]:F2}{endBrace}");
         }
-
-        internal static IList<string> GetPrintableBins(Histogram h)
+        else
         {
-            int nbins = h.Edges.Count - 1;
-            IList<string> bins = new List<string>(nbins);
-
-            int startIdx, endIdx;
-            string left, right, end;
-
-            if (h.Left)
+            startIdx = 1; // first bin is a special case
+            endIdx = numBins;
+            leftBrace = "(";
+            rightBrace = "]";
+            endBrace = closed ? "[" : "(";
+            bins.Add($"{endBrace}{edges[0]:F2}, {edges[1]:F2}{rightBrace}");
+            for (var i = startIdx; i < endIdx; i++)
             {
-                startIdx = 0;
-                endIdx = nbins - 1; // last bin is the special case
-                left = "[";
-                right = ")";
-                end = h.Closed ? "]" : ")";
-                for (int i = startIdx; i < endIdx; i++)
-                {
-                    bins.Add($"{left}{h.Edges[i]:F2}, {h.Edges[i + 1]:F2}{right}");
-                }
-                bins.Add($"{left}{h.Edges[nbins - 1]:F2}, {h.Edges[nbins]:F2}{end}");
+                bins.Add($"{leftBrace}{edges[i]:F2}, {edges[i + 1]:F2}{rightBrace}");
             }
-            else
+        }
+
+        return bins;
+    }
+
+    /// <summary>
+    /// Find the midpoints of consecutive pairs in a sorted list.
+    /// </summary>
+    internal static IList<double> Midpoints(IList<double> xs)
+    {
+        IList<double> ms = new List<double>(xs.Count - 1);
+        for (var i = 1; i < xs.Count; i++)
+        {
+            ms.Add((xs[i] + xs[i - 1]) / 2.0);
+        }
+        return ms;
+    }
+
+    /// <summary>
+    /// Find the index of the first matching value in a list sorted from least to greatest.
+    /// </summary>
+    internal static int SearchSortedFirst(IList<double> values, double x)
+    {
+        foreach (var (a, i) in values.Select((item, index) => (item, index)))
+        {
+            if (a >= x)
             {
-                startIdx = 1; // first bin is a special case
-                endIdx = nbins;
-                left = "(";
-                right = "]";
-                end = h.Closed ? "[" : "(";
-                bins.Add($"{end}{h.Edges[0]:F2}, {h.Edges[1]:F2}{right}");
-                for (int i = startIdx; i < endIdx; i++)
-                {
-                    bins.Add($"{left}{h.Edges[i]:F2}, {h.Edges[i + 1]:F2}{right}");
-                }
+                return i;
             }
-
-            return bins;
         }
 
-        /// <summary>
-        /// Find the midpoints of consecutive pairs in a sorted list.
-        /// </summary>
-        internal static IList<double> Midpoints(IList<double> xs)
+        // y > a for all a in A
+        return values.Count;
+    }
+
+    /// <summary>
+    /// Find the index of the last matching value in a list sorted from least to greatest.
+    /// </summary>
+    internal static int SearchSortedLast(IList<double> values, double y)
+    {
+        foreach (var (a, i) in values.Select((item, index) => (item, index)))
         {
-            IList<double> ms = new List<double>(xs.Count - 1);
-            for (int i = 1; i < xs.Count; i++)
+            if (a > y)
             {
-                ms.Add((xs[i] + xs[i - 1]) / 2.0);
+                return i - 1;
             }
-            return ms;
         }
 
-        /// <summary>
-        /// Find the index of the first matching value in a list sorted from least to greatest.
-        /// </summary>
-        internal static int SearchSortedFirst(IEnumerable<double> A, double x)
-        {
-            foreach (var (a, i) in A.Select((item, index) => (item, index)))
-            {
-                if (a >= x)
-                {
-                    return i;
-                }
-            }
+        // y < a for all a in A
+        return values.Count - 1;
+    }
 
-            // y > a for all a in A
-            return A.Count();
-        }
+    /// <summary>
+    /// Weighted interpolation of two values.
+    /// </summary>
+    internal static double Smooth(double a, double b, double w)
+    {
+        return a + w * (b - a);
+    }
 
-        /// <summary>
-        /// Find the index of the last matching value in a list sorted from least to greatest.
-        /// </summary>
-        internal static int SearchSortedLast(IEnumerable<double> A, double y)
-        {
-            foreach (var (a, i) in A.Select((item, index) => (item, index)))
-            {
-                if (a > y)
-                {
-                    return i - 1;
-                }
-            }
+    /// <summary>
+    /// Compute the (biased) variance of a collection of values.
+    /// </summary>
+    internal static double Variance(IList<double> xs)
+    {
+        var mean = xs.Average();
+        var meanSquare = xs.Average(s => s * s);
 
-            // y < a for all a in A
-            return A.Count() - 1;
-        }
-
-        /// <summary>
-        /// Weighted interpolation of two values.
-        /// </summary>
-        internal static double Smooth(double a, double b, double w)
-        {
-            return a + w * (b - a);
-        }
-
-        /// <summary>
-        /// Finds the pth quantile of a collection that is assumed to be sorted.
-        /// </summary>
-        internal static double SortedQuantile(IEnumerable<double> xs, double p)
-        {
-            if (p < 0.0 || p > 1.0)
-            {
-                throw new Exception($"p must be in range [0, 1]. Got {p}.");
-            }
-
-            int n = xs.Count();
-            int i = (int)Math.Floor((n - 1) * p);
-            return xs.ElementAt(i);
-        }
-
-        /// <summary>
-        /// Compute the (biased) variance of a collection of values.
-        /// </summary>
-        internal static double Variance(IEnumerable<double> xs)
-        {
-            double mean = xs.Average();
-            double meanSquare = xs.Average(s => s * s);
-
-            return Math.Abs(meanSquare - mean * mean);
-        }
+        return Math.Abs(meanSquare - mean * mean);
     }
 }
