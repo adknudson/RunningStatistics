@@ -6,7 +6,7 @@ namespace RunningStatistics;
 internal class Series<T> : IRunningStatistic<T>
 {
     private readonly List<IRunningStatistic<T>> _statistics;
-    
+
     
     public Series(params IRunningStatistic<T>[] statistics)
     {
@@ -17,7 +17,9 @@ internal class Series<T> : IRunningStatistic<T>
     
     public long Count { get; private set; }
     
-    
+    public IRunningStatistic<T> this[int index] => _statistics[index];
+
+
     public void Fit(IEnumerable<T> values)
     {
         foreach (var value in values)
@@ -48,7 +50,7 @@ internal class Series<T> : IRunningStatistic<T>
     {
         if (other is not Series<T> series) return;
         
-        Count += other.Count;
+        Count += series.Count;
         for (var i = 0; i < _statistics.Count; i++)
         {
             _statistics[i].Merge(series._statistics[i]);
