@@ -28,7 +28,7 @@ namespace RunningStatistics.Test
             Mean a = new(); Mean b = new();
             a.Merge(b);
 
-            Assert.Equal(a.Value, double.NaN);
+            Assert.Equal(double.NaN, a.Value);
         }
 
         [Fact]

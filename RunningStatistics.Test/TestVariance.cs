@@ -10,17 +10,17 @@ namespace RunningStatistics.Test
         {
             Variance variance = new();
 
-            Assert.Equal(1.0, variance.Value);
+            Assert.Equal(1.0, (double) variance);
         }
 
         [Fact]
         public void MergeEmptyVarianceIsOne()
         {
-            Variance a, b;
-            a = new(); b = new();
+            Variance a = new(); 
+            Variance b = new();
             a.Merge(b);
 
-            Assert.Equal(1.0, a.Value);
+            Assert.Equal(1.0, (double) a);
         }
 
         [Fact]
@@ -29,8 +29,9 @@ namespace RunningStatistics.Test
             var n = 2000;
             var rng = new Random();
 
-            Variance a, b, c;
-            a = new(); b = new(); c = new();
+            Variance a = new(); 
+            Variance b = new();
+            Variance c = new();
 
             double v;
             for (var i = 0; i < n; i++)
@@ -49,7 +50,7 @@ namespace RunningStatistics.Test
 
             a.Merge(b);
 
-            Assert.Equal(a.Value, c.Value, 1);
+            Assert.Equal((double)a, (double)c, 1);
         }
 
         [Fact]
@@ -65,9 +66,9 @@ namespace RunningStatistics.Test
                 variance.Fit(rng.NextDouble());
             }
 
-            var real_variance = Math.Pow(1.0 - double.Epsilon, 2) / 12.0;
+            var realVariance = Math.Pow(1.0 - double.Epsilon, 2) / 12.0;
 
-            Assert.Equal(0.0, Utils.RelError(real_variance, variance.Value), 1);
+            Assert.Equal(0.0, Utils.RelError(realVariance, (double)variance), 1);
         }
 
         [Theory]
@@ -86,16 +87,16 @@ namespace RunningStatistics.Test
                 variance.Fit(rng.RandNorm(mu, sd));
             }
 
-            var real_variance = sd * sd;
+            var realVariance = sd * sd;
 
-            Assert.Equal(0.0, Utils.RelError(real_variance, variance.Value), 1);
+            Assert.Equal(0.0, Utils.RelError(realVariance, (double)variance), 1);
         }
 
         [Theory]
         [InlineData(1.0, 1.0)]
         public void TestLogNormal(double mu, double sd)
         {
-            var n = 1_000_000;
+            const int n = 1_000_000;
             var rng = new Random();
 
             Variance variance = new();
@@ -106,9 +107,9 @@ namespace RunningStatistics.Test
             }
 
             var s2 = sd * sd;
-            var real_variance = (Math.Exp(s2) - 1) * Math.Exp(2.0 * mu + s2);
+            var realVariance = (Math.Exp(s2) - 1) * Math.Exp(2.0 * mu + s2);
 
-            Assert.Equal(0.0, Utils.RelError(real_variance, variance.Value), 1);
+            Assert.Equal(0.0, Utils.RelError(realVariance, (double)variance), 1);
         }
     }
 }

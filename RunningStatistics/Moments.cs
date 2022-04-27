@@ -7,7 +7,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Tracks the first four non-central moments, stored as a <see cref="double"/>.
 /// </summary>
-public class Moments : IRunningStat<double, Moments>
+public class Moments : IRunningStatistic<double, Moments>
 {
     private double _mean, _variance, _skewness, _kurtosis;
 

@@ -7,9 +7,9 @@ namespace RunningStatistics;
 /// <summary>
 /// Minimum and maximum (and number of occurrences for each) for a data stream of type <see cref="double"/>.
 /// </summary>
-public class Extrema : IRunningStat<double, Extrema>
+public class Extrema : IRunningStatistic<double, Extrema>
 {
-    private readonly double _tolerance = Math.Sqrt(double.Epsilon);
+    private const double Tolerance = 1.4901161193847656e-8;
 
 
     public Extrema()
@@ -29,8 +29,8 @@ public class Extrema : IRunningStat<double, Extrema>
     }
 
 
-    private int CountMin { get; set; }
-    private int CountMax { get; set; }
+    public int CountMin { get; set; }
+    public int CountMax { get; set; }
     public double Max { get; private set; }
     public double Min { get; private set; }
     public double Range => Max - Min;
@@ -63,12 +63,12 @@ public class Extrema : IRunningStat<double, Extrema>
         }
     
     
-        if (Math.Abs(value - Min) < _tolerance)
+        if (Math.Abs(value - Min) < Tolerance)
         {
             CountMin++;
         }
     
-        if (Math.Abs(value - Max) < _tolerance)
+        if (Math.Abs(value - Max) < Tolerance)
         {
             CountMax++;
         }
@@ -78,7 +78,7 @@ public class Extrema : IRunningStat<double, Extrema>
     {
         Count += other.Count;
         
-        if (Math.Abs(Min - other.Min) < _tolerance)
+        if (Math.Abs(Min - other.Min) < Tolerance)
         {
             CountMin += other.CountMin;
         }
@@ -88,7 +88,7 @@ public class Extrema : IRunningStat<double, Extrema>
             CountMin = other.CountMin;
         }
         
-        if (Math.Abs(Max - other.Max) < _tolerance)
+        if (Math.Abs(Max - other.Max) < Tolerance)
         {
             CountMax += other.CountMax;
         }

@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -9,21 +8,21 @@ namespace RunningStatistics;
 /// A dictionary that maps unique values to its number of occurrences.
 /// </summary>
 /// <typeparam name="T">The observation type.</typeparam>
-public class Countmap<T> : IRunningStat<T, Countmap<T>>, IEnumerable<KeyValuePair<T, int>>
+public class Countmap<T> : IRunningStatistic<T, Countmap<T>>, IEnumerable<KeyValuePair<T, int>>
 {
-    private readonly SortedDictionary<T, int> _counter;
+    private readonly IDictionary<T, int> _counter;
 
     
     
     public Countmap()
     {
-        _counter = new SortedDictionary<T, int>();
+        _counter = new Dictionary<T, int>();
         Count = 0;
     }
 
     public Countmap(Countmap<T> other)
     {
-        _counter = new SortedDictionary<T, int>(other._counter);
+        _counter = new Dictionary<T, int>(other._counter);
         Count = other.Count;
     }
     
@@ -58,7 +57,7 @@ public class Countmap<T> : IRunningStat<T, Countmap<T>>, IEnumerable<KeyValuePai
 
     public void Merge(Countmap<T> other)
     {
-        foreach (var (key, value) in other)
+        foreach (var (key, value) in other._counter)
         {
             Fit(key, value);
         }
@@ -70,33 +69,16 @@ public class Countmap<T> : IRunningStat<T, Countmap<T>>, IEnumerable<KeyValuePai
         Count = 0;
     }
 
-    public void Print(StreamWriter stream)
-    {
-        stream.WriteLine(ToString());
-        stream.WriteLine("Key\tCount");
-        foreach (var (key, value) in this)
-        {
-            stream.WriteLine($"{key}\t{value}");
-        }
-    }
+    public IEnumerator<KeyValuePair<T, int>> GetEnumerator() => _counter.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public override string ToString() => $"{typeof(Countmap<T>)}(n={Count})";
 
-
     public long Count { get; private set; }
     public T Mode => _counter.Aggregate((x, y) => x.Value > y.Value ? x : y).Key;
-    public int this[T key] => _counter.ContainsKey(key) ? _counter[key] : 0;
+    public int this[T key] => _counter.TryGetValue(key, out var value) ? value : 0;
+    public bool ContainsKey(T key) => _counter.ContainsKey(key);
     
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    public IEnumerator<KeyValuePair<T, int>> GetEnumerator() => _counter.GetEnumerator();
-
-
-
-    public static Countmap<T> operator +(Countmap<T> a, Countmap<T> b)
-    {
-        return Merge(a, b);
-    }
-
     private static Countmap<T> Merge(Countmap<T> a, Countmap<T> b)
     {
         Countmap<T> merged = new(a);

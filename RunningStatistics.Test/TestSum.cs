@@ -10,7 +10,7 @@ namespace RunningStatistics.Test
         {
             Sum s = new();
 
-            Assert.Equal(0.0, s.Value);
+            Assert.Equal(0.0, (double) s);
         }
 
         [Fact]
@@ -19,7 +19,7 @@ namespace RunningStatistics.Test
             Sum s = new(), t = new();
             s.Merge(t);
 
-            Assert.Equal(0.0, s.Value);
+            Assert.Equal(0.0, (double) s);
         }
 
         [Theory]
@@ -35,7 +35,7 @@ namespace RunningStatistics.Test
                 s.Fit(i);
             }
 
-            Assert.Equal(n * (n + 1) >> 2, s.Value);
+            Assert.Equal(n * (n + 1) >> 1, (double) s);
         }
 
         [Fact]
@@ -63,7 +63,7 @@ namespace RunningStatistics.Test
 
             a.Merge(b);
 
-            Assert.Equal(a.Value, c.Value, 7);
+            Assert.Equal((double) a, (double) c, 7);
             Assert.Equal(a.Mean, c.Mean, 7);
         }
     }

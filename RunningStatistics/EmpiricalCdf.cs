@@ -8,43 +8,43 @@ namespace RunningStatistics;
 /// <summary>
 /// Approximate order statistics (CDF) with batches of a given size.
 /// </summary>
-public class EmpiricalCdf : IRunningStat<double, EmpiricalCdf>
+public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
 {
     private readonly int _numBins;
     private readonly Extrema _extrema;
-    private IList<double> _values, _buffer;
+    private readonly double[] _buffer, _values;
+
     
-    
-    
-    
+
     public EmpiricalCdf(int numBins = 200)
     {
-        Count = 0;
         _numBins = numBins;
-        _values = Enumerable.Repeat(0.0, _numBins).ToList();
-        _buffer = Enumerable.Repeat(0.0, _numBins).ToList();
+        _values = new double[_numBins];
+        _buffer = new double[_numBins];
         _extrema = new Extrema();
     }
 
     public EmpiricalCdf(EmpiricalCdf other)
     {
-        Count = other.Count;
         _numBins = other._numBins;
-        _values = new List<double>(other._values);
-        _buffer = new List<double>(other._buffer);
+        
+        _values = new double[_numBins];
+        _buffer = new double[_numBins];
+        other._values.CopyTo(_values, 0);
+        other._buffer.CopyTo(_buffer, 0);
+        
         _extrema = new Extrema(other._extrema);
     }
     
-    
-    
-    public long Count { get; private set; }
+
+
+    public long Count => _extrema.Count;
     public double Median => Quantile(0.5);
     public double Min => _extrema.Min;
     public double Max => _extrema.Max;
-    public double this[double p] => SortedQuantile(p);
 
 
-    private double Quantile(double p) => SortedQuantile(p);
+    public double Quantile(double p) => SortedQuantile(p);
     
     public void Merge(EmpiricalCdf other)
     {
@@ -54,11 +54,13 @@ public class EmpiricalCdf : IRunningStat<double, EmpiricalCdf>
                                 $"Got {_numBins} and {other._numBins}.");
         }
 
-        Count += other.Count;
         _extrema.Merge(other._extrema);
+        
+        if (Count == 0) return;
+        
         for (var k = 0; k < _numBins; k++)
         {
-            _values[k] = Utils.Smooth(_values[k], other._values[k], (double)Count / other.Count);
+            _values[k] = Utils.Smooth(_values[k], other._values[k], (double)other.Count / Count);
         }
     }
 
@@ -73,38 +75,29 @@ public class EmpiricalCdf : IRunningStat<double, EmpiricalCdf>
     public void Fit(double value)
     {
         var i = (int)(Count % _numBins);
-
-        Count += 1;
         _extrema.Fit(value);
         _buffer[i] = value;
 
-        if (i + 1 != _numBins) return;
-        
-        _buffer = _buffer.OrderBy(t => t).ToList();
-        for (var k = 0; k < _numBins; k++)
+        // if the buffer is full, then merge buffer into value vector
+        if (i == _numBins - 1)
         {
-            _values[k] = Utils.Smooth(_values[k], _buffer[k], (double)_numBins / Count);
+            Array.Sort(_buffer);
+            for (var k = 0; k < _numBins; k++)
+            {
+                _values[k] = Utils.Smooth(_values[k], _buffer[k], (double) _numBins / Count);
+            }
         }
+        
     }
 
     public void Reset()
     {
-        Count = 0;
-        _values = _values.Select(_ => 0.0).ToList();
-        _buffer = _values.Select(_ => 0.0).ToList();
-        _extrema.Reset();
-    }
-
-    public void Print(StreamWriter stream)
-    {
-        var quantileValue = Enumerable.Range(0, _numBins).Select(i => (double) i / (_numBins - 1)).Zip(_values);
-        
-        stream.WriteLine(ToString());
-        stream.WriteLine("Quantile\tValue");
-        foreach (var (quantile, value) in quantileValue)
+        for (var i = 0; i < _numBins; i++)
         {
-            stream.WriteLine($"{quantile:F3}\t{value}");
+            _values[i] = 0;
+            _buffer[i] = 0;
         }
+        _extrema.Reset();
     }
 
     public override string ToString() => $"{typeof(EmpiricalCdf)}(n={Count})";
@@ -129,5 +122,4 @@ public class EmpiricalCdf : IRunningStat<double, EmpiricalCdf>
         merged.Merge(b);
         return merged;
     }
-    public static EmpiricalCdf operator +(EmpiricalCdf a, EmpiricalCdf b) => Merge(a, b);
 }

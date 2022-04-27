@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -9,12 +8,12 @@ namespace RunningStatistics;
 /// <summary>
 /// A histogram with bin partitions defined by edges.
 /// </summary>
-public class Histogram : IRunningStat<double, Histogram>, IEnumerable<(string, int)>
+public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(string BinName, int Count)>
 {
     private readonly bool _left, _closed;
     private OutOfBounds _outOfBounds;
     private readonly IList<string> _binNames;
-    private readonly double _tolerance = Math.Sqrt(double.Epsilon);
+    private const double Tolerance = 1.4901161193847656e-8;
 
     
     
@@ -31,7 +30,7 @@ public class Histogram : IRunningStat<double, Histogram>, IEnumerable<(string, i
         _binNames = Utils.GetPrintableBins(Edges, _left, _closed);
     }
 
-    public Histogram(Histogram other)
+    private Histogram(Histogram other)
     {
         Count = other.Count;
 
@@ -43,15 +42,15 @@ public class Histogram : IRunningStat<double, Histogram>, IEnumerable<(string, i
         _outOfBounds = new OutOfBounds(other._outOfBounds);
         _binNames = new List<string>(other._binNames);
     }
-    
-    
-    
-    public long Count { get; private set; }
-    private int NumBins => Edges.Count - 1;
-    public (int Lower, int Upper) OutOfBoundsCounts => _outOfBounds.Counts;
-    public IList<double> Edges { get; }
 
-    public IList<int> BinCounts { get; private set; }
+
+
+    public long Count { get; private set; }
+    public (int Lower, int Upper) OutOfBoundsCounts => _outOfBounds.Counts;
+    
+    private int NumBins => Edges.Count - 1;
+    private IList<double> Edges { get; }
+    private IList<int> BinCounts { get; set; }
 
 
     public void Fit(IEnumerable<double> values)
@@ -67,7 +66,7 @@ public class Histogram : IRunningStat<double, Histogram>, IEnumerable<(string, i
         Fit(value, 1);
     }
 
-    private void Fit(double value, int k)
+    public void Fit(double value, int k)
     {
         Count += k;
 
@@ -111,24 +110,15 @@ public class Histogram : IRunningStat<double, Histogram>, IEnumerable<(string, i
         _outOfBounds.Reset();
     }
 
-    public void Print(StreamWriter stream)
+
+    public IEnumerator<(string BinName, int Count)> GetEnumerator()
     {
-        stream.WriteLine(ToString());
-        stream.WriteLine("Bin\tCount");
-        foreach (var (bin, count) in this)
-        {
-            stream.WriteLine($"{bin}\t{count}");
-        }
+        return _binNames.Zip(BinCounts).GetEnumerator();
     }
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public override string ToString() => $"{typeof(Histogram)}(n={Count})";
 
-    public IEnumerator<(string, int)> GetEnumerator() => _binNames.Zip(BinCounts).GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-    
-    
-    #region Private Methods, Classes
 
     /// <summary>
     /// Get the index of the bin that an observation falls in.
@@ -148,12 +138,20 @@ public class Histogram : IRunningStat<double, Histogram>, IEnumerable<(string, i
             return NumBins;
         }
 
-        return _closed switch
+        if (_closed)
         {
-            true when Math.Abs(y - a) < _tolerance => 0,
-            true when Math.Abs(y - b) < _tolerance => NumBins - 1,
-            _ => _left ? Utils.SearchSortedLast(Edges, y) : Utils.SearchSortedFirst(Edges, y) - 1
-        };
+            if (y.Equals(a))
+            {
+                return 0;
+            }
+
+            if (y.Equals(b))
+            {
+                return NumBins - 1;
+            }
+        }
+
+        return _left ? Utils.SearchSortedLast(Edges, y) : Utils.SearchSortedFirst(Edges, y) - 1;
     }
     
     private bool EdgesMatch(ICollection<double> other)
@@ -162,7 +160,7 @@ public class Histogram : IRunningStat<double, Histogram>, IEnumerable<(string, i
         
         return Edges
             .Zip(other)
-            .All(z => Math.Abs((z.First - z.Second)) <= _tolerance);
+            .All(z => Math.Abs((z.First - z.Second)) <= Tolerance);
     }
     
     private struct OutOfBounds
@@ -203,18 +201,10 @@ public class Histogram : IRunningStat<double, Histogram>, IEnumerable<(string, i
         }
     }
     
-    #endregion
-
-    #region Static Methods
-
     private static Histogram Merge(Histogram a, Histogram b)
     {
         Histogram merged = new(a);
         merged.Merge(b);
         return merged;
     }
-    
-    public static Histogram operator +(Histogram a, Histogram b) => Merge(a, b);
-
-    #endregion
 }

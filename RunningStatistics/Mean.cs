@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -7,8 +6,10 @@ namespace RunningStatistics;
 /// <summary>
 /// Tracks the univariate mean, stored as a <see cref="double"/>.
 /// </summary>
-public class Mean : IRunningStat<double, Mean>
+public class Mean : IRunningStatistic<double, Mean>
 {
+    private double _value;
+
     public Mean()
     {
         Count = 0;
@@ -24,7 +25,12 @@ public class Mean : IRunningStat<double, Mean>
     
     
     public long Count { get; private set; }
-    public double Value { get; private set; }
+
+    public double Value
+    {
+        get => Count == 0 ? double.NaN : _value;
+        private set => _value = value;
+    }
 
 
     public void Merge(Mean other)
@@ -52,11 +58,6 @@ public class Mean : IRunningStat<double, Mean>
         Value = 0;
     }
 
-    public void Print(StreamWriter stream)
-    {
-        stream.WriteLine(ToString());
-    }
-
     public override string ToString() => $"{typeof(Mean)}(μ={Value}, n={Count})";
     
     
@@ -68,6 +69,5 @@ public class Mean : IRunningStat<double, Mean>
         return merged;
     }
     
-    public static Mean operator +(Mean a, Mean b) => Merge(a, b);
     public static explicit operator double(Mean value) => value.Value;
 }

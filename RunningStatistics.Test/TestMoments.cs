@@ -114,7 +114,7 @@ namespace RunningStatistics.Test
             const double mu = 0.0;
             const double sd = 0.5;
             const double s2 = sd * sd;
-            const int n = 10_000_000;
+            const int n = 50_000_000;
             var rng = new Random();
 
             var moments = new Moments();

@@ -7,7 +7,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Tracks the overall sum, stored as a <see cref="double"/>.
 /// </summary>
-public class Sum : IRunningStat<double, Sum>
+public class Sum : IRunningStatistic<double, Sum>
 {
     public Sum()
     {

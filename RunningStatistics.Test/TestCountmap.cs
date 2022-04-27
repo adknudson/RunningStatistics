@@ -27,12 +27,11 @@ namespace RunningStatistics.Test
         }
 
         [Fact]
-        public void MergingAddsEmptyKeys()
+        public void AccessingNonFittedValueDoesntAddKey()
         {
-            Countmap<string> a = new(); Countmap<string> b = new();
-            Assert.Equal(0, b["everything"]);
-            a.Merge(b);
-            Assert.True(a.ContainsKey("everything"));
+            Countmap<string> a = new();
+            Assert.Equal(0, a["everything"]);
+            Assert.False(a.ContainsKey("everything"));
         }
 
         [Fact]

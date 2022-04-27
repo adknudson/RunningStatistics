@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public class Variance : IRunningStat<double, Variance>
+public class Variance : IRunningStatistic<double, Variance>
 {
     private double _mean, _variance;
     
