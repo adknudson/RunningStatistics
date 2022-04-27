@@ -10,32 +10,43 @@ namespace RunningStatistics;
 /// </summary>
 public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName, int Count)>
 {
-    private readonly bool _left, _closed;
-    private OutOfBounds _outOfBounds;
-    private readonly IList<string> _binNames;
-    private const double Tolerance = 1.4901161193847656e-8;
+    private OutOfBounds _outOfBounds = new();
 
 
-    public Histogram(IEnumerable<double> edges, bool left = true, bool closed = true)
+    public Histogram(IEnumerable<double> edges, bool leftClosed = true, bool endsClosed = true)
     {
-        Count = 0;
+        var es = edges.OrderBy(e => e).ToList();
 
-        Edges = edges.OrderBy(e => e).ToList();
-        _left = left;
-        _closed = closed;
+        Bins = new List<Bin>(es.Count - 1);
+        if (leftClosed)
+        {
+            // add all but last normally
+            for (var i = 1; i < es.Count - 1; i++)
+            {
+                Bins.Add(new Bin(es[i-1], es[i], true, false));
+            }
 
-        BinCounts = Enumerable.Repeat(0, NumBins).ToList();
-        _outOfBounds = new OutOfBounds();
-        _binNames = Utils.GetPrintableBins(Edges, _left, _closed);
+            var lastTwoEdges = es.TakeLast(2).ToList();
+            Bins.Add(new Bin(lastTwoEdges[0], lastTwoEdges[1], true, endsClosed));
+        }
+        else
+        {
+            // add all but first normally
+            var firstTwoEdges = es.Take(2).ToList();
+            Bins.Add(new Bin(firstTwoEdges[0], firstTwoEdges[1], endsClosed, true));
+            for (var i = 2; i < es.Count; i++)
+            {
+                Bins.Add(new Bin(es[i-1], es[i], false, true));
+            }
+        }
     }
 
 
     public long Count { get; private set; }
     public (int Lower, int Upper) OutOfBoundsCounts => _outOfBounds.Counts;
 
-    private int NumBins => Edges.Count - 1;
-    private IList<double> Edges { get; }
-    private IList<int> BinCounts { get; set; }
+    private int NumBins => Bins.Count;
+    private IList<Bin> Bins { get; }
 
 
     public void Fit(IEnumerable<double> values)
@@ -54,38 +65,71 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
     public void Fit(double value, int k)
     {
         Count += k;
+        
+        var firstBin = Bins.First();
+        var lastBin = Bins.Last();
 
-        var i = GetBinIndex(value);
-        if (0 <= i && i < NumBins)
+        if (value < firstBin.Lower)
         {
-            BinCounts[i] += k;
+            _outOfBounds.Update(-1, k);
+            return;
         }
-        else
+
+        if (value > lastBin.Upper)
         {
-            _outOfBounds.Update(i, k);
+            _outOfBounds.Update(NumBins, k);
+            return;
         }
+
+        if (value.Equals(lastBin.Upper))
+        {
+            if (lastBin.ClosedRight)
+            {
+                lastBin.Increment(k);
+            }
+            else
+            {
+                _outOfBounds.Update(NumBins, k);
+            }
+            return;
+        }
+
+        if (value.Equals(firstBin.Lower))
+        {
+            if (firstBin.ClosedLeft)
+            {
+                firstBin.Increment(k);
+            }
+            else
+            {
+                _outOfBounds.Update(-1, k);
+            }
+            return;
+        }
+
+        var bin = Bins.First(bin => bin.Contains(value));
+        bin.Increment(k);
     }
 
     public void Merge(IRunningStatistic<double> other)
     {
         if (other is not Histogram histogram) return;
         
-        if (EdgesMatch(histogram.Edges))
+        if (BinsMatch(histogram.Bins))
         {
             Count += histogram.Count;
 
             for (var j = 0; j < NumBins; j++)
             {
-                BinCounts[j] += histogram.BinCounts[j];
+                Bins[j].Merge(histogram.Bins[j]);
             }
         }
         else
         {
-            // Using midpoints of source edges as approximate locations for merging
-            var midpoints = Utils.Midpoints(histogram.Edges);
-            for (var j = 0; j < midpoints.Count; j++)
+            // Using midpoints of source bins as approximate locations for merging
+            foreach (var bin in histogram.Bins)
             {
-                Fit(midpoints[j], histogram.BinCounts[j]);
+                Fit(bin.Midpoint, bin.Count);
             }
         }
     }
@@ -93,62 +137,47 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
     public void Reset()
     {
         Count = 0;
-        BinCounts = BinCounts.Select(_ => 0).ToList();
+        foreach (var bin in Bins)
+        {
+            bin.Reset();
+        }
         _outOfBounds.Reset();
+    }
+
+    public int NumValuesLessThan(double value)
+    {
+        return Bins.Where(bin => bin.Upper < value).Sum(bin => bin.Count);
+    }
+
+    public int NumValuesLessThanOrEqualTo(double value)
+    {
+        return Bins.Where(bin => bin.Upper <= value).Sum(bin => bin.Count);
+    }
+
+    public int NumValuesGreaterThan(double value)
+    {
+        return Bins.Where(bin => bin.Lower > value).Sum(bin => bin.Count);
+    }
+
+    public int NumValuesGreaterThanOrEqualTo(double value)
+    {
+        return Bins.Where(bin => bin.Lower >= value).Sum(bin => bin.Count);
     }
 
 
     public IEnumerator<(string BinName, int Count)> GetEnumerator()
     {
-        return _binNames.Zip(BinCounts).GetEnumerator();
+        return Bins.Select(bin => (bin.BinName, bin.Count)).GetEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public override string ToString() => $"{typeof(Histogram)}(n={Count})";
+    
 
-
-    /// <summary>
-    /// Get the index of the bin that an observation falls in.
-    /// </summary>
-    private int GetBinIndex(double y)
+    private bool BinsMatch(ICollection<Bin> other)
     {
-        var a = Edges.First();
-        var b = Edges.Last();
-
-        if (y < a)
-        {
-            return -1;
-        }
-
-        if (y > b)
-        {
-            return NumBins;
-        }
-
-        if (_closed)
-        {
-            if (y.Equals(a))
-            {
-                return 0;
-            }
-
-            if (y.Equals(b))
-            {
-                return NumBins - 1;
-            }
-        }
-
-        return _left ? Utils.SearchSortedLast(Edges, y) : Utils.SearchSortedFirst(Edges, y) - 1;
-    }
-
-    private bool EdgesMatch(ICollection<double> other)
-    {
-        if (Edges.Count != other.Count) return false;
-
-        return Edges
-            .Zip(other)
-            .All(z => Math.Abs(z.First - z.Second) <= Tolerance);
+        return Bins.Count == other.Count && Bins.Zip(other).All(z => z.First.Equals(z.Second));
     }
 
     private struct OutOfBounds
@@ -181,6 +210,94 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
             {
                 Lower += k;
             }
+        }
+    }
+    
+    private class Bin
+    {
+        public Bin(double lower, double upper, bool closedLeft, bool closedRight)
+        {
+            if (lower >= upper)
+            {
+                throw new ArgumentException("Lower bound must be strictly less than upper bound");
+            }
+            
+            Lower = lower;
+            Upper = upper;
+            ClosedLeft = closedLeft;
+            ClosedRight = closedRight;
+
+            var leftBrace = ClosedLeft ? '[' : '(';
+            var rightBrace = ClosedRight ? ']' : ')';
+            BinName = $"{leftBrace}{Lower:F2}, {Upper:F2}{rightBrace}";
+
+            Count = 0;
+        }
+        
+        
+        public int Count { get; private set; }
+        public string BinName { get; }
+        public double Lower { get; }
+        public double Upper { get; }
+        public bool ClosedLeft { get; }
+        public bool ClosedRight { get; }
+
+        public double Midpoint => (Upper + Lower) / 2;
+
+
+        public bool Contains(double value)
+        {
+            if (value > Upper || value < Lower)
+            {
+                return false;
+            }
+
+            if (Lower < value && value < Upper)
+            {
+                return true;
+            }
+
+            if (value.Equals(Lower))
+            {
+                return ClosedLeft;
+            }
+
+            if (value.Equals(Upper))
+            {
+                return ClosedRight;
+            }
+
+            return false;
+        }
+
+        public void Reset()
+        {
+            Count = 0;
+        }
+
+        public void Merge(Bin other)
+        {
+            Count += other.Count;
+        }
+
+        public void Increment(int k = 1)
+        {
+            Count += k;
+        }
+
+        public override string ToString()
+        {
+            return $"Bin {BinName}, n={Count}";
+        }
+
+        public bool Equals(Bin other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return Lower.Equals(other.Lower) 
+                   && Upper.Equals(other.Upper) 
+                   && ClosedLeft == other.ClosedLeft 
+                   && ClosedRight == other.ClosedRight;
         }
     }
 }
