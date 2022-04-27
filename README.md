@@ -41,7 +41,7 @@ Do note that if two running statistics have different concrete classes, then no 
 ## Examples
 
 ```csharp
-using RunningStatistics
+using RunningStatistics;
 
 var mean1 = new Mean();
 var mean2 = new Mean();
