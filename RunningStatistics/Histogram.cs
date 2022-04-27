@@ -160,7 +160,7 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(stri
         
         return Edges
             .Zip(other)
-            .All(z => Math.Abs((z.First - z.Second)) <= Tolerance);
+            .All(z => Math.Abs(z.First - z.Second) <= Tolerance);
     }
     
     private struct OutOfBounds

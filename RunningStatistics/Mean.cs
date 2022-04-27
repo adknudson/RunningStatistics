@@ -10,6 +10,8 @@ public class Mean : IRunningStatistic<double, Mean>
 {
     private double _value;
 
+    
+    
     public Mean()
     {
         Count = 0;
@@ -31,8 +33,9 @@ public class Mean : IRunningStatistic<double, Mean>
         get => Count == 0 ? double.NaN : _value;
         private set => _value = value;
     }
-
-
+    
+    
+    
     public void Merge(Mean other)
     {
         Count += other.Count;
@@ -59,8 +62,6 @@ public class Mean : IRunningStatistic<double, Mean>
     }
 
     public override string ToString() => $"{typeof(Mean)}(μ={Value}, n={Count})";
-    
-    
     
     private static Mean Merge(Mean a, Mean b)
     {

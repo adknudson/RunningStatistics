@@ -84,13 +84,7 @@ public class Variance : IRunningStatistic<double, Variance>
         _mean = 0;
         _variance = 0;
     }
-
-    public void Print(StreamWriter stream)
-    {
-        stream.WriteLine($"{nameof(Mean)} Running Statistic. Count={Count}");
-        stream.WriteLine($"Variance\t{Value}");
-    }
-
+    
     public override string ToString() => $"{typeof(Variance)}(ν={Value}, n={Count})";
     
     private static Variance Merge(Variance a, Variance b)
@@ -100,6 +94,5 @@ public class Variance : IRunningStatistic<double, Variance>
         return merged;
     }
 
-    public static Variance operator +(Variance a, Variance b) => Merge(a, b);
     public static explicit operator double(Variance value) => value.Value;
 }

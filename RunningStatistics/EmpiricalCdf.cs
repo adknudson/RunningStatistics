@@ -87,7 +87,6 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
                 _values[k] = Utils.Smooth(_values[k], _buffer[k], (double) _numBins / Count);
             }
         }
-        
     }
 
     public void Reset()
@@ -109,7 +108,7 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
     {
         if (p is < 0 or > 1)
         {
-            throw new Exception($"p must be in range [0, 1]. Got {p}.");
+            throw new ArgumentOutOfRangeException($"p must be in range [0, 1]. Got {p}.");
         }
 
         var i = (int)Math.Floor((_numBins - 1) * p);

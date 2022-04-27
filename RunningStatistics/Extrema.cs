@@ -29,8 +29,8 @@ public class Extrema : IRunningStatistic<double, Extrema>
     }
 
 
-    public int CountMin { get; set; }
-    public int CountMax { get; set; }
+    public int CountMin { get; private set; }
+    public int CountMax { get; private set; }
     public double Max { get; private set; }
     public double Min { get; private set; }
     public double Range => Max - Min;
@@ -107,25 +107,12 @@ public class Extrema : IRunningStatistic<double, Extrema>
         CountMax = 0;
     }
 
-    public void Print(StreamWriter stream)
-    {
-        stream.WriteLine($"{typeof(Extrema)}(n={Count})");
-        stream.WriteLine($"\tMin={Min} (n={CountMin})");
-        stream.WriteLine($"\tMax={Max} (n={CountMax})");
-    }
-
     public override string ToString() => $"{typeof(Extrema)}(min={Min:F2}, max={Max:F2}, n={Count})";
-
-
+    
     private static Extrema Merge(Extrema a, Extrema b)
     {
         Extrema merged = new(a);
         merged.Merge(b);
         return merged;
-    }
-
-    public static Extrema operator +(Extrema a, Extrema b)
-    {
-        return Merge(a, b);
     }
 }

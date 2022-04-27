@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace RunningStatistics;
 
@@ -51,12 +50,16 @@ public class Moments : IRunningStatistic<double, Moments>
     {
         get
         {
-            var vr = _variance - _mean * _mean;
-            return Count == 0 ? double.NaN : (_skewness - 3.0 * _mean * vr - _mean * _mean * _mean) / Math.Pow(vr, 1.5);
+            if (Count == 0)
+            {
+                return double.NaN;
+            }
+            
+            var mean2 = _mean * _mean;
+            var vr = _variance - mean2;
+            return (_skewness - 3.0 * _mean * vr - mean2 * _mean) / Math.Pow(vr, 1.5);
         }
     }
-
-    public (double, double, double, double) Values => (Mean, Variance, Skewness, Kurtosis);
     
     /// <summary>
     /// Returns the (excess) kurtosis.
@@ -65,28 +68,21 @@ public class Moments : IRunningStatistic<double, Moments>
     {
         get
         {
-            var meanSquared = _mean * _mean;
-            var variance = _variance - meanSquared;
-            return Count == 0 
-                ? double.NaN 
-                : (_kurtosis - 4.0 * _mean * _skewness + 6.0 * meanSquared * _variance - 3.0 * meanSquared * meanSquared) 
+            if (Count == 0)
+            {
+                return double.NaN;
+            }
+            
+            var mean2 = _mean * _mean;
+            var mean4 = mean2 * mean2;
+            var variance = _variance - mean2;
+
+            return (_kurtosis - 4.0 * _mean * _skewness + 6.0 * mean2 * _variance - 3.0 * mean4) 
                 / (variance * variance) - 3.0;
         }
     }
 
-
-    public void Merge(Moments other)
-    {
-        Count += other.Count;
-
-        if (Count <= 0) return;
-        
-        var g = (double)other.Count / Count;
-        _mean = Utils.Smooth(_mean, other._mean, g);
-        _variance = Utils.Smooth(_variance, other._variance, g);
-        _skewness = Utils.Smooth(_skewness, other._skewness, g);
-        _kurtosis = Utils.Smooth(_kurtosis, other._kurtosis, g);
-    }
+    public (double Mean, double Variance, double Skewness, double Kurtosis) Values => (Mean, Variance, Skewness, Kurtosis);
 
     public void Fit(IEnumerable<double> values)
     {
@@ -117,28 +113,29 @@ public class Moments : IRunningStatistic<double, Moments>
         _skewness = 0;
         _kurtosis = 0;
     }
-
-    public void Print(StreamWriter stream)
+    
+    public void Merge(Moments other)
     {
-        stream.WriteLine($"{typeof(Moments)}(n={Count})");
-        stream.WriteLine($"\tMean={Mean}");
-        stream.WriteLine($"\tVariance={Variance}");
-        stream.WriteLine($"\tSkewness={Skewness}");
-        stream.WriteLine($"\tKurtosis={Kurtosis}");
-    }
+        Count += other.Count;
 
+        if (Count <= 0) return;
+        
+        var g = (double)other.Count / Count;
+        _mean = Utils.Smooth(_mean, other._mean, g);
+        _variance = Utils.Smooth(_variance, other._variance, g);
+        _skewness = Utils.Smooth(_skewness, other._skewness, g);
+        _kurtosis = Utils.Smooth(_kurtosis, other._kurtosis, g);
+    }
+    
     public override string ToString()
     {
         return $"{typeof(Moments)}(M=[{Mean:F2}, {Variance:F2}, {Skewness:F2}, {Kurtosis:F2}], n={Count})";
     }
-
-
+    
     private static Moments Merge(Moments a, Moments b)
     {
         Moments merged = new(a);
         merged.Merge(b);
         return merged;
     }
-
-    public static Moments operator +(Moments a, Moments b) => Merge(a, b);
 }
