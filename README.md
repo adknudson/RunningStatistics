@@ -45,7 +45,7 @@ using RunningStatistics;
 
 var mean1 = new Mean();
 var mean2 = new Mean();
-var hist = new EmpiricalCdf();
+var ecdf = new EmpiricalCdf();
 var series = new Series(new Moments(), new Extrema()); 
 
 var rng = new Random();
@@ -56,9 +56,10 @@ for (var i = 0; i < 1000; i++)
     mean1.Fit(x);
     mean2.Fit(2*x);
     
-    hist.Fit(x);
+    ecdf.Fit(x);
     series.Fit(x);
 }
 
 mean1.Merge(mean2);
+var q1 = ecdf.Quantile(0.25);
 ```
