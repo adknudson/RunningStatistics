@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
 
-public class Variance : IRunningStatistic<double, Variance>
+public class Variance : IRunningStatistic<double>
 {
     private double _mean, _variance;
 
@@ -15,14 +14,7 @@ public class Variance : IRunningStatistic<double, Variance>
         _mean = 0;
         _variance = 0;
     }
-
-    private Variance(Variance other)
-    {
-        Count = other.Count;
-        _mean = other._mean;
-        _variance = other._variance;
-    }
-
+    
 
     public long Count { get; private set; }
 
@@ -39,17 +31,19 @@ public class Variance : IRunningStatistic<double, Variance>
     }
 
 
-    public void Merge(Variance other)
+    public void Merge(IRunningStatistic<double> other)
     {
-        Count += other.Count;
+        if (other is not Variance variance) return;
+        
+        Count += variance.Count;
 
         if (Count <= 0) return;
 
-        var g = (double) other.Count / Count;
-        var delta = _mean - other._mean;
+        var g = (double) variance.Count / Count;
+        var delta = _mean - variance._mean;
 
-        _variance = Utils.Smooth(_variance, other._variance, g) + delta * delta * g * (1 - g);
-        _mean = Utils.Smooth(_mean, other._mean, g);
+        _variance = Utils.Smooth(_variance, variance._variance, g) + delta * delta * g * (1 - g);
+        _mean = Utils.Smooth(_mean, variance._mean, g);
     }
 
     public void Fit(IEnumerable<double> values)
@@ -83,13 +77,6 @@ public class Variance : IRunningStatistic<double, Variance>
     }
 
     public override string ToString() => $"{typeof(Variance)}(ν={Value}, n={Count})";
-
-    private static Variance Merge(Variance a, Variance b)
-    {
-        Variance merged = new(a);
-        merged.Merge(b);
-        return merged;
-    }
-
+    
     public static explicit operator double(Variance value) => value.Value;
 }

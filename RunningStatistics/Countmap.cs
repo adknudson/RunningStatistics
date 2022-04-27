@@ -8,7 +8,7 @@ namespace RunningStatistics;
 /// A dictionary that maps unique values to its number of occurrences.
 /// </summary>
 /// <typeparam name="T">The observation type.</typeparam>
-public class Countmap<T> : IRunningStatistic<T, Countmap<T>>, IEnumerable<KeyValuePair<T, int>>
+public class Countmap<T> : IRunningStatistic<T>, IEnumerable<KeyValuePair<T, int>>
 {
     private readonly IDictionary<T, int> _counter;
 
@@ -18,13 +18,7 @@ public class Countmap<T> : IRunningStatistic<T, Countmap<T>>, IEnumerable<KeyVal
         _counter = new Dictionary<T, int>();
         Count = 0;
     }
-
-    public Countmap(Countmap<T> other)
-    {
-        _counter = new Dictionary<T, int>(other._counter);
-        Count = other.Count;
-    }
-
+    
 
     public void Fit(IEnumerable<T> values)
     {
@@ -53,9 +47,11 @@ public class Countmap<T> : IRunningStatistic<T, Countmap<T>>, IEnumerable<KeyVal
         }
     }
 
-    public void Merge(Countmap<T> other)
+    public void Merge(IRunningStatistic<T> other)
     {
-        foreach (var (key, value) in other._counter)
+        if (other is not Countmap<T> countmap) return;
+        
+        foreach (var (key, value) in countmap._counter)
         {
             Fit(key, value);
         }
@@ -76,11 +72,4 @@ public class Countmap<T> : IRunningStatistic<T, Countmap<T>>, IEnumerable<KeyVal
     public T Mode => _counter.Aggregate((x, y) => x.Value > y.Value ? x : y).Key;
     public int this[T key] => _counter.TryGetValue(key, out var value) ? value : 0;
     public bool ContainsKey(T key) => _counter.ContainsKey(key);
-
-    private static Countmap<T> Merge(Countmap<T> a, Countmap<T> b)
-    {
-        Countmap<T> merged = new(a);
-        merged.Merge(b);
-        return merged;
-    }
 }

@@ -8,7 +8,7 @@ namespace RunningStatistics;
 /// <summary>
 /// A histogram with bin partitions defined by edges.
 /// </summary>
-public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(string BinName, int Count)>
+public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName, int Count)>
 {
     private readonly bool _left, _closed;
     private OutOfBounds _outOfBounds;
@@ -27,19 +27,6 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(stri
         BinCounts = Enumerable.Repeat(0, NumBins).ToList();
         _outOfBounds = new OutOfBounds();
         _binNames = Utils.GetPrintableBins(Edges, _left, _closed);
-    }
-
-    private Histogram(Histogram other)
-    {
-        Count = other.Count;
-
-        Edges = new List<double>(other.Edges);
-        _left = other._left;
-        _closed = other._closed;
-
-        BinCounts = new List<int>(other.BinCounts);
-        _outOfBounds = new OutOfBounds(other._outOfBounds);
-        _binNames = new List<string>(other._binNames);
     }
 
 
@@ -79,24 +66,26 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(stri
         }
     }
 
-    public void Merge(Histogram other)
+    public void Merge(IRunningStatistic<double> other)
     {
-        if (EdgesMatch(other.Edges))
+        if (other is not Histogram histogram) return;
+        
+        if (EdgesMatch(histogram.Edges))
         {
-            Count += other.Count;
+            Count += histogram.Count;
 
             for (var j = 0; j < NumBins; j++)
             {
-                BinCounts[j] += other.BinCounts[j];
+                BinCounts[j] += histogram.BinCounts[j];
             }
         }
         else
         {
             // Using midpoints of source edges as approximate locations for merging
-            var midpoints = Utils.Midpoints(other.Edges);
+            var midpoints = Utils.Midpoints(histogram.Edges);
             for (var j = 0; j < midpoints.Count; j++)
             {
-                Fit(midpoints[j], other.BinCounts[j]);
+                Fit(midpoints[j], histogram.BinCounts[j]);
             }
         }
     }
@@ -170,17 +159,12 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(stri
             Upper = 0;
         }
 
-        public OutOfBounds(OutOfBounds other)
-        {
-            Lower = other.Lower;
-            Upper = other.Upper;
-        }
-
+        
         private int Lower { get; set; }
         private int Upper { get; set; }
-
         public (int, int) Counts => (Lower, Upper);
 
+        
         public void Reset()
         {
             Lower = 0;
@@ -198,12 +182,5 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(stri
                 Lower += k;
             }
         }
-    }
-
-    private static Histogram Merge(Histogram a, Histogram b)
-    {
-        Histogram merged = new(a);
-        merged.Merge(b);
-        return merged;
     }
 }

@@ -6,7 +6,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Tracks the univariate mean, stored as a <see cref="double"/>.
 /// </summary>
-public class Mean : IRunningStatistic<double, Mean>
+public class Mean : IRunningStatistic<double>
 {
     private double _value;
 
@@ -16,13 +16,7 @@ public class Mean : IRunningStatistic<double, Mean>
         Count = 0;
         Value = 0;
     }
-
-    private Mean(Mean other)
-    {
-        Count = other.Count;
-        Value = other.Value;
-    }
-
+    
 
     public long Count { get; private set; }
 
@@ -33,10 +27,12 @@ public class Mean : IRunningStatistic<double, Mean>
     }
 
 
-    public void Merge(Mean other)
+    public void Merge(IRunningStatistic<double> other)
     {
-        Count += other.Count;
-        Value = Count == 0 ? 0 : Utils.Smooth(Value, other.Value, (double) other.Count / Count);
+        if (other is not Mean mean) return;
+        
+        Count += mean.Count;
+        Value = Count == 0 ? 0 : Utils.Smooth(Value, mean.Value, (double) mean.Count / Count);
     }
 
     public void Fit(IEnumerable<double> values)
@@ -59,13 +55,6 @@ public class Mean : IRunningStatistic<double, Mean>
     }
 
     public override string ToString() => $"{typeof(Mean)}(μ={Value}, n={Count})";
-
-    private static Mean Merge(Mean a, Mean b)
-    {
-        Mean merged = new(a);
-        merged.Merge(b);
-        return merged;
-    }
-
+    
     public static explicit operator double(Mean value) => value.Value;
 }

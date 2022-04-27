@@ -6,7 +6,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Tracks the first four non-central moments, stored as a <see cref="double"/>.
 /// </summary>
-public class Moments : IRunningStatistic<double, Moments>
+public class Moments : IRunningStatistic<double>
 {
     private double _mean, _variance, _skewness, _kurtosis;
 
@@ -19,16 +19,7 @@ public class Moments : IRunningStatistic<double, Moments>
         _skewness = 0;
         _kurtosis = 0;
     }
-
-    public Moments(Moments other)
-    {
-        Count = other.Count;
-        _mean = other._mean;
-        _variance = other._variance;
-        _skewness = other._skewness;
-        _kurtosis = other._kurtosis;
-    }
-
+    
 
     public long Count { get; private set; }
 
@@ -113,28 +104,23 @@ public class Moments : IRunningStatistic<double, Moments>
         _kurtosis = 0;
     }
 
-    public void Merge(Moments other)
+    public void Merge(IRunningStatistic<double> other)
     {
-        Count += other.Count;
+        if (other is not Moments moments) return;
+        
+        Count += moments.Count;
 
         if (Count <= 0) return;
 
-        var g = (double) other.Count / Count;
-        _mean = Utils.Smooth(_mean, other._mean, g);
-        _variance = Utils.Smooth(_variance, other._variance, g);
-        _skewness = Utils.Smooth(_skewness, other._skewness, g);
-        _kurtosis = Utils.Smooth(_kurtosis, other._kurtosis, g);
+        var g = (double) moments.Count / Count;
+        _mean = Utils.Smooth(_mean, moments._mean, g);
+        _variance = Utils.Smooth(_variance, moments._variance, g);
+        _skewness = Utils.Smooth(_skewness, moments._skewness, g);
+        _kurtosis = Utils.Smooth(_kurtosis, moments._kurtosis, g);
     }
 
     public override string ToString()
     {
         return $"{typeof(Moments)}(M=[{Mean:F2}, {Variance:F2}, {Skewness:F2}, {Kurtosis:F2}], n={Count})";
-    }
-
-    private static Moments Merge(Moments a, Moments b)
-    {
-        Moments merged = new(a);
-        merged.Merge(b);
-        return merged;
     }
 }

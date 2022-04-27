@@ -2,7 +2,7 @@
 
 namespace RunningStatistics;
 
-public interface IRunningStatistic<in TObs, in TSelf>
+public interface IRunningStatistic<TObs>
 {
     public long Count { get; }
 
@@ -11,6 +11,5 @@ public interface IRunningStatistic<in TObs, in TSelf>
     public void Fit(TObs value);
 
     public void Reset();
-
-    public void Merge(TSelf other);
+    public void Merge(IRunningStatistic<TObs> other);
 }

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -7,20 +6,14 @@ namespace RunningStatistics;
 /// <summary>
 /// Tracks the overall sum, stored as a <see cref="double"/>.
 /// </summary>
-public class Sum : IRunningStatistic<double, Sum>
+public class Sum : IRunningStatistic<double>
 {
     public Sum()
     {
         Value = 0;
         Count = 0;
     }
-
-    private Sum(Sum other)
-    {
-        Count = other.Count;
-        Value = other.Value;
-    }
-
+    
 
     public long Count { get; private set; }
     private double Value { get; set; }
@@ -40,10 +33,12 @@ public class Sum : IRunningStatistic<double, Sum>
         Value += ys.Sum();
     }
 
-    public void Merge(Sum other)
+    public void Merge(IRunningStatistic<double> other)
     {
-        Count += other.Count;
-        Value += other.Value;
+        if (other is not Sum sum) return;
+        
+        Count += sum.Count;
+        Value += sum.Value;
     }
 
     public void Reset()
@@ -53,13 +48,6 @@ public class Sum : IRunningStatistic<double, Sum>
     }
 
     public override string ToString() => $"{typeof(Sum)}(Σ={Value}, n={Count})";
-
-    private static Sum Merge(Sum a, Sum b)
-    {
-        var merged = new Sum(a);
-        merged.Merge(b);
-        return merged;
-    }
-
+    
     public static explicit operator double(Sum value) => value.Value;
 }

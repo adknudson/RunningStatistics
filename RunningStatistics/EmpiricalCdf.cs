@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -8,7 +7,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Approximate order statistics (CDF) with batches of a given size.
 /// </summary>
-public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
+public class EmpiricalCdf : IRunningStatistic<double>
 {
     private readonly int _numBins;
     private readonly Extrema _extrema;
@@ -23,18 +22,6 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
         _extrema = new Extrema();
     }
 
-    public EmpiricalCdf(EmpiricalCdf other)
-    {
-        _numBins = other._numBins;
-
-        _values = new double[_numBins];
-        _buffer = new double[_numBins];
-        other._values.CopyTo(_values, 0);
-        other._buffer.CopyTo(_buffer, 0);
-
-        _extrema = new Extrema(other._extrema);
-    }
-
 
     public long Count => _extrema.Count;
     public double Median => Quantile(0.5);
@@ -44,21 +31,23 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
 
     public double Quantile(double p) => SortedQuantile(p);
 
-    public void Merge(EmpiricalCdf other)
+    public void Merge(IRunningStatistic<double> other)
     {
-        if (_numBins != other._numBins)
+        if (other is not EmpiricalCdf empiricalCdf) return;
+        
+        if (_numBins != empiricalCdf._numBins)
         {
             throw new Exception($"The two {nameof(EmpiricalCdf)} objects must have the same batch size. " +
-                                $"Got {_numBins} and {other._numBins}.");
+                                $"Got {_numBins} and {empiricalCdf._numBins}.");
         }
 
-        _extrema.Merge(other._extrema);
+        _extrema.Merge(empiricalCdf._extrema);
 
         if (Count == 0) return;
 
         for (var k = 0; k < _numBins; k++)
         {
-            _values[k] = Utils.Smooth(_values[k], other._values[k], (double) other.Count / Count);
+            _values[k] = Utils.Smooth(_values[k], empiricalCdf._values[k], (double) empiricalCdf.Count / Count);
         }
     }
 
@@ -112,12 +101,5 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
 
         var i = (int) Math.Floor((_numBins - 1) * p);
         return _values.ElementAt(i);
-    }
-
-    private static EmpiricalCdf Merge(EmpiricalCdf a, EmpiricalCdf b)
-    {
-        var merged = new EmpiricalCdf(a);
-        merged.Merge(b);
-        return merged;
     }
 }

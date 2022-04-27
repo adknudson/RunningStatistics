@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace RunningStatistics;
 
 /// <summary>
 /// Minimum and maximum (and number of occurrences for each) for a data stream of type <see cref="double"/>.
 /// </summary>
-public class Extrema : IRunningStatistic<double, Extrema>
+public class Extrema : IRunningStatistic<double>
 {
     private const double Tolerance = 1.4901161193847656e-8;
 
@@ -19,15 +18,7 @@ public class Extrema : IRunningStatistic<double, Extrema>
         CountMin = 0;
         CountMax = 0;
     }
-
-    public Extrema(Extrema a)
-    {
-        Min = a.Min;
-        Max = a.Max;
-        CountMin = a.CountMin;
-        CountMax = a.CountMax;
-    }
-
+    
 
     public int CountMin { get; private set; }
     public int CountMax { get; private set; }
@@ -73,28 +64,30 @@ public class Extrema : IRunningStatistic<double, Extrema>
         }
     }
 
-    public void Merge(Extrema other)
+    public void Merge(IRunningStatistic<double> other)
     {
-        Count += other.Count;
+        if (other is not Extrema extrema) return;
 
-        if (Math.Abs(Min - other.Min) < Tolerance)
+        Count += extrema.Count;
+
+        if (Math.Abs(Min - extrema.Min) < Tolerance)
         {
-            CountMin += other.CountMin;
+            CountMin += extrema.CountMin;
         }
-        else if (other.Min < Min)
+        else if (extrema.Min < Min)
         {
-            Min = other.Min;
-            CountMin = other.CountMin;
+            Min = extrema.Min;
+            CountMin = extrema.CountMin;
         }
 
-        if (Math.Abs(Max - other.Max) < Tolerance)
+        if (Math.Abs(Max - extrema.Max) < Tolerance)
         {
-            CountMax += other.CountMax;
+            CountMax += extrema.CountMax;
         }
-        else if (other.Max > Max)
+        else if (extrema.Max > Max)
         {
-            Max = other.Max;
-            CountMax = other.CountMax;
+            Max = extrema.Max;
+            CountMax = extrema.CountMax;
         }
     }
 
@@ -107,11 +100,4 @@ public class Extrema : IRunningStatistic<double, Extrema>
     }
 
     public override string ToString() => $"{typeof(Extrema)}(min={Min:F2}, max={Max:F2}, n={Count})";
-
-    private static Extrema Merge(Extrema a, Extrema b)
-    {
-        Extrema merged = new(a);
-        merged.Merge(b);
-        return merged;
-    }
 }
