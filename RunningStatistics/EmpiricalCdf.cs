@@ -14,7 +14,6 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
     private readonly Extrema _extrema;
     private readonly double[] _buffer, _values;
 
-    
 
     public EmpiricalCdf(int numBins = 200)
     {
@@ -27,15 +26,14 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
     public EmpiricalCdf(EmpiricalCdf other)
     {
         _numBins = other._numBins;
-        
+
         _values = new double[_numBins];
         _buffer = new double[_numBins];
         other._values.CopyTo(_values, 0);
         other._buffer.CopyTo(_buffer, 0);
-        
+
         _extrema = new Extrema(other._extrema);
     }
-    
 
 
     public long Count => _extrema.Count;
@@ -45,7 +43,7 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
 
 
     public double Quantile(double p) => SortedQuantile(p);
-    
+
     public void Merge(EmpiricalCdf other)
     {
         if (_numBins != other._numBins)
@@ -55,12 +53,12 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
         }
 
         _extrema.Merge(other._extrema);
-        
+
         if (Count == 0) return;
-        
+
         for (var k = 0; k < _numBins; k++)
         {
-            _values[k] = Utils.Smooth(_values[k], other._values[k], (double)other.Count / Count);
+            _values[k] = Utils.Smooth(_values[k], other._values[k], (double) other.Count / Count);
         }
     }
 
@@ -74,7 +72,7 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
 
     public void Fit(double value)
     {
-        var i = (int)(Count % _numBins);
+        var i = (int) (Count % _numBins);
         _extrema.Fit(value);
         _buffer[i] = value;
 
@@ -96,6 +94,7 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
             _values[i] = 0;
             _buffer[i] = 0;
         }
+
         _extrema.Reset();
     }
 
@@ -111,7 +110,7 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
             throw new ArgumentOutOfRangeException($"p must be in range [0, 1]. Got {p}.");
         }
 
-        var i = (int)Math.Floor((_numBins - 1) * p);
+        var i = (int) Math.Floor((_numBins - 1) * p);
         return _values.ElementAt(i);
     }
 

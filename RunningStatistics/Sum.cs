@@ -20,15 +20,13 @@ public class Sum : IRunningStatistic<double, Sum>
         Count = other.Count;
         Value = other.Value;
     }
-    
-    
-    
+
+
     public long Count { get; private set; }
     private double Value { get; set; }
     public double Mean => Value / Count;
 
 
-    
     public void Fit(double value)
     {
         Count += 1;
@@ -53,7 +51,7 @@ public class Sum : IRunningStatistic<double, Sum>
         Count = 0;
         Value = 0;
     }
-    
+
     public override string ToString() => $"{typeof(Sum)}(Σ={Value}, n={Count})";
 
     private static Sum Merge(Sum a, Sum b)
@@ -62,6 +60,6 @@ public class Sum : IRunningStatistic<double, Sum>
         merged.Merge(b);
         return merged;
     }
-    
+
     public static explicit operator double(Sum value) => value.Value;
 }

@@ -7,9 +7,8 @@ namespace RunningStatistics;
 public class Variance : IRunningStatistic<double, Variance>
 {
     private double _mean, _variance;
-    
-    
-    
+
+
     public Variance()
     {
         Count = 0;
@@ -23,11 +22,10 @@ public class Variance : IRunningStatistic<double, Variance>
         _mean = other._mean;
         _variance = other._variance;
     }
-    
-    
-    
+
+
     public long Count { get; private set; }
-    
+
     /// <summary>
     /// Returns the bias-corrected variance.
     /// </summary>
@@ -39,16 +37,15 @@ public class Variance : IRunningStatistic<double, Variance>
             return double.IsFinite(_mean) ? 1.0 : double.NaN;
         }
     }
-    
-    
-    
+
+
     public void Merge(Variance other)
     {
         Count += other.Count;
 
         if (Count <= 0) return;
-        
-        var g = (double)other.Count / Count;
+
+        var g = (double) other.Count / Count;
         var delta = _mean - other._mean;
 
         _variance = Utils.Smooth(_variance, other._variance, g) + delta * delta * g * (1 - g);
@@ -62,7 +59,7 @@ public class Variance : IRunningStatistic<double, Variance>
 
         var mean = ys.Average();
         var variance = Utils.Variance(ys);
-        var g = (double)ys.Count / Count;
+        var g = (double) ys.Count / Count;
         var delta = _mean - mean;
 
         _variance = Utils.Smooth(_variance, variance, g) + delta * delta * g * (1 - g);
@@ -84,9 +81,9 @@ public class Variance : IRunningStatistic<double, Variance>
         _mean = 0;
         _variance = 0;
     }
-    
+
     public override string ToString() => $"{typeof(Variance)}(ν={Value}, n={Count})";
-    
+
     private static Variance Merge(Variance a, Variance b)
     {
         Variance merged = new(a);

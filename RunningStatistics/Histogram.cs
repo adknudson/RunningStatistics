@@ -15,12 +15,11 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(stri
     private readonly IList<string> _binNames;
     private const double Tolerance = 1.4901161193847656e-8;
 
-    
-    
+
     public Histogram(IEnumerable<double> edges, bool left = true, bool closed = true)
     {
         Count = 0;
-        
+
         Edges = edges.OrderBy(e => e).ToList();
         _left = left;
         _closed = closed;
@@ -44,10 +43,9 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(stri
     }
 
 
-
     public long Count { get; private set; }
     public (int Lower, int Upper) OutOfBoundsCounts => _outOfBounds.Counts;
-    
+
     private int NumBins => Edges.Count - 1;
     private IList<double> Edges { get; }
     private IList<int> BinCounts { get; set; }
@@ -80,13 +78,13 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(stri
             _outOfBounds.Update(i, k);
         }
     }
-    
+
     public void Merge(Histogram other)
     {
         if (EdgesMatch(other.Edges))
         {
             Count += other.Count;
-            
+
             for (var j = 0; j < NumBins; j++)
             {
                 BinCounts[j] += other.BinCounts[j];
@@ -115,6 +113,7 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(stri
     {
         return _binNames.Zip(BinCounts).GetEnumerator();
     }
+
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public override string ToString() => $"{typeof(Histogram)}(n={Count})";
@@ -132,7 +131,7 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(stri
         {
             return -1;
         }
-        
+
         if (y > b)
         {
             return NumBins;
@@ -153,16 +152,16 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(stri
 
         return _left ? Utils.SearchSortedLast(Edges, y) : Utils.SearchSortedFirst(Edges, y) - 1;
     }
-    
+
     private bool EdgesMatch(ICollection<double> other)
     {
         if (Edges.Count != other.Count) return false;
-        
+
         return Edges
             .Zip(other)
             .All(z => Math.Abs(z.First - z.Second) <= Tolerance);
     }
-    
+
     private struct OutOfBounds
     {
         public OutOfBounds()
@@ -200,7 +199,7 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<(stri
             }
         }
     }
-    
+
     private static Histogram Merge(Histogram a, Histogram b)
     {
         Histogram merged = new(a);

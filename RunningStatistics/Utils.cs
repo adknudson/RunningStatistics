@@ -8,7 +8,7 @@ internal static class Utils
 {
     internal static double BesselCorrection(long n)
     {
-        return (double)n / (n - 1);
+        return (double) n / (n - 1);
     }
 
     internal static IList<string> GetPrintableBins(IList<double> edges, bool left, bool closed)
@@ -30,6 +30,7 @@ internal static class Utils
             {
                 bins.Add($"{leftBrace}{edges[i]:F2}, {edges[i + 1]:F2}{rightBrace}");
             }
+
             bins.Add($"{leftBrace}{edges[numBins - 1]:F2}, {edges[numBins]:F2}{endBrace}");
         }
         else
@@ -59,6 +60,7 @@ internal static class Utils
         {
             ms.Add((xs[i] + xs[i - 1]) / 2.0);
         }
+
         return ms;
     }
 

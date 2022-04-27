@@ -19,7 +19,7 @@ public class Extrema : IRunningStatistic<double, Extrema>
         CountMin = 0;
         CountMax = 0;
     }
-    
+
     public Extrema(Extrema a)
     {
         Min = a.Min;
@@ -35,9 +35,8 @@ public class Extrema : IRunningStatistic<double, Extrema>
     public double Min { get; private set; }
     public double Range => Max - Min;
     public long Count { get; private set; }
-    
-    
-    
+
+
     public void Fit(IEnumerable<double> values)
     {
         foreach (var value in values)
@@ -55,29 +54,29 @@ public class Extrema : IRunningStatistic<double, Extrema>
             Min = value;
             CountMin = 1;
         }
-        
+
         if (value > Max)
         {
             Max = value;
             CountMax = 1;
         }
-    
-    
+
+
         if (Math.Abs(value - Min) < Tolerance)
         {
             CountMin++;
         }
-    
+
         if (Math.Abs(value - Max) < Tolerance)
         {
             CountMax++;
         }
     }
-    
+
     public void Merge(Extrema other)
     {
         Count += other.Count;
-        
+
         if (Math.Abs(Min - other.Min) < Tolerance)
         {
             CountMin += other.CountMin;
@@ -87,7 +86,7 @@ public class Extrema : IRunningStatistic<double, Extrema>
             Min = other.Min;
             CountMin = other.CountMin;
         }
-        
+
         if (Math.Abs(Max - other.Max) < Tolerance)
         {
             CountMax += other.CountMax;
@@ -108,7 +107,7 @@ public class Extrema : IRunningStatistic<double, Extrema>
     }
 
     public override string ToString() => $"{typeof(Extrema)}(min={Min:F2}, max={Max:F2}, n={Count})";
-    
+
     private static Extrema Merge(Extrema a, Extrema b)
     {
         Extrema merged = new(a);

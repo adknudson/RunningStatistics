@@ -12,8 +12,7 @@ public class Countmap<T> : IRunningStatistic<T, Countmap<T>>, IEnumerable<KeyVal
 {
     private readonly IDictionary<T, int> _counter;
 
-    
-    
+
     public Countmap()
     {
         _counter = new Dictionary<T, int>();
@@ -25,8 +24,7 @@ public class Countmap<T> : IRunningStatistic<T, Countmap<T>>, IEnumerable<KeyVal
         _counter = new Dictionary<T, int>(other._counter);
         Count = other.Count;
     }
-    
-    
+
 
     public void Fit(IEnumerable<T> values)
     {
@@ -40,11 +38,11 @@ public class Countmap<T> : IRunningStatistic<T, Countmap<T>>, IEnumerable<KeyVal
     {
         Fit(value, 1);
     }
-    
+
     public void Fit(T obs, int k)
     {
         Count += k;
-        
+
         if (_counter.ContainsKey(obs))
         {
             _counter[obs] += k;
@@ -78,7 +76,7 @@ public class Countmap<T> : IRunningStatistic<T, Countmap<T>>, IEnumerable<KeyVal
     public T Mode => _counter.Aggregate((x, y) => x.Value > y.Value ? x : y).Key;
     public int this[T key] => _counter.TryGetValue(key, out var value) ? value : 0;
     public bool ContainsKey(T key) => _counter.ContainsKey(key);
-    
+
     private static Countmap<T> Merge(Countmap<T> a, Countmap<T> b)
     {
         Countmap<T> merged = new(a);
