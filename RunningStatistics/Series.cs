@@ -1,9 +1,10 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace RunningStatistics;
 
-internal class Series<T> : IRunningStatistic<T>
+public class Series<T> : IRunningStatistic<T>, IEnumerable<IRunningStatistic<T>>
 {
     private readonly List<IRunningStatistic<T>> _statistics;
 
@@ -56,4 +57,8 @@ internal class Series<T> : IRunningStatistic<T>
             _statistics[i].Merge(series._statistics[i]);
         }
     }
+
+    public IEnumerator<IRunningStatistic<T>> GetEnumerator() => _statistics.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
