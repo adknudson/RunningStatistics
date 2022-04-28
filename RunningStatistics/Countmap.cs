@@ -72,6 +72,9 @@ public class Countmap<T> : IRunningStatistic<T>, IEnumerable<KeyValuePair<T, int
     public T Mode => _counter.Aggregate((x, y) => x.Value > y.Value ? x : y).Key;
     public int this[T key] => _counter.TryGetValue(key, out var value) ? value : 0;
     public bool ContainsKey(T key) => _counter.ContainsKey(key);
+    public IEnumerable<int> Values => _counter.Values;
+    public IEnumerable<double> Probabilities => Values.Select(s => (double) s / Count);
+    public IEnumerable<T> Keys => _counter.Keys;
 
     public SortedDictionary<T, int> ToSortedDictionary() => new(_counter);
 }
