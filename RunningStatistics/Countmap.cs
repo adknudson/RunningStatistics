@@ -105,6 +105,9 @@ public class Countmap<T> : IRunningStatistic<T>, IReadOnlyDictionary<T, long>
     /// Returns <c>true</c> if the key has been observed, and <c>false</c> otherwise. 
     /// </summary>
     public bool ContainsKey(T key) => _counter.ContainsKey(key);
+    public IEnumerable<int> Values => _counter.Values;
+    public IEnumerable<double> Probabilities => Values.Select(s => (double) s / Count);
+    public IEnumerable<T> Keys => _counter.Keys;
 
     /// <summary>
     /// Return the counter as a <see cref="SortedDictionary{TKey,TValue}"/>, sorted by the keys.
