@@ -18,6 +18,14 @@ public class Extrema : IRunningStatistic<double>
         CountMin = 0;
         CountMax = 0;
     }
+
+    public Extrema(Extrema other)
+    {
+        Min = other.Min;
+        Max = other.Max;
+        CountMin = other.CountMin;
+        CountMax = other.CountMax;
+    }
     
 
     public int CountMin { get; private set; }
@@ -89,6 +97,13 @@ public class Extrema : IRunningStatistic<double>
             Max = extrema.Max;
             CountMax = extrema.CountMax;
         }
+    }
+
+    public static Extrema Merge(Extrema a, Extrema b)
+    {
+        var c = new Extrema(a);
+        c.Merge(b);
+        return c;
     }
 
     public void Reset()

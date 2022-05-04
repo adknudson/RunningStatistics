@@ -36,6 +36,32 @@ namespace RunningStatistics.Test
         }
 
         [Fact]
+        public void MergingWhereOneIsEmptyEqualsNonEmptyInstance()
+        {
+            EmpiricalCdf a = new(20), b = new(20);
+            var rng = new Random();
+
+            for (var i = 0; i < 1000; i++)
+            {
+                b.Fit(rng.NextDouble());
+            }
+
+            var aMergeB = EmpiricalCdf.Merge(a, b);
+            var bMergeA = EmpiricalCdf.Merge(b, a);
+            
+            Assert.Equal(b.Min, aMergeB.Min);
+            Assert.Equal(b.Max, aMergeB.Max);
+            Assert.Equal(b.Quantile(0.25), aMergeB.Quantile(0.25));
+            Assert.Equal(b.Quantile(0.75), aMergeB.Quantile(0.75));
+
+            
+            Assert.Equal(b.Min, bMergeA.Min);
+            Assert.Equal(b.Max, bMergeA.Max);
+            Assert.Equal(b.Quantile(0.25), bMergeA.Quantile(0.25));
+            Assert.Equal(b.Quantile(0.75), bMergeA.Quantile(0.75));
+        }
+
+        [Fact]
         public void MergePartsEqualsMergeAll()
         {
             const int n = 50_000;

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace RunningStatistics;
 
@@ -21,6 +20,14 @@ public class EmpiricalCdf : IRunningStatistic<double>
         _extrema = new Extrema();
     }
 
+    public EmpiricalCdf(EmpiricalCdf other)
+    {
+        NumBins = other.NumBins;
+        _values = other._values;
+        _buffer = other._buffer;
+        _extrema = new Extrema(other._extrema);
+    }
+
 
     public long Count => _extrema.Count;
     public double Median => Quantile(0.5);
@@ -28,9 +35,32 @@ public class EmpiricalCdf : IRunningStatistic<double>
     public double Max => _extrema.Max;
     internal int NumBins { get; }
 
+    
+    public void Fit(IEnumerable<double> values)
+    {
+        foreach (var value in values)
+        {
+            Fit(value);
+        }
+    }
 
-    public double Quantile(double p) => SortedQuantile(p);
+    public void Fit(double value)
+    {
+        var i = (int) (Count % NumBins);
+        var bufferCount = i + 1;
+        _buffer[i] = value;
+        
+        _extrema.Fit(value);
 
+        if (bufferCount < NumBins) return;
+        
+        Array.Sort(_buffer);
+        for (var k = 0; k < NumBins; k++)
+        {
+            _values[k] = Utils.Smooth(_values[k], _buffer[k], (double) NumBins / Count);
+        }
+    }
+    
     public void Merge(IRunningStatistic<double> other)
     {
         if (other is not EmpiricalCdf empiricalCdf) return;
@@ -51,29 +81,11 @@ public class EmpiricalCdf : IRunningStatistic<double>
         }
     }
 
-    public void Fit(IEnumerable<double> values)
+    public static EmpiricalCdf Merge(EmpiricalCdf a, EmpiricalCdf b)
     {
-        foreach (var value in values)
-        {
-            Fit(value);
-        }
-    }
-
-    public void Fit(double value)
-    {
-        var i = (int) (Count % NumBins);
-        _extrema.Fit(value);
-        _buffer[i] = value;
-
-        // if the buffer is full, then merge buffer into value vector
-        if (i == NumBins - 1)
-        {
-            Array.Sort(_buffer);
-            for (var k = 0; k < NumBins; k++)
-            {
-                _values[k] = Utils.Smooth(_values[k], _buffer[k], (double) NumBins / Count);
-            }
-        }
+        var c = new EmpiricalCdf(a);
+        c.Merge(b);
+        return c;
     }
 
     public void Reset()
@@ -87,12 +99,11 @@ public class EmpiricalCdf : IRunningStatistic<double>
         _extrema.Reset();
     }
 
-    public override string ToString() => $"{typeof(EmpiricalCdf)}(n={Count})";
 
     /// <summary>
-    /// Finds the pth quantile of a collection that is assumed to be sorted.
+    /// Finds the pth quantile of the empirical CDF.
     /// </summary>
-    private double SortedQuantile(double p)
+    public double Quantile(double p)
     {
         if (p is < 0 or > 1)
         {
@@ -100,6 +111,8 @@ public class EmpiricalCdf : IRunningStatistic<double>
         }
 
         var i = (int) Math.Floor((NumBins - 1) * p);
-        return _values.ElementAt(i);
+        return _values[i];
     }
+    
+    public override string ToString() => $"{typeof(EmpiricalCdf)}(n={Count})";
 }

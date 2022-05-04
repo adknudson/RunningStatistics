@@ -29,7 +29,7 @@ public static class PrintExtensions
     {
         PrintType(stat, stream);
         stream.WriteLine($"Key{sep}Count");
-        foreach (var (key, count) in stat.ToSortedDictionary())
+        foreach (var (key, count) in stat.AsSortedDictionary())
         {
             stream.WriteLine($"{key}{sep}{count}");
         }
