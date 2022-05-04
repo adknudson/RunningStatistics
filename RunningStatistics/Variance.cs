@@ -28,7 +28,7 @@ public class Variance : IRunningStatistic<double>
     /// <summary>
     /// Returns the bias-corrected variance.
     /// </summary>
-    private double Value
+    public double Value
     {
         get
         {

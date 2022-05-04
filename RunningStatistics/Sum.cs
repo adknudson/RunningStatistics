@@ -22,7 +22,7 @@ public class Sum : IRunningStatistic<double>
     
 
     public long Count { get; private set; }
-    private double Value { get; set; }
+    public double Value { get; set; }
     public double Mean => Value / Count;
 
 
