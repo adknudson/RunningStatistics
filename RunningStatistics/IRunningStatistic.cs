@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 
 namespace RunningStatistics;
 
@@ -11,5 +12,8 @@ public interface IRunningStatistic<TObs>
     public void Fit(TObs value);
 
     public void Reset();
+    
     public void Merge(IRunningStatistic<TObs> other);
+
+    public void Print(StreamWriter stream);
 }

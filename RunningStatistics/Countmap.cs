@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -122,4 +123,19 @@ public class Countmap<T> : IRunningStatistic<T>, IReadOnlyDictionary<T, long>
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     
     public override string ToString() => $"{typeof(Countmap<T>)}(n={Count})";
+
+    public void Print(StreamWriter stream)
+    {
+        Print(stream, '\t');
+    }
+    
+    public void Print(StreamWriter stream, char sep)
+    {
+        stream.WriteLine($"{GetType()}(n={Count})");
+        stream.WriteLine($"Key{sep}Count");
+        foreach (var (key, count) in AsSortedDictionary())
+        {
+            stream.WriteLine($"{key}{sep}{count}");
+        }
+    }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -70,4 +71,9 @@ public class Mean : IRunningStatistic<double>
     public static explicit operator double(Mean value) => value.Value;
     
     public override string ToString() => $"{typeof(Mean)}(μ={Value}, n={Count})";
+
+    public void Print(StreamWriter stream)
+    {
+        stream.WriteLine($"{GetType()}(μ={Value}, n={Count})");
+    }
 }

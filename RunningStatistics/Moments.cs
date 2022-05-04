@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace RunningStatistics;
 
@@ -137,5 +138,14 @@ public class Moments : IRunningStatistic<double>
     public override string ToString()
     {
         return $"{typeof(Moments)}(M=[{Mean:F2}, {Variance:F2}, {Skewness:F2}, {Kurtosis:F2}], n={Count})";
+    }
+
+    public void Print(StreamWriter stream)
+    {
+        stream.WriteLine($"{GetType()}(n={Count})");
+        stream.WriteLine($"\tMean={Mean}");
+        stream.WriteLine($"\tVariance={Variance}");
+        stream.WriteLine($"\tSkewness={Skewness}");
+        stream.WriteLine($"\tKurtosis={Kurtosis}");
     }
 }

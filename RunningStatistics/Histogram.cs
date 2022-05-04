@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -185,6 +186,21 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public override string ToString() => $"{typeof(Histogram)}(n={Count})";
+
+    public void Print(StreamWriter stream)
+    {
+        Print(stream, '\t');
+    }
+
+    public void Print(StreamWriter stream, char sep)
+    {
+        stream.WriteLine($"{GetType()}(n={Count})");
+        stream.WriteLine($"Bin{sep}Count");
+        foreach (var (bin, count) in this)
+        {
+            stream.WriteLine($"{bin}{sep}{count}");
+        }
+    }
     
 
     private bool BinsMatch(ICollection<Bin> other)
