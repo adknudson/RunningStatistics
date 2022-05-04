@@ -16,6 +16,12 @@ public class Mean : IRunningStatistic<double>
         Count = 0;
         Value = 0;
     }
+
+    public Mean(Mean other)
+    {
+        Count = other.Count;
+        Value = other._value;
+    }
     
 
     public long Count { get; private set; }
@@ -24,15 +30,6 @@ public class Mean : IRunningStatistic<double>
     {
         get => Count == 0 ? double.NaN : _value;
         private set => _value = value;
-    }
-
-
-    public void Merge(IRunningStatistic<double> other)
-    {
-        if (other is not Mean mean) return;
-        
-        Count += mean.Count;
-        Value = Count == 0 ? 0 : Utils.Smooth(Value, mean.Value, (double) mean.Count / Count);
     }
 
     public void Fit(IEnumerable<double> values)
@@ -48,13 +45,29 @@ public class Mean : IRunningStatistic<double>
         Value = Utils.Smooth(Value, value, 1.0 / Count);
     }
 
+    public void Merge(IRunningStatistic<double> other)
+    {
+        if (other is not Mean mean) return;
+        
+        Count += mean.Count;
+        Value = Count == 0 ? 0 : Utils.Smooth(Value, mean.Value, (double) mean.Count / Count);
+    }
+
+    public static Mean Merge(Mean a, Mean b)
+    {
+        var c = new Mean(a);
+        c.Merge(b);
+        return c;
+    }
+
     public void Reset()
     {
         Count = 0;
         Value = 0;
     }
-
-    public override string ToString() => $"{typeof(Mean)}(μ={Value}, n={Count})";
+    
     
     public static explicit operator double(Mean value) => value.Value;
+    
+    public override string ToString() => $"{typeof(Mean)}(μ={Value}, n={Count})";
 }

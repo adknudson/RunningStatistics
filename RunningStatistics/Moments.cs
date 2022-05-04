@@ -19,10 +19,18 @@ public class Moments : IRunningStatistic<double>
         _skewness = 0;
         _kurtosis = 0;
     }
+
+    public Moments(Moments other)
+    {
+        Count = other.Count;
+        _mean = other._mean;
+        _variance = other._variance;
+        _skewness = other._skewness;
+        _kurtosis = other._kurtosis;
+    }
     
 
     public long Count { get; private set; }
-
     public double Mean => Count == 0 ? double.NaN : _mean;
 
     /// <summary>
@@ -117,6 +125,13 @@ public class Moments : IRunningStatistic<double>
         _variance = Utils.Smooth(_variance, moments._variance, g);
         _skewness = Utils.Smooth(_skewness, moments._skewness, g);
         _kurtosis = Utils.Smooth(_kurtosis, moments._kurtosis, g);
+    }
+
+    public static Moments Merge(Moments a, Moments b)
+    {
+        var c = new Moments(a);
+        c.Merge(b);
+        return c;
     }
 
     public override string ToString()

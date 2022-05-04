@@ -41,10 +41,15 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
         }
     }
 
+    public Histogram(Histogram other)
+    {
+        Bins = other.Bins.Select(b => new Bin(b)).ToList();
+        _outOfBounds = other._outOfBounds;
+    }
+
 
     public long Count { get; private set; }
     public (int Lower, int Upper) OutOfBoundsCounts => _outOfBounds.Counts;
-
     private int NumBins => Bins.Count;
     private IList<Bin> Bins { get; }
 
@@ -132,6 +137,13 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
                 Fit(bin.Midpoint, bin.Count);
             }
         }
+    }
+
+    public static Histogram Merge(Histogram a, Histogram b)
+    {
+        var c = new Histogram(a);
+        c.Merge(b);
+        return c;
     }
 
     public void Reset()
@@ -232,6 +244,10 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
             BinName = $"{leftBrace}{Lower:F2}, {Upper:F2}{rightBrace}";
 
             Count = 0;
+        }
+
+        public Bin(Bin other) : this(other.Lower, other.Upper, other.ClosedLeft, other.ClosedRight)
+        {
         }
         
         

@@ -13,6 +13,12 @@ public class Sum : IRunningStatistic<double>
         Value = 0;
         Count = 0;
     }
+
+    public Sum(Sum other)
+    {
+        Value = other.Value;
+        Count = other.Count;
+    }
     
 
     public long Count { get; private set; }
@@ -41,13 +47,20 @@ public class Sum : IRunningStatistic<double>
         Value += sum.Value;
     }
 
+    public static Sum Merge(Sum a, Sum b)
+    {
+        var c = new Sum(a);
+        c.Merge(a);
+        return c;
+    }
+
     public void Reset()
     {
         Count = 0;
         Value = 0;
     }
 
-    public override string ToString() => $"{typeof(Sum)}(Σ={Value}, n={Count})";
-    
     public static explicit operator double(Sum value) => value.Value;
+    
+    public override string ToString() => $"{typeof(Sum)}(Σ={Value}, n={Count})";
 }

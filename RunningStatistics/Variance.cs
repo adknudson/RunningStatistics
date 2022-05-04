@@ -14,6 +14,13 @@ public class Variance : IRunningStatistic<double>
         _mean = 0;
         _variance = 0;
     }
+
+    public Variance(Variance other)
+    {
+        Count = other.Count;
+        _mean = other._mean;
+        _variance = other._variance;
+    }
     
 
     public long Count { get; private set; }
@@ -28,22 +35,6 @@ public class Variance : IRunningStatistic<double>
             if (Count > 1) return _variance * Utils.BesselCorrection(Count);
             return double.IsFinite(_mean) ? 1.0 : double.NaN;
         }
-    }
-
-
-    public void Merge(IRunningStatistic<double> other)
-    {
-        if (other is not Variance variance) return;
-        
-        Count += variance.Count;
-
-        if (Count <= 0) return;
-
-        var g = (double) variance.Count / Count;
-        var delta = _mean - variance._mean;
-
-        _variance = Utils.Smooth(_variance, variance._variance, g) + delta * delta * g * (1 - g);
-        _mean = Utils.Smooth(_mean, variance._mean, g);
     }
 
     public void Fit(IEnumerable<double> values)
@@ -67,6 +58,28 @@ public class Variance : IRunningStatistic<double>
         var g = 1.0 / Count;
         _mean = Utils.Smooth(_mean, value, g);
         _variance = Utils.Smooth(_variance, (value - _mean) * (value - mu), g);
+    }
+
+    public void Merge(IRunningStatistic<double> other)
+    {
+        if (other is not Variance variance) return;
+        
+        Count += variance.Count;
+
+        if (Count <= 0) return;
+
+        var g = (double) variance.Count / Count;
+        var delta = _mean - variance._mean;
+
+        _variance = Utils.Smooth(_variance, variance._variance, g) + delta * delta * g * (1 - g);
+        _mean = Utils.Smooth(_mean, variance._mean, g);
+    }
+
+    public static Variance Merge(Variance a, Variance b)
+    {
+        var c = new Variance(a);
+        c.Merge(b);
+        return c;
     }
 
     public void Reset()

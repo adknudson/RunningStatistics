@@ -1,14 +1,15 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace RunningStatistics;
 
-public class Series<T> : IRunningStatistic<T>, IEnumerable<IRunningStatistic<T>>
+public class Series<T> : IRunningStatistic<T>, IReadOnlyList<IRunningStatistic<T>>
 {
     private readonly List<IRunningStatistic<T>> _statistics;
 
-    
+
     public Series(params IRunningStatistic<T>[] statistics)
     {
         _statistics = statistics.ToList();
@@ -17,7 +18,6 @@ public class Series<T> : IRunningStatistic<T>, IEnumerable<IRunningStatistic<T>>
     
     
     public long Count { get; private set; }
-    
     public IRunningStatistic<T> this[int index] => _statistics[index];
 
 
@@ -37,15 +37,6 @@ public class Series<T> : IRunningStatistic<T>, IEnumerable<IRunningStatistic<T>>
             statistic.Fit(value);
         }
     }
-
-    public void Reset()
-    {
-        Count = 0;
-        foreach (var statistic in _statistics)
-        {
-            statistic.Reset();
-        }
-    }
     
     public void Merge(IRunningStatistic<T> other)
     {
@@ -58,7 +49,16 @@ public class Series<T> : IRunningStatistic<T>, IEnumerable<IRunningStatistic<T>>
         }
     }
 
-    public IEnumerator<IRunningStatistic<T>> GetEnumerator() => _statistics.GetEnumerator();
+    public void Reset()
+    {
+        Count = 0;
+        foreach (var statistic in _statistics)
+        {
+            statistic.Reset();
+        }
+    }
 
+    public IEnumerator<IRunningStatistic<T>> GetEnumerator() => _statistics.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    int IReadOnlyCollection<IRunningStatistic<T>>.Count => Convert.ToInt32(Count);
 }
