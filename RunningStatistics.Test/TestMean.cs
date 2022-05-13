@@ -60,9 +60,47 @@ namespace RunningStatistics.Test
         }
 
         [Fact]
+        public void CreateFromOther()
+        {
+            var a = new Mean();
+            var rng = new Random();
+            for (var i = 0; i < 100; i++)
+            {
+                a.Fit(rng.NextDouble());
+            }
+
+            var b = new Mean(a);
+            Assert.Equal(a.Count, b.Count);
+            Assert.Equal(a.Value, b.Value);
+
+            b.Fit(100);
+            
+            Assert.NotEqual(a.Value, b.Value);
+            Assert.Equal(a.Count + 1, b.Count);
+        }
+
+        [Fact]
+        public void StaticMergeDoesntAffectOriginals()
+        {
+            var a = new Mean();
+            var b = new Mean();
+            for (var i = 0; i < 10; i++)
+            {
+                a.Fit(100 - i);
+                b.Fit(i + 10);
+            }
+
+            var c = Mean.Merge(a, b);
+            Assert.Equal(a.Count + b.Count, c.Count);
+
+            c.Fit(12);
+            Assert.Equal(a.Count + b.Count + 1, c.Count);
+        }
+
+        [Fact]
         public void TestUnitUniform()
         {
-            var n = 1_000_000;
+            const int n = 1_000_000;
             var rng = new Random();
 
             Mean mean = new();

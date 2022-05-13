@@ -26,7 +26,7 @@ namespace RunningStatistics.Test
         [Fact]
         public void MergePartsEqualsMergeAll()
         {
-            var n = 2000;
+            const int n = 2000;
             var rng = new Random();
 
             Variance a = new(); 
@@ -56,7 +56,7 @@ namespace RunningStatistics.Test
         [Fact]
         public void TestUnitUniform()
         {
-            var n = 1_000_000;
+            const int n = 1_000_000;
             var rng = new Random();
 
             Variance variance = new();
@@ -77,7 +77,7 @@ namespace RunningStatistics.Test
         [InlineData(100.0, 100.0)]
         public void TestNormal(double mu, double sd)
         {
-            var n = 1_000_000;
+            const int n = 1_000_000;
             var rng = new Random();
 
             Variance variance = new();
@@ -110,6 +110,44 @@ namespace RunningStatistics.Test
             var realVariance = (Math.Exp(s2) - 1) * Math.Exp(2.0 * mu + s2);
 
             Assert.Equal(0.0, Utils.RelError(realVariance, (double)variance), 1);
+        }
+
+        [Fact]
+        public void CreateFromOther()
+        {
+            Variance a = new();
+            var rng = new Random();
+            
+            for (var i = 0; i < 100; i++)
+            {
+                a.Fit(rng.NextDouble());
+            }
+
+            var b = new Variance(a);
+            Assert.Equal(a.Count, b.Count);
+            Assert.Equal(a.Value, b.Value);
+
+            b.Fit(rng.NextDouble());
+            Assert.Equal(a.Count + 1, b.Count);
+            Assert.NotEqual(a.Value, b.Value);
+        }
+
+        [Fact]
+        public void StaticMergeDoesntAffectOriginals()
+        {
+            Variance a = new(), b = new();
+            var rng = new Random();
+            for (var i = 0; i < 100; i++)
+            {
+                a.Fit(rng.NextDouble());
+                b.Fit(rng.NextDouble() * 2);
+            }
+
+            var c = Variance.Merge(a, b);
+            Assert.Equal(a.Count + b.Count, c.Count);
+
+            c.Fit(rng.NextDouble());
+            Assert.Equal(a.Count + b.Count + 1, c.Count);
         }
     }
 }

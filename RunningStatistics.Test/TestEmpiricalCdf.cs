@@ -93,7 +93,7 @@ namespace RunningStatistics.Test
         [Fact]
         public void TestUnitUniform()
         {
-            const int n = 1_000_000;
+            const int n = 10_000_000;
             var rng = new Random();
 
             EmpiricalCdf o = new();
@@ -113,7 +113,7 @@ namespace RunningStatistics.Test
         [Fact]
         public void TestNormal()
         {
-            const int n = 1_000_000;
+            const int n = 10_000_000;
             var rng = new Random();
 
             EmpiricalCdf o = new();
@@ -139,7 +139,7 @@ namespace RunningStatistics.Test
         [Fact]
         public void TestLogNormal()
         {
-            const int n = 1_000_000;
+            const int n = 10_000_000;
             var rng = new Random();
             const double mu = 0.0;
             const double sd = 0.1;
@@ -158,6 +158,24 @@ namespace RunningStatistics.Test
             Assert.Equal(1.0697756729225374, o.Quantile(0.75), 1);
             Assert.Equal(1.136729360026064, o.Quantile(0.90), 1);
             Assert.Equal(1.2619205258882853, o.Quantile(0.99), 1);
+        }
+
+        [Fact]
+        public void CreateFromOther()
+        {
+            EmpiricalCdf a = new();
+            var rng = new Random();
+
+            for (var i = 0; i < 1000; i++)
+            {
+                a.Fit(rng.NextDouble());
+            }
+
+            var b = new EmpiricalCdf(a);
+            Assert.Equal(a.Count, b.Count);
+            
+            b.Fit(rng.NextDouble());
+            Assert.NotEqual(a.Count, b.Count);
         }
     }
 }

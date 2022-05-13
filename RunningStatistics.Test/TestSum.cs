@@ -66,5 +66,36 @@ namespace RunningStatistics.Test
             Assert.Equal((double) a, (double) c, 7);
             Assert.Equal(a.Mean, c.Mean, 7);
         }
+
+        [Fact]
+        public void CreateFromOther()
+        {
+            Sum a = new();
+            a.Fit(new double[]{1, 2, 3, 4});
+
+            var b = new Sum(a);
+            Assert.Equal(a.Count, b.Count);
+            Assert.Equal(a.Value, b.Value);
+            
+            b.Fit(5);
+            Assert.Equal(a.Count + 1, b.Count);
+            Assert.Equal(a.Value + 5, b.Value);
+        }
+
+        [Fact]
+        public void StaticMergeDoesntAffectOriginals()
+        {
+            Sum a = new(), b = new();
+            a.Fit(new double[]{1, 2, 3, 4, 5});
+            b.Fit(new double[]{6, 7, 8, 9, 10});
+
+            var c = Sum.Merge(a, b);
+            Assert.Equal(a.Count + b.Count, c.Count);
+            Assert.Equal(a.Value + b.Value, c.Value);
+
+            c.Fit(100);
+            Assert.Equal(a.Count + b.Count + 1, c.Count);
+            Assert.Equal(a.Value + b.Value + 100, c.Value);
+        }
     }
 }

@@ -61,9 +61,47 @@ namespace RunningStatistics.Test
         }
 
         [Fact]
+        public void CreateFromOther()
+        {
+            var a = new Moments();
+            var rng = new Random();
+            for (var i = 0; i < 100; i++)
+            {
+                a.Fit(rng.NextDouble());
+            }
+
+            var b = new Moments(a);
+            Assert.Equal(a.Count, b.Count);
+            Assert.Equal(a.Mean, b.Mean);
+
+            b.Fit(rng.NextDouble());
+
+            Assert.Equal(a.Count + 1, b.Count);
+            Assert.NotEqual(a.Kurtosis, b.Kurtosis);
+        }
+
+        [Fact]
+        public void StaticMergeDoesntAffectOriginals()
+        {
+            Moments a = new(), b = new();
+            var rng = new Random();
+            for (var i = 0; i < 100; i++)
+            {
+                a.Fit(rng.NextDouble());
+                b.Fit(rng.NextDouble());
+            }
+
+            var c = Moments.Merge(a, b);
+            Assert.Equal(a.Count + b.Count, c.Count);
+            
+            c.Fit(rng.NextDouble());
+            Assert.Equal(a.Count + b.Count + 1, c.Count);
+        }
+
+        [Fact]
         public void TestUnitUniform()
         {
-            var n = 10_000_000;
+            const int n = 10_000_000;
             var rng = new Random();
 
             var moments = new Moments();
@@ -73,10 +111,10 @@ namespace RunningStatistics.Test
                 moments.Fit(rng.NextDouble());
             }
 
-            var mean = (0.0 + 1.0 - double.Epsilon) / 2.0;
+            const double mean = (0.0 + 1.0 - double.Epsilon) / 2.0;
             var variance = Math.Pow(1.0 - double.Epsilon, 2) / 12.0;
-            var skewness = 0.0;
-            var kurtosis = -6.0 / 5.0;
+            const double skewness = 0.0;
+            const double kurtosis = -6.0 / 5.0;
 
             Assert.Equal(mean, moments.Mean, 2);
             Assert.Equal(variance, moments.Variance, 2);
@@ -89,7 +127,7 @@ namespace RunningStatistics.Test
         [InlineData(2.0, 10.0)]
         public void TestNormal(double mu, double sd)
         {
-            var n = 10_000_000;
+            const int n = 10_000_000;
             var rng = new Random();
 
             var moments = new Moments();
@@ -99,8 +137,8 @@ namespace RunningStatistics.Test
                 moments.Fit(rng.RandNorm(mu, sd));
             }
 
-            var skewness = 0.0;
-            var kurtosis = 0.0;
+            const double skewness = 0.0;
+            const double kurtosis = 0.0;
 
             Assert.Equal(0.0, Utils.RelError(mu, moments.Mean), 2);
             Assert.Equal(0.0, Utils.RelError(sd, moments.StandardDeviation), 2);
@@ -114,7 +152,7 @@ namespace RunningStatistics.Test
             const double mu = 0.0;
             const double sd = 0.5;
             const double s2 = sd * sd;
-            const int n = 50_000_000;
+            const int n = 100_000_000;
             var rng = new Random();
 
             var moments = new Moments();

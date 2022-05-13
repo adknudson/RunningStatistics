@@ -139,5 +139,45 @@ namespace RunningStatistics.Test
                 Assert.Equal(1, count);
             }
         }
+
+        [Fact]
+        public void CreateFromOther()
+        {
+            // (0.0, 0.1], (0.1, 0.5], (0.5, 0.9]
+            Histogram a = new(new []{0, 0.1, 0.5, 0.9}, leftClosed: false, endsClosed: false);
+            var rng = new Random();
+            for (var i = 0; i < 100; i++)
+            {
+                a.Fit(rng.NextDouble());
+            }
+
+            var b = new Histogram(a);
+
+            Assert.Equal(a.Count, b.Count);
+            Assert.Equal(a.OutOfBoundsCounts.Upper, b.OutOfBoundsCounts.Upper);
+            
+            b.Fit(0.99, 10);
+            Assert.Equal(a.OutOfBoundsCounts.Upper + 10, b.OutOfBoundsCounts.Upper);
+        }
+
+        [Fact]
+        public void StaticMergeDoesntAffectOriginals()
+        {
+            Histogram a = new(new []{0, 0.1, 0.5, 0.9}, leftClosed: false, endsClosed: false);
+            Histogram b = new(new []{0, 0.1, 0.5, 0.9}, leftClosed: false, endsClosed: false);
+            var rng = new Random();
+            for (var i = 0; i < 100; i++)
+            {
+                a.Fit(rng.NextDouble());
+                b.Fit(rng.NextDouble());
+            }
+
+            var c = Histogram.Merge(a, b);
+            Assert.Equal(a.Count + b.Count, c.Count);
+            Assert.Equal(a.OutOfBoundsCounts.Upper + b.OutOfBoundsCounts.Upper, c.OutOfBoundsCounts.Upper);
+
+            c.Fit(0.99, 10);
+            Assert.Equal(a.OutOfBoundsCounts.Upper + b.OutOfBoundsCounts.Upper + 10, c.OutOfBoundsCounts.Upper);
+        }
     }
 }

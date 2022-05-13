@@ -73,5 +73,46 @@ namespace RunningStatistics.Test
             
             Assert.Equal(5, a.Mode);
         }
+
+        [Fact]
+        public void CreateFromOther()
+        {
+            Countmap<int> a = new();
+            a.Fit(new [] {1, 1, 2, 3, 5, 8});
+
+            var b = new Countmap<int>(a);
+            
+            Assert.NotEmpty(b);
+            Assert.Equal(a.Count, b.Count);
+            
+            b.Fit(1);
+            Assert.Equal(2, a[1]);
+            Assert.Equal(3, b[1]);
+        }
+
+        [Fact]
+        public void StaticMergeDoesntAffectOriginals()
+        {
+            Countmap<int> a = new();
+            a.Fit(new [] {1, 1, 2, 3, 5, 8});
+
+            Countmap<int> b = new();
+            b.Fit(new []{4, 5, 8, 11});
+
+            var c = Countmap<int>.Merge(a, b);
+            Assert.Equal(a.Count + b.Count, c.Count);
+            
+            c.Fit(1);
+
+            Assert.Equal(2, a[1]);
+            Assert.Equal(1, a[8]);
+            
+            Assert.Equal(1, b[4]);
+            Assert.Equal(1, b[5]);
+            
+            Assert.Equal(3, c[1]);
+            Assert.Equal(2, c[5]);
+            Assert.Equal(2, c[8]);
+        }
     }
 }
