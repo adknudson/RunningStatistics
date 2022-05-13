@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -63,4 +64,9 @@ public class Sum : IRunningStatistic<double>
     public static explicit operator double(Sum value) => value.Value;
     
     public override string ToString() => $"{typeof(Sum)}(Σ={Value}, n={Count})";
+
+    public void Print(StreamWriter stream)
+    {
+        stream.WriteLine($"{GetType()}(Σ={Value}, n={Count})");
+    }
 }

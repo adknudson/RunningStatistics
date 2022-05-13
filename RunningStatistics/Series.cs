@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -64,4 +65,14 @@ public class Series<T> : IRunningStatistic<T>, IReadOnlyList<IRunningStatistic<T
     public IEnumerator<IRunningStatistic<T>> GetEnumerator() => _statistics.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     int IReadOnlyCollection<IRunningStatistic<T>>.Count => Convert.ToInt32(Count);
+
+    public void Print(StreamWriter stream)
+    {
+        stream.WriteLine($"{GetType()}(n={Count})");
+        foreach (var statistic in _statistics)
+        {
+            statistic.Print(stream);
+            stream.WriteLine();
+        }
+    }
 }

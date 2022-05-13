@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -92,4 +93,9 @@ public class Variance : IRunningStatistic<double>
     public override string ToString() => $"{typeof(Variance)}(ν={Value}, n={Count})";
     
     public static explicit operator double(Variance value) => value.Value;
+
+    public void Print(StreamWriter stream)
+    {
+        stream.WriteLine($"{GetType()}(σ²={Value}, n={Count})");
+    }
 }

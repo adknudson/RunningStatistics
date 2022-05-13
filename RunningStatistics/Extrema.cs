@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace RunningStatistics;
 
@@ -116,4 +117,9 @@ public class Extrema : IRunningStatistic<double>
     }
 
     public override string ToString() => $"{typeof(Extrema)}(min={Min:F2}, max={Max:F2}, n={Count})";
+
+    public void Print(StreamWriter stream)
+    {
+        stream.WriteLine($"{GetType()}(Min={Min}, Max={Max}, CountMin={CountMin}, CountMax={CountMax}, n={Count}");
+    }
 }

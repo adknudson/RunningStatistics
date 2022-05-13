@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace RunningStatistics;
 
@@ -115,4 +117,28 @@ public class EmpiricalCdf : IRunningStatistic<double>
     }
     
     public override string ToString() => $"{typeof(EmpiricalCdf)}(n={Count})";
+
+    public void Print(StreamWriter stream)
+    {
+        Print(stream, NumBins);
+    }
+
+    public void Print(StreamWriter stream, char sep)
+    {
+        Print(stream, NumBins, sep);
+    }
+
+    public void Print(StreamWriter stream, int numQuantiles, char sep = '\t')
+    {
+        var quantiles = Enumerable.Range(0, numQuantiles)
+            .Select(p => (double) p / (numQuantiles - 1))
+            .ToList();
+        var values = quantiles.Select(Quantile);
+        
+        stream.WriteLine($"{GetType()}(n={Count})");
+        foreach (var (q, x) in quantiles.Zip(values))
+        {
+            stream.WriteLine($"{q:F3}{sep}{x}");
+        }
+    }
 }
