@@ -24,7 +24,7 @@ The `IRunningStatistic<T>` interface provides the following members:
 ```csharp
 public interface IRunningStatistic<TObs>
 {
-    public long Count { get; }
+    public nint Count { get; }
 
     public void Fit(IEnumerable<TObs> values);
 
