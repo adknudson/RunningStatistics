@@ -25,15 +25,16 @@ public class Extrema : IRunningStatistic<double>
         Max = other.Max;
         CountMin = other.CountMin;
         CountMax = other.CountMax;
+        Count = other.Count;
     }
     
 
-    public int CountMin { get; private set; }
-    public int CountMax { get; private set; }
+    public nint CountMin { get; private set; }
+    public nint CountMax { get; private set; }
     public double Max { get; private set; }
     public double Min { get; private set; }
     public double Range => Max - Min;
-    public long Count { get; private set; }
+    public nint Count { get; private set; }
 
 
     public void Fit(IEnumerable<double> values)

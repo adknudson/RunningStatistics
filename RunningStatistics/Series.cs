@@ -17,15 +17,18 @@ public class Series<T> : IRunningStatistic<T>, IReadOnlyList<IRunningStatistic<T
     }
     
     
-    public long Count { get; private set; }
+    public nint Count { get; private set; }
     public IRunningStatistic<T> this[int index] => _statistics[index];
 
 
     public void Fit(IEnumerable<T> values)
     {
-        foreach (var value in values)
+        var ys = values.ToList();
+        Count += ys.Count;
+
+        foreach (var statistic in _statistics)
         {
-            Fit(value);
+            statistic.Fit(ys);
         }
     }
 

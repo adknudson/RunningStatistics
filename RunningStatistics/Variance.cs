@@ -23,7 +23,7 @@ public class Variance : IRunningStatistic<double>
     }
     
 
-    public long Count { get; private set; }
+    public nint Count { get; private set; }
 
     /// <summary>
     /// Returns the bias-corrected variance.

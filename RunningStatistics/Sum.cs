@@ -21,8 +21,8 @@ public class Sum : IRunningStatistic<double>
     }
     
 
-    public long Count { get; private set; }
-    public double Value { get; set; }
+    public nint Count { get; private set; }
+    public double Value { get; private set; }
     public double Mean => Value / Count;
 
 
@@ -50,7 +50,7 @@ public class Sum : IRunningStatistic<double>
     public static Sum Merge(Sum a, Sum b)
     {
         var c = new Sum(a);
-        c.Merge(a);
+        c.Merge(b);
         return c;
     }
 

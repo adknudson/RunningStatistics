@@ -24,7 +24,7 @@ public class Mean : IRunningStatistic<double>
     }
     
 
-    public long Count { get; private set; }
+    public nint Count { get; private set; }
 
     public double Value
     {

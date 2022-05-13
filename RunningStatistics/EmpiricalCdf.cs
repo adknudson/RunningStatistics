@@ -29,11 +29,11 @@ public class EmpiricalCdf : IRunningStatistic<double>
     }
 
 
-    public long Count => _extrema.Count;
+    public nint Count => _extrema.Count;
     public double Median => Quantile(0.5);
     public double Min => _extrema.Min;
     public double Max => _extrema.Max;
-    internal int NumBins { get; }
+    private int NumBins { get; }
 
     
     public void Fit(IEnumerable<double> values)
@@ -46,7 +46,7 @@ public class EmpiricalCdf : IRunningStatistic<double>
 
     public void Fit(double value)
     {
-        var i = (int) (Count % NumBins);
+        var i = (Count % NumBins);
         var bufferCount = i + 1;
         _buffer[i] = value;
         
