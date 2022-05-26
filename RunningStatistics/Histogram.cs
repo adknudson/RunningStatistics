@@ -160,27 +160,7 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
         _outOfBounds.Reset();
     }
 
-    public long NumValuesLessThan(double value)
-    {
-        return Bins.Where(bin => bin.Upper < value).Sum(bin => bin.Count);
-    }
-
-    public long NumValuesLessThanOrEqualTo(double value)
-    {
-        return Bins.Where(bin => bin.Upper <= value).Sum(bin => bin.Count);
-    }
-
-    public long NumValuesGreaterThan(double value)
-    {
-        return Bins.Where(bin => bin.Lower > value).Sum(bin => bin.Count);
-    }
-
-    public long NumValuesGreaterThanOrEqualTo(double value)
-    {
-        return Bins.Where(bin => bin.Lower >= value).Sum(bin => bin.Count);
-    }
-
-
+    
     public IEnumerator<(string BinName, long Count)> GetEnumerator()
     {
         return Bins.Select(bin => (bin.BinName, bin.Count)).GetEnumerator();
@@ -289,7 +269,6 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
         public double Upper { get; }
         public bool ClosedLeft { get; }
         public bool ClosedRight { get; }
-
         public double Midpoint => (Upper + Lower) / 2;
 
 
