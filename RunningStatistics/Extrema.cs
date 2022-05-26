@@ -9,6 +9,9 @@ namespace RunningStatistics;
 /// </summary>
 public class Extrema : IRunningStatistic<double>
 {
+    /// <summary>
+    /// Square root of machine epsilon.
+    /// </summary>
     private const double Tolerance = 1.4901161193847656e-8;
 
 
@@ -30,12 +33,12 @@ public class Extrema : IRunningStatistic<double>
     }
     
 
-    public nint CountMin { get; private set; }
-    public nint CountMax { get; private set; }
+    public long CountMin { get; private set; }
+    public long CountMax { get; private set; }
     public double Max { get; private set; }
     public double Min { get; private set; }
     public double Range => Max - Min;
-    public nint Count { get; private set; }
+    public long Count { get; private set; }
 
 
     public void Fit(IEnumerable<double> values)

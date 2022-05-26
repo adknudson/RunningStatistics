@@ -18,7 +18,7 @@ public class Series<T> : IRunningStatistic<T>, IReadOnlyList<IRunningStatistic<T
     }
     
     
-    public nint Count { get; private set; }
+    public long Count { get; private set; }
     public IRunningStatistic<T> this[int index] => _statistics[index];
 
 

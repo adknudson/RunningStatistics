@@ -9,7 +9,7 @@ namespace RunningStatistics;
 /// <summary>
 /// A histogram with bin partitions defined by edges.
 /// </summary>
-public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName, nint Count)>
+public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName, long Count)>
 {
     private OutOfBounds _outOfBounds = new();
 
@@ -50,8 +50,8 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
     }
 
 
-    public nint Count { get; private set; }
-    public (nint Lower, nint Upper) OutOfBoundsCounts => _outOfBounds.Counts;
+    public long Count { get; private set; }
+    public (long Lower, long Upper) OutOfBoundsCounts => _outOfBounds.Counts;
     private int NumBins => Bins.Count;
     private IList<Bin> Bins { get; }
 
@@ -69,7 +69,7 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
         Fit(value, 1);
     }
 
-    public void Fit(double value, nint k)
+    public void Fit(double value, long k)
     {
         Count += k;
         
@@ -160,28 +160,28 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
         _outOfBounds.Reset();
     }
 
-    public nint NumValuesLessThan(double value)
+    public long NumValuesLessThan(double value)
     {
-        return (nint) Bins.Where(bin => bin.Upper < value).Sum(bin => bin.Count);
+        return Bins.Where(bin => bin.Upper < value).Sum(bin => bin.Count);
     }
 
-    public nint NumValuesLessThanOrEqualTo(double value)
+    public long NumValuesLessThanOrEqualTo(double value)
     {
-        return (nint) Bins.Where(bin => bin.Upper <= value).Sum(bin => bin.Count);
+        return Bins.Where(bin => bin.Upper <= value).Sum(bin => bin.Count);
     }
 
-    public nint NumValuesGreaterThan(double value)
+    public long NumValuesGreaterThan(double value)
     {
-        return (nint) Bins.Where(bin => bin.Lower > value).Sum(bin => bin.Count);
+        return Bins.Where(bin => bin.Lower > value).Sum(bin => bin.Count);
     }
 
-    public nint NumValuesGreaterThanOrEqualTo(double value)
+    public long NumValuesGreaterThanOrEqualTo(double value)
     {
-        return (nint) Bins.Where(bin => bin.Lower >= value).Sum(bin => bin.Count);
+        return Bins.Where(bin => bin.Lower >= value).Sum(bin => bin.Count);
     }
 
 
-    public IEnumerator<(string BinName, nint Count)> GetEnumerator()
+    public IEnumerator<(string BinName, long Count)> GetEnumerator()
     {
         return Bins.Select(bin => (bin.BinName, bin.Count)).GetEnumerator();
     }
@@ -226,9 +226,9 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
         }
 
         
-        private nint Lower { get; set; }
-        private nint Upper { get; set; }
-        public (nint, nint) Counts => (Lower, Upper);
+        private long Lower { get; set; }
+        private long Upper { get; set; }
+        public (long, long) Counts => (Lower, Upper);
 
         
         public void Reset()
@@ -237,7 +237,7 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
             Upper = 0;
         }
 
-        public void Update(int index, nint k)
+        public void Update(int index, long k)
         {
             if (index >= 0)
             {
@@ -283,7 +283,7 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
         }
         
         
-        public nint Count { get; private set; }
+        public long Count { get; private set; }
         public string BinName { get; }
         public double Lower { get; }
         public double Upper { get; }
@@ -328,7 +328,7 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
             Count += other.Count;
         }
 
-        public void Increment(nint k = 1)
+        public void Increment(long k = 1)
         {
             Count += k;
         }

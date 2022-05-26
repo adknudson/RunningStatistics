@@ -6,7 +6,7 @@ namespace RunningStatistics;
 
 internal static class Utils
 {
-    internal static double BesselCorrection(nint n)
+    internal static double BesselCorrection(long n)
     {
         return (double) n / (n - 1);
     }

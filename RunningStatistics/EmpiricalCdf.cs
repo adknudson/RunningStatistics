@@ -31,7 +31,7 @@ public class EmpiricalCdf : IRunningStatistic<double>
     }
 
 
-    public nint Count => _extrema.Count;
+    public long Count => _extrema.Count;
     public double Median => Quantile(0.5);
     public double Min => _extrema.Min;
     public double Max => _extrema.Max;

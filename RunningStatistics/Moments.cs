@@ -31,7 +31,7 @@ public class Moments : IRunningStatistic<double>
     }
     
 
-    public nint Count { get; private set; }
+    public long Count { get; private set; }
     public double Mean => Count == 0 ? double.NaN : _mean;
 
     /// <summary>
