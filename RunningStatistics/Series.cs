@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -6,9 +5,12 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public class Series<T> : IRunningStatistic<T>, IReadOnlyList<IRunningStatistic<T>>
+/// <summary>
+/// A collection of <see cref="IRunningStatistic{TObs}"/>s that all get fit to the same observations.
+/// </summary>
+public class Series<T> : IRunningStatistic<T>, IEnumerable<IRunningStatistic<T>>
 {
-    private readonly List<IRunningStatistic<T>> _statistics;
+    private readonly IList<IRunningStatistic<T>> _statistics;
 
 
     public Series(params IRunningStatistic<T>[] statistics)
@@ -64,7 +66,6 @@ public class Series<T> : IRunningStatistic<T>, IReadOnlyList<IRunningStatistic<T
 
     public IEnumerator<IRunningStatistic<T>> GetEnumerator() => _statistics.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    int IReadOnlyCollection<IRunningStatistic<T>>.Count => Convert.ToInt32(Count);
 
     public void Print(StreamWriter stream)
     {
