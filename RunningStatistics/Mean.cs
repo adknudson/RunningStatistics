@@ -68,7 +68,7 @@ public class Mean : IRunningStatistic<double>
     }
     
     
-    public static explicit operator double(Mean value) => value.Value;
+    public static implicit operator double(Mean value) => value.Value;
     
     public override string ToString() => $"{typeof(Mean)}(μ={Value}, n={Count})";
 
