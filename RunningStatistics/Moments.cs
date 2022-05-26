@@ -60,7 +60,7 @@ public class Moments : IRunningStatistic<double>
     }
 
     /// <summary>
-    /// Returns the (excess) kurtosis.
+    /// Returns the excess kurtosis.
     /// </summary>
     public double Kurtosis
     {

@@ -11,17 +11,24 @@ namespace RunningStatistics;
 /// of zero, however a new key will not be added to the internal dictionary.
 /// </summary>
 /// <typeparam name="T">The observation type.</typeparam>
-public class Countmap<T> : IRunningStatistic<T>, IReadOnlyDictionary<T, long>
+public class Countmap<T> : IRunningStatistic<T>, IEnumerable<KeyValuePair<T, long>>
 {
     private readonly IDictionary<T, long> _counter;
 
 
+    /// <summary>
+    /// Create a new, empty Countmap.
+    /// </summary>
     public Countmap()
     {
         _counter = new Dictionary<T, long>();
         Count = 0;
     }
 
+    /// <summary>
+    /// Create a copy of an existing Countmap.
+    /// </summary>
+    /// <param name="other"></param>
     public Countmap(Countmap<T> other)
     {
         _counter = new Dictionary<T, long>(other._counter);
@@ -87,25 +94,15 @@ public class Countmap<T> : IRunningStatistic<T>, IReadOnlyDictionary<T, long>
     public IEnumerable<T> Keys => _counter.Keys;
     public IEnumerable<long> Values => _counter.Values;
     
-    
-    /// <summary>
-    /// This will always return <c>true</c>. It will either return the count for the given key, or return 0.
-    /// For this reason, you should use an indexer and check if the count is non-zero.
-    /// </summary>
-    bool IReadOnlyDictionary<T, long>.TryGetValue(T key, out long value)
-    {
-        if (!_counter.TryGetValue(key, out value))
-        {
-            value = 0;
-        }
-
-        return true;
-    }
 
     /// <summary>
     /// Returns <c>true</c> if the key has been observed, and <c>false</c> otherwise. 
     /// </summary>
     public bool ContainsKey(T key) => _counter.ContainsKey(key);
+    
+    /// <summary>
+    /// Normalize the counts so that the values represent a probability distribution (sum to 1).
+    /// </summary>
     public IEnumerable<double> Probabilities => Values.Select(s => (double) s / Count);
 
     /// <summary>
@@ -113,12 +110,6 @@ public class Countmap<T> : IRunningStatistic<T>, IReadOnlyDictionary<T, long>
     /// </summary>
     public SortedDictionary<T, long> AsSortedDictionary() => new(_counter);
 
-    /// <summary>
-    /// Please use the <see cref="Count"/> property as it uses an Int64 value to store the count. This method will
-    /// throw an exception if the count is too big for an Int32.
-    /// </summary>
-    int IReadOnlyCollection<KeyValuePair<T, long>>.Count => Convert.ToInt32(Count);
-    
     public IEnumerator<KeyValuePair<T, long>> GetEnumerator() => _counter.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     
