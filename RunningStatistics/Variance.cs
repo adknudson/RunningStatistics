@@ -92,7 +92,7 @@ public class Variance : IRunningStatistic<double>
 
     public override string ToString() => $"{typeof(Variance)}(ν={Value}, n={Count})";
     
-    public static implicit operator double(Variance value) => value.Value;
+    public static explicit operator double(Variance value) => value.Value;
 
     public void Print(StreamWriter stream)
     {

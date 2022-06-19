@@ -13,7 +13,7 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
 {
     private OutOfBounds _outOfBounds = new();
 
-
+    
     public Histogram(IEnumerable<double> edges, bool leftClosed = true, bool endsClosed = true)
     {
         var es = edges.OrderBy(e => e).ToList();
@@ -159,8 +159,8 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
         }
         _outOfBounds.Reset();
     }
-
     
+
     public IEnumerator<(string BinName, long Count)> GetEnumerator()
     {
         return Bins.Select(bin => (bin.BinName, bin.Count)).GetEnumerator();
@@ -269,6 +269,7 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
         public double Upper { get; }
         public bool ClosedLeft { get; }
         public bool ClosedRight { get; }
+
         public double Midpoint => (Upper + Lower) / 2;
 
 

@@ -61,7 +61,7 @@ public class Sum : IRunningStatistic<double>
         Value = 0;
     }
 
-    public static implicit operator double(Sum value) => value.Value;
+    public static explicit operator double(Sum value) => value.Value;
     
     public override string ToString() => $"{typeof(Sum)}(Σ={Value}, n={Count})";
 
