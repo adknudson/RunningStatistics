@@ -1,20 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
 
-public class Normal : IRunningStatistic<double>
+public class Normal : IRunningStatistic<double, (double Mean, double Variance), Normal>
 {
-    private readonly Mean _mean = new();
-    private readonly Variance _variance = new();
+    private readonly Mean _mean;
+    private readonly Variance _variance;
 
 
-    public long Count => _mean.Count;
+
+    public Normal()
+    {
+        _mean = new Mean();
+        _variance = new Variance();
+    }
+    
+    private Normal(Normal other)
+    {
+        _mean = other._mean.Clone();
+        _variance = other._variance.Clone();
+    }
+
+    
+
+    public long Nobs => _mean.Nobs;
+
+    public (double Mean, double Variance) Value => (Mean, Variance);
+
     public double Mean => _mean.Value;
+    
     public double Variance => _variance.Value;
+    
     public double StandardDeviation => Math.Sqrt(_variance.Value);
+    
     
     
     public void Fit(IEnumerable<double> values)
@@ -36,16 +56,32 @@ public class Normal : IRunningStatistic<double>
         _variance.Reset();
     }
 
-    public void Merge(IRunningStatistic<double> other)
+    public void Merge(Normal normal)
     {
-        if (other is not Normal normal) return;
-
         _mean.Merge(normal._mean);
         _variance.Merge(normal._variance);
     }
 
-    public void Print(StreamWriter stream)
+    public static Normal Merge(Normal first, Normal second)
     {
-        stream.WriteLine($"{GetType()}(μ={Mean}, σ²={Variance}, n={Count}");
+        var stat = first.CloneEmpty();
+        stat.Merge(first);
+        stat.Merge(second);
+        return stat;
+    }
+
+    public Normal CloneEmpty()
+    {
+        return new Normal();
+    }
+
+    public Normal Clone()
+    {
+        return new Normal(this);
+    }
+
+    public override string ToString()
+    {
+        return $"{typeof(Normal)}(μ={Mean}, σ²={Variance}, n={Nobs}";
     }
 }

@@ -9,7 +9,7 @@ namespace RunningStatistics.Test
         public void EmptyMomentsAreNaN()
         {
             Moments moments = new();
-            var (mean, variance, skewness, kurtosis) = moments.Values;
+            var (mean, variance, skewness, kurtosis) = moments.Value;
 
             Assert.Equal(double.NaN, mean);
             Assert.Equal(double.NaN, variance);
@@ -21,7 +21,7 @@ namespace RunningStatistics.Test
         public void MergeEmptyAreNaN()
         {
             Moments a = new(); Moments b = new(); a.Merge(b);
-            var (mean, variance, skewness, kurtosis) = a.Values;
+            var (mean, variance, skewness, kurtosis) = a.Value;
 
             Assert.Equal(double.NaN, mean);
             Assert.Equal(double.NaN, variance);
@@ -61,26 +61,6 @@ namespace RunningStatistics.Test
         }
 
         [Fact]
-        public void CreateFromOther()
-        {
-            var a = new Moments();
-            var rng = new Random();
-            for (var i = 0; i < 100; i++)
-            {
-                a.Fit(rng.NextDouble());
-            }
-
-            var b = new Moments(a);
-            Assert.Equal(a.Count, b.Count);
-            Assert.Equal(a.Mean, b.Mean);
-
-            b.Fit(rng.NextDouble());
-
-            Assert.Equal(a.Count + 1, b.Count);
-            Assert.NotEqual(a.Kurtosis, b.Kurtosis);
-        }
-
-        [Fact]
         public void StaticMergeDoesntAffectOriginals()
         {
             Moments a = new(), b = new();
@@ -92,10 +72,10 @@ namespace RunningStatistics.Test
             }
 
             var c = Moments.Merge(a, b);
-            Assert.Equal(a.Count + b.Count, c.Count);
+            Assert.Equal(a.Nobs + b.Nobs, c.Nobs);
             
             c.Fit(rng.NextDouble());
-            Assert.Equal(a.Count + b.Count + 1, c.Count);
+            Assert.Equal(a.Nobs + b.Nobs + 1, c.Nobs);
         }
 
         [Fact]

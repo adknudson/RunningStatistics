@@ -1,72 +1,63 @@
 ﻿using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using System.Numerics;
 
 namespace RunningStatistics;
 
-/// <summary>
-/// Tracks the overall sum, stored as a <see cref="double"/>.
-/// </summary>
-public class Sum : IRunningStatistic<double>
+public class Sum<TObs> : IRunningStatistic<TObs, TObs, Sum<TObs>> where TObs : INumber<TObs>
 {
-    public Sum()
-    {
-        Value = 0;
-        Count = 0;
-    }
+    public long Nobs { get; protected set; }
 
-    public Sum(Sum other)
-    {
-        Value = other.Value;
-        Count = other.Count;
-    }
+    public TObs Value { get; protected set; } = TObs.Zero;
+
     
-
-    public long Count { get; private set; }
-    public double Value { get; private set; }
-    public double Mean => Value / Count;
-
-
-    public void Fit(double value)
+    
+    public virtual void Fit(IEnumerable<TObs> values)
     {
-        Count += 1;
+        foreach (var value in values)
+        {
+            Fit(value);
+        }
+    }
+
+    public void Fit(TObs value)
+    {
+        Nobs++;
         Value += value;
-    }
-
-    public void Fit(IEnumerable<double> values)
-    {
-        var ys = values.ToList();
-        Count += ys.Count;
-        Value += ys.Sum();
-    }
-
-    public void Merge(IRunningStatistic<double> other)
-    {
-        if (other is not Sum sum) return;
-        
-        Count += sum.Count;
-        Value += sum.Value;
-    }
-
-    public static Sum Merge(Sum a, Sum b)
-    {
-        var c = new Sum(a);
-        c.Merge(b);
-        return c;
     }
 
     public void Reset()
     {
-        Count = 0;
-        Value = 0;
+        Nobs = 0;
+        Value = TObs.Zero;
     }
 
-    public static explicit operator double(Sum value) => value.Value;
-    
-    public override string ToString() => $"{typeof(Sum)}(Σ={Value}, n={Count})";
-
-    public void Print(StreamWriter stream)
+    public void Merge(Sum<TObs> sum)
     {
-        stream.WriteLine($"{GetType()}(Σ={Value}, n={Count})");
+        Nobs += sum.Nobs;
+        Value += sum.Value;
     }
+
+    public static Sum<TObs> Merge(Sum<TObs> first, Sum<TObs> second)
+    {
+        var stat = first.CloneEmpty();
+        stat.Merge(first);
+        stat.Merge(second);
+        return stat;
+    }
+
+    public Sum<TObs> CloneEmpty()
+    {
+        return new Sum<TObs>();
+    }
+
+    public Sum<TObs> Clone()
+    {
+        return new Sum<TObs>()
+        {
+            Nobs = Nobs,
+            Value = Value
+        };
+    }
+
+    public override string ToString() => $"{typeof(Sum<TObs>)}(Σ={Value}, n={Nobs})";
 }

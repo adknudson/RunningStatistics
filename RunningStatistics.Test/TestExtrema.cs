@@ -59,24 +59,9 @@ namespace RunningStatistics.Test
             a.Merge(b);
 
             Assert.Equal(a.Min, c.Min);
-            Assert.Equal(a.CountMin, c.CountMin);
+            Assert.Equal(a.MinCount, c.MinCount);
             Assert.Equal(a.Max, c.Max);
-            Assert.Equal(a.CountMax, c.CountMax);
-        }
-
-        [Fact]
-        public void CreateFromOther()
-        {
-            Extrema a = new();
-            a.Fit(new double[] {1, 1, 2, 3, 5, 8, 13, 21, 34});
-
-            var b = new Extrema(a);
-            
-            Assert.Equal(a.Min, b.Min);
-            Assert.Equal(a.Max, b.Max);
-            Assert.Equal(a.CountMin, b.CountMin);
-            Assert.Equal(a.CountMax, b.CountMax);
-            Assert.Equal(a.Count, b.Count);
+            Assert.Equal(a.MaxCount, c.MaxCount);
         }
 
         [Fact]

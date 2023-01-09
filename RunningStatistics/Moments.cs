@@ -1,43 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace RunningStatistics;
 
 /// <summary>
 /// Tracks the first four non-central moments, stored as a <see cref="double"/>.
 /// </summary>
-public class Moments : IRunningStatistic<double>
+public class Moments : IRunningStatistic<double, (double Mean, double Variance, double Skewness, double ExcessKurtosis), Moments>
 {
     private double _mean, _variance, _skewness, _kurtosis;
 
+    
 
     public Moments()
     {
-        Count = 0;
+        Nobs = 0;
         _mean = 0;
         _variance = 0;
         _skewness = 0;
         _kurtosis = 0;
     }
 
-    public Moments(Moments other)
-    {
-        Count = other.Count;
-        _mean = other._mean;
-        _variance = other._variance;
-        _skewness = other._skewness;
-        _kurtosis = other._kurtosis;
-    }
     
 
-    public long Count { get; private set; }
-    public double Mean => Count == 0 ? double.NaN : _mean;
+    public long Nobs { get; private set; }
+    
+    public double Mean => Nobs == 0 ? double.NaN : _mean;
 
     /// <summary>
     /// The bias-corrected variance.
     /// </summary>
-    public double Variance => Count == 0 ? double.NaN : Utils.BesselCorrection(Count) * (_variance - _mean * _mean);
+    public double Variance => Nobs == 0 ? double.NaN : Utils.BesselCorrection(Nobs) * (_variance - _mean * _mean);
 
     /// <summary>
     /// The sample standard deviation.
@@ -48,7 +41,7 @@ public class Moments : IRunningStatistic<double>
     {
         get
         {
-            if (Count == 0)
+            if (Nobs == 0)
             {
                 return double.NaN;
             }
@@ -59,14 +52,11 @@ public class Moments : IRunningStatistic<double>
         }
     }
 
-    /// <summary>
-    /// Returns the (excess) kurtosis.
-    /// </summary>
     public double Kurtosis
     {
         get
         {
-            if (Count == 0)
+            if (Nobs == 0)
             {
                 return double.NaN;
             }
@@ -75,14 +65,17 @@ public class Moments : IRunningStatistic<double>
             var mean4 = mean2 * mean2;
             var variance = _variance - mean2;
 
-            return (_kurtosis - 4.0 * _mean * _skewness + 6.0 * mean2 * _variance - 3.0 * mean4)
-                / (variance * variance) - 3.0;
+            return (_kurtosis - 4.0 * _mean * _skewness + 6.0 * mean2 * _variance - 3.0 * mean4) / (variance * variance);
         }
     }
+    
+    public double ExcessKurtosis => Kurtosis - 3;
 
-    public (double Mean, double Variance, double Skewness, double Kurtosis) Values =>
-        (Mean, Variance, Skewness, Kurtosis);
+    public (double Mean, double Variance, double Skewness, double ExcessKurtosis) Value =>
+        (Mean, Variance, Skewness, ExcessKurtosis);
 
+    
+    
     public void Fit(IEnumerable<double> values)
     {
         foreach (var value in values)
@@ -93,9 +86,9 @@ public class Moments : IRunningStatistic<double>
 
     public void Fit(double value)
     {
-        Count++;
+        Nobs++;
 
-        var g = 1.0 / Count;
+        var g = 1.0 / Nobs;
         var y2 = value * value;
 
         _mean = Utils.Smooth(_mean, value, g);
@@ -106,46 +99,53 @@ public class Moments : IRunningStatistic<double>
 
     public void Reset()
     {
-        Count = 0;
+        Nobs = 0;
         _mean = 0;
         _variance = 0;
         _skewness = 0;
         _kurtosis = 0;
     }
 
-    public void Merge(IRunningStatistic<double> other)
+    public void Merge(Moments moments)
     {
-        if (other is not Moments moments) return;
-        
-        Count += moments.Count;
+        Nobs += moments.Nobs;
 
-        if (Count <= 0) return;
+        if (Nobs <= 0) return;
 
-        var g = (double) moments.Count / Count;
+        var g = (double) moments.Nobs / Nobs;
         _mean = Utils.Smooth(_mean, moments._mean, g);
         _variance = Utils.Smooth(_variance, moments._variance, g);
         _skewness = Utils.Smooth(_skewness, moments._skewness, g);
         _kurtosis = Utils.Smooth(_kurtosis, moments._kurtosis, g);
     }
 
-    public static Moments Merge(Moments a, Moments b)
+    public static Moments Merge(Moments first, Moments second)
     {
-        var c = new Moments(a);
-        c.Merge(b);
-        return c;
+        var stat = first.CloneEmpty();
+        stat.Merge(first);
+        stat.Merge(second);
+        return stat;
+    }
+
+    public Moments CloneEmpty()
+    {
+        return new Moments();
+    }
+
+    public Moments Clone()
+    {
+        return new Moments()
+        {
+            Nobs = Nobs,
+            _mean = _mean,
+            _variance = _variance,
+            _skewness = _skewness,
+            _kurtosis = _kurtosis,
+        };
     }
 
     public override string ToString()
     {
-        return $"{typeof(Moments)}(M=[{Mean:F2}, {Variance:F2}, {Skewness:F2}, {Kurtosis:F2}], n={Count})";
-    }
-
-    public void Print(StreamWriter stream)
-    {
-        stream.WriteLine($"{GetType()}(n={Count})");
-        stream.WriteLine($"\tMean={Mean}");
-        stream.WriteLine($"\tVariance={Variance}");
-        stream.WriteLine($"\tSkewness={Skewness}");
-        stream.WriteLine($"\tKurtosis={Kurtosis}");
+        return $"{typeof(Moments)}(M=[{Mean:F2}, {Variance:F2}, {Skewness:F2}, {ExcessKurtosis:F2}], n={Nobs})";
     }
 }

@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -10,26 +8,39 @@ namespace RunningStatistics;
 /// A dictionary that maps unique values to its number of occurrences. Accessing a non-existent key will return a count
 /// of zero, however a new key will not be added to the internal dictionary.
 /// </summary>
-/// <typeparam name="T">The observation type.</typeparam>
-public class Countmap<T> : IRunningStatistic<T>, IReadOnlyDictionary<T, long>
+public class Countmap<TObs> : 
+    IReadOnlyDictionary<TObs, long>, 
+    IRunningStatistic<TObs, IDictionary<TObs, long>, Countmap<TObs>> 
+    where TObs : notnull
 {
-    private readonly IDictionary<T, long> _counter;
-
-
     public Countmap()
     {
-        _counter = new Dictionary<T, long>();
-        Count = 0;
+        Value = new Dictionary<TObs, long>();
+        Nobs = 0;
     }
+    
+    
+    
+    public long Nobs { get; private set; }
 
-    public Countmap(Countmap<T> other)
-    {
-        _counter = new Dictionary<T, long>(other._counter);
-        Count = other.Count;
-    }
+    public IDictionary<TObs, long> Value { get; }
+    
+    /// <summary>
+    /// The number of unique observations in the countmap.
+    /// </summary>
+    public int Count => Value.Count;
+    
+    public long this[TObs key] => Value.TryGetValue(key, out var value) ? value : 0;
 
+    public IEnumerable<TObs> Keys => Value.Keys;
 
-    public void Fit(IEnumerable<T> values)
+    public IEnumerable<long> Values => Value.Values;
+
+    public TObs Mode => Value.MaxBy(kvp => kvp.Value).Key;
+
+    
+    
+    public void Fit(IEnumerable<TObs> values)
     {
         foreach (var value in values)
         {
@@ -37,105 +48,88 @@ public class Countmap<T> : IRunningStatistic<T>, IReadOnlyDictionary<T, long>
         }
     }
 
-    public void Fit(T value)
+    public void Fit(TObs value)
     {
         Fit(value, 1);
     }
 
-    public void Fit(T obs, long k)
+    public void Fit(TObs obs, long k)
     {
-        Count += k;
+        Nobs += k;
 
-        if (_counter.ContainsKey(obs))
+        if (Value.ContainsKey(obs))
         {
-            _counter[obs] += k;
+            Value[obs] += k;
         }
         else
         {
-            _counter[obs] = k;
+            Value[obs] = k;
         }
     }
 
-    public void Merge(IRunningStatistic<T> other)
+    public void Merge(Countmap<TObs> countmap)
     {
-        if (other is not Countmap<T> countmap) return;
-        
-        foreach (var (key, value) in countmap._counter)
+        foreach (var (key, value) in countmap.Value)
         {
             Fit(key, value);
         }
     }
 
-    public static Countmap<T> Merge(Countmap<T> a, Countmap<T> b)
-    {
-        var c = new Countmap<T>(a);
-        c.Merge(b);
-        return c;
-    }
-
     public void Reset()
     {
-        _counter.Clear();
-        Count = 0;
+        Value.Clear();
+        Nobs = 0;
     }
 
-
-
-    public long Count { get; private set; }
-    public T Mode => _counter.Aggregate((x, y) => x.Value > y.Value ? x : y).Key;
-    public long this[T key] => _counter.TryGetValue(key, out var value) ? value : 0;
-    public IEnumerable<T> Keys => _counter.Keys;
-    public IEnumerable<long> Values => _counter.Values;
-    
-    
-    /// <summary>
-    /// This will always return <c>true</c>. It will either return the count for the given key, or return 0.
-    /// For this reason, you should use an indexer and check if the count is non-zero.
-    /// </summary>
-    bool IReadOnlyDictionary<T, long>.TryGetValue(T key, out long value)
+    public Countmap<TObs> CloneEmpty()
     {
-        if (!_counter.TryGetValue(key, out value))
+        return new Countmap<TObs>();
+    }
+
+    public Countmap<TObs> Clone()
+    {
+        var countmap = new Countmap<TObs>();
+        
+        foreach (var (key, nobs) in Value)
         {
-            value = 0;
+            countmap.Fit(key, nobs);
         }
 
-        return true;
+        return countmap;
     }
 
-    /// <summary>
-    /// Returns <c>true</c> if the key has been observed, and <c>false</c> otherwise. 
-    /// </summary>
-    public bool ContainsKey(T key) => _counter.ContainsKey(key);
-    public IEnumerable<double> Probabilities => Values.Select(s => (double) s / Count);
+    public static Countmap<TObs> Merge(Countmap<TObs> first, Countmap<TObs> second)
+    {
+        var stat = first.CloneEmpty();
+        stat.Merge(first);
+        stat.Merge(second);
+        return stat;
+    }
 
-    /// <summary>
-    /// Return the counter as a <see cref="SortedDictionary{TKey,TValue}"/>, sorted by the keys.
-    /// </summary>
-    public SortedDictionary<T, long> AsSortedDictionary() => new(_counter);
+    public bool ContainsKey(TObs key) => Value.ContainsKey(key);
 
-    /// <summary>
-    /// Please use the <see cref="Count"/> property as it uses an Int64 value to store the count. This method will
-    /// throw an exception if the count is too big for an Int32.
-    /// </summary>
-    int IReadOnlyCollection<KeyValuePair<T, long>>.Count => Convert.ToInt32(Count);
+
     
-    public IEnumerator<KeyValuePair<T, long>> GetEnumerator() => _counter.GetEnumerator();
+    public IDictionary<TObs, long> AsDictionary() => Value;
+
+    public Dictionary<TObs, long> ToDictionary() => new(Value);
+
+    public SortedDictionary<TObs, long> ToSortedDictionary() => new(Value);
+
+    public IEnumerable<(TObs Value, double Probability)> ValueProbabilityPairs()
+    {
+        foreach (var (value, count) in Value)
+        {
+            yield return (value, (double) count / Nobs);
+        }
+    }
+
+    public bool TryGetValue(TObs key, out long value) => Value.TryGetValue(key, out value);
+    
+    public IEnumerator<KeyValuePair<TObs, long>> GetEnumerator() => Value.GetEnumerator();
+
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     
-    public override string ToString() => $"{typeof(Countmap<T>)}(n={Count})";
+    public override string ToString() => $"{typeof(Countmap<TObs>)}(n={Nobs}) with {Value.Keys.Count} unique values.";
 
-    public void Print(StreamWriter stream)
-    {
-        Print(stream, '\t');
-    }
-    
-    public void Print(StreamWriter stream, char sep)
-    {
-        stream.WriteLine($"{GetType()}(n={Count})");
-        stream.WriteLine($"Key{sep}Count");
-        foreach (var (key, count) in AsSortedDictionary())
-        {
-            stream.WriteLine($"{key}{sep}{count}");
-        }
-    }
 }

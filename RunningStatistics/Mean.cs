@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -7,73 +6,78 @@ namespace RunningStatistics;
 /// <summary>
 /// Tracks the univariate mean, stored as a <see cref="double"/>.
 /// </summary>
-public class Mean : IRunningStatistic<double>
+public class Mean : IRunningStatistic<double, double, Mean>
 {
     private double _value;
 
 
+    
     public Mean()
     {
-        Count = 0;
+        Nobs = 0;
         Value = 0;
     }
 
-    public Mean(Mean other)
-    {
-        Count = other.Count;
-        Value = other._value;
-    }
     
-
-    public long Count { get; private set; }
+    
+    public long Nobs { get; private set; }
 
     public double Value
     {
-        get => Count == 0 ? double.NaN : _value;
+        get => Nobs == 0 ? double.NaN : _value;
         private set => _value = value;
     }
 
+    
+    
     public void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();
-        Count += ys.Count;
-        Value = Utils.Smooth(Value, ys.Average(), (double) ys.Count / Count);
+        Nobs += ys.Count;
+        Value = Utils.Smooth(Value, ys.Average(), (double) ys.Count / Nobs);
     }
 
     public void Fit(double value)
     {
-        Count++;
-        Value = Utils.Smooth(Value, value, 1.0 / Count);
+        Nobs++;
+        Value = Utils.Smooth(Value, value, 1.0 / Nobs);
     }
 
-    public void Merge(IRunningStatistic<double> other)
+    public void Merge(Mean mean)
     {
-        if (other is not Mean mean) return;
-        
-        Count += mean.Count;
-        Value = Count == 0 ? 0 : Utils.Smooth(Value, mean.Value, (double) mean.Count / Count);
+        Nobs += mean.Nobs;
+        Value = Nobs == 0 ? 0 : Utils.Smooth(Value, mean.Value, (double) mean.Nobs / Nobs);
     }
 
-    public static Mean Merge(Mean a, Mean b)
+    public static Mean Merge(Mean first, Mean second)
     {
-        var c = new Mean(a);
-        c.Merge(b);
-        return c;
+        var stat = first.CloneEmpty();
+        stat.Merge(first);
+        stat.Merge(second);
+        return stat;
     }
 
     public void Reset()
     {
-        Count = 0;
+        Nobs = 0;
         Value = 0;
     }
-    
-    
-    public static explicit operator double(Mean value) => value.Value;
-    
-    public override string ToString() => $"{typeof(Mean)}(μ={Value}, n={Count})";
 
-    public void Print(StreamWriter stream)
+    public Mean CloneEmpty()
     {
-        stream.WriteLine($"{GetType()}(μ={Value}, n={Count})");
+        return new Mean();
     }
+
+    public Mean Clone()
+    {
+        return new Mean()
+        {
+            Nobs = Nobs,
+            Value = Value,
+        };
+    }
+    
+
+    
+    public override string ToString() => $"{typeof(Mean)}(μ={Value}, n={Nobs})";
 }

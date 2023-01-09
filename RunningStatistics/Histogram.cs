@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -9,53 +7,59 @@ namespace RunningStatistics;
 /// <summary>
 /// A histogram with bin partitions defined by edges.
 /// </summary>
-public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName, long Count)>
+public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Histogram>
 {
-    private OutOfBounds _outOfBounds = new();
+    private OutOfBounds _outOfBounds;
+    private readonly IList<double> _edges;
+    private readonly bool _leftClosed, _endsClosed;
 
+    
     
     public Histogram(IEnumerable<double> edges, bool leftClosed = true, bool endsClosed = true)
     {
         var es = edges.OrderBy(e => e).ToList();
-
-        Bins = new List<Bin>(es.Count - 1);
+        _edges = es;
+        _leftClosed = leftClosed;
+        _endsClosed = endsClosed;
+        
+        Bins = new List<HistogramBin>(es.Count - 1);
         if (leftClosed)
         {
             // add all but last normally
             for (var i = 1; i < es.Count - 1; i++)
             {
-                Bins.Add(new Bin(es[i-1], es[i], true, false));
+                Bins.Add(new HistogramBin(es[i-1], es[i], true, false));
             }
 
             var lastTwoEdges = es.TakeLast(2).ToList();
-            Bins.Add(new Bin(lastTwoEdges[0], lastTwoEdges[1], true, endsClosed));
+            Bins.Add(new HistogramBin(lastTwoEdges[0], lastTwoEdges[1], true, endsClosed));
         }
         else
         {
             // add all but first normally
             var firstTwoEdges = es.Take(2).ToList();
-            Bins.Add(new Bin(firstTwoEdges[0], firstTwoEdges[1], endsClosed, true));
+            Bins.Add(new HistogramBin(firstTwoEdges[0], firstTwoEdges[1], endsClosed, true));
             for (var i = 2; i < es.Count; i++)
             {
-                Bins.Add(new Bin(es[i-1], es[i], false, true));
+                Bins.Add(new HistogramBin(es[i-1], es[i], false, true));
             }
         }
     }
 
-    public Histogram(Histogram other)
-    {
-        Count = other.Count;
-        Bins = other.Bins.Select(b => new Bin(b)).ToList();
-        _outOfBounds = new OutOfBounds(other._outOfBounds);
-    }
 
 
-    public long Count { get; private set; }
+    public long Nobs { get; private set; }
+
+    public IEnumerable<HistogramBin> Value => Bins;
+
     public (long Lower, long Upper) OutOfBoundsCounts => _outOfBounds.Counts;
+    
     private int NumBins => Bins.Count;
-    private IList<Bin> Bins { get; }
+    
+    private IList<HistogramBin> Bins { get; }
 
 
+    
     public void Fit(IEnumerable<double> values)
     {
         foreach (var value in values)
@@ -71,20 +75,20 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
 
     public void Fit(double value, long k)
     {
-        Count += k;
+        Nobs += k;
         
         var firstBin = Bins.First();
         var lastBin = Bins.Last();
 
         if (value < firstBin.Lower)
         {
-            _outOfBounds.Update(-1, k);
+            _outOfBounds.Update(Side.Lower, k);
             return;
         }
 
         if (value > lastBin.Upper)
         {
-            _outOfBounds.Update(NumBins, k);
+            _outOfBounds.Update(Side.Upper, k);
             return;
         }
 
@@ -96,7 +100,7 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
             }
             else
             {
-                _outOfBounds.Update(NumBins, k);
+                _outOfBounds.Update(Side.Upper, k);
             }
             return;
         }
@@ -109,7 +113,7 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
             }
             else
             {
-                _outOfBounds.Update(-1, k);
+                _outOfBounds.Update(Side.Lower, k);
             }
             return;
         }
@@ -118,15 +122,13 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
         bin.Increment(k);
     }
 
-    public void Merge(IRunningStatistic<double> other)
+    public void Merge(Histogram histogram)
     {
-        if (other is not Histogram histogram) return;
-
         _outOfBounds.Merge(histogram._outOfBounds);
         
         if (BinsAreMatching(histogram.Bins))
         {
-            Count += histogram.Count;
+            Nobs += histogram.Nobs;
 
             for (var j = 0; j < NumBins; j++)
             {
@@ -138,78 +140,68 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
             // Using midpoints of source bins as approximate locations for merging
             foreach (var bin in histogram.Bins)
             {
-                Fit(bin.Midpoint, bin.Count);
+                Fit(bin.Midpoint, bin.Nobs);
             }
         }
     }
 
-    public static Histogram Merge(Histogram a, Histogram b)
+    public static Histogram Merge(Histogram first, Histogram second)
     {
-        var c = new Histogram(a);
-        c.Merge(b);
-        return c;
+        var stat = first.CloneEmpty();
+        stat.Merge(first);
+        stat.Merge(second);
+        return stat;
     }
 
     public void Reset()
     {
-        Count = 0;
+        Nobs = 0;
         foreach (var bin in Bins)
         {
             bin.Reset();
         }
         _outOfBounds.Reset();
     }
-    
 
-    public IEnumerator<(string BinName, long Count)> GetEnumerator()
+    public Histogram CloneEmpty()
     {
-        return Bins.Select(bin => (bin.BinName, bin.Count)).GetEnumerator();
+        return new Histogram(_edges, _leftClosed, _endsClosed);
     }
 
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-    public override string ToString() => $"{typeof(Histogram)}(n={Count})";
-
-    public void Print(StreamWriter stream)
+    public Histogram Clone()
     {
-        Print(stream, '\t');
-    }
-
-    public void Print(StreamWriter stream, char sep)
-    {
-        stream.WriteLine($"{GetType()}(n={Count})");
-        stream.WriteLine($"Bin{sep}Count");
-        foreach (var (bin, count) in this)
+        var hist = CloneEmpty();
+        hist._outOfBounds = _outOfBounds.Clone();
+        
+        foreach (var bin in Value)
         {
-            stream.WriteLine($"{bin}{sep}{count}");
+            hist.Fit(bin.Midpoint, bin.Nobs);
         }
+        
+        return hist;
     }
     
-
-    private bool BinsAreMatching(ICollection<Bin> other)
+    public override string ToString() => $"{typeof(Histogram)}(n={Nobs})";
+    
+    private bool BinsAreMatching(ICollection<HistogramBin> other)
     {
         return Bins.Count == other.Count && Bins.Zip(other).All(z => z.First.Equals(z.Second));
+    }
+    
+    private enum Side
+    {
+        Lower, Upper
     }
 
     private struct OutOfBounds
     {
-        public OutOfBounds()
-        {
-            Lower = 0;
-            Upper = 0;
-        }
-
-        public OutOfBounds(OutOfBounds other)
-        {
-            Lower = other.Lower;
-            Upper = other.Upper;
-        }
-
-        
         private long Lower { get; set; }
+
         private long Upper { get; set; }
+        
         public (long, long) Counts => (Lower, Upper);
 
+        
         
         public void Reset()
         {
@@ -217,15 +209,18 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
             Upper = 0;
         }
 
-        public void Update(int index, long k)
+        public void Update(Side side, long k)
         {
-            if (index >= 0)
+            switch (side)
             {
-                Upper += k;
-            }
-            else
-            {
-                Lower += k;
+                case Side.Lower:
+                    Lower += k;
+                    return;
+                case Side.Upper:
+                    Upper += k;
+                    return;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(side), side, null);
             }
         }
 
@@ -234,98 +229,14 @@ public class Histogram : IRunningStatistic<double>, IEnumerable<(string BinName,
             Lower += other.Lower;
             Upper += other.Upper;
         }
-    }
-    
-    private class Bin
-    {
-        public Bin(double lower, double upper, bool closedLeft, bool closedRight)
+
+        public OutOfBounds Clone()
         {
-            if (lower >= upper)
+            return new OutOfBounds
             {
-                throw new ArgumentException("Lower bound must be strictly less than upper bound");
-            }
-            
-            Lower = lower;
-            Upper = upper;
-            ClosedLeft = closedLeft;
-            ClosedRight = closedRight;
-
-            var leftBrace = ClosedLeft ? '[' : '(';
-            var rightBrace = ClosedRight ? ']' : ')';
-            BinName = $"{leftBrace}{Lower:F2}, {Upper:F2}{rightBrace}";
-
-            Count = 0;
-        }
-
-        public Bin(Bin other) : this(other.Lower, other.Upper, other.ClosedLeft, other.ClosedRight)
-        {
-            Count = other.Count;
-        }
-        
-        
-        public long Count { get; private set; }
-        public string BinName { get; }
-        public double Lower { get; }
-        public double Upper { get; }
-        public bool ClosedLeft { get; }
-        public bool ClosedRight { get; }
-
-        public double Midpoint => (Upper + Lower) / 2;
-
-
-        public bool Contains(double value)
-        {
-            if (value < Lower || value > Upper)
-            {
-                return false;
-            }
-
-            if (Lower < value && value < Upper)
-            {
-                return true;
-            }
-
-            if (value.Equals(Lower))
-            {
-                return ClosedLeft;
-            }
-
-            if (value.Equals(Upper))
-            {
-                return ClosedRight;
-            }
-
-            return false;
-        }
-
-        public void Reset()
-        {
-            Count = 0;
-        }
-
-        public void Merge(Bin other)
-        {
-            Count += other.Count;
-        }
-
-        public void Increment(long k = 1)
-        {
-            Count += k;
-        }
-
-        public override string ToString()
-        {
-            return $"Bin {BinName}, n={Count}";
-        }
-
-        public bool Equals(Bin other)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return Lower.Equals(other.Lower) 
-                   && Upper.Equals(other.Upper) 
-                   && ClosedLeft == other.ClosedLeft 
-                   && ClosedRight == other.ClosedRight;
+                Lower = Lower,
+                Upper = Upper
+            };
         }
     }
 }

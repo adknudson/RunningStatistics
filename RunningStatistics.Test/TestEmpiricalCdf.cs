@@ -159,23 +159,5 @@ namespace RunningStatistics.Test
             Assert.Equal(1.136729360026064, o.Quantile(0.90), 1);
             Assert.Equal(1.2619205258882853, o.Quantile(0.99), 1);
         }
-
-        [Fact]
-        public void CreateFromOther()
-        {
-            EmpiricalCdf a = new();
-            var rng = new Random();
-
-            for (var i = 0; i < 1000; i++)
-            {
-                a.Fit(rng.NextDouble());
-            }
-
-            var b = new EmpiricalCdf(a);
-            Assert.Equal(a.Count, b.Count);
-            
-            b.Fit(rng.NextDouble());
-            Assert.NotEqual(a.Count, b.Count);
-        }
     }
 }

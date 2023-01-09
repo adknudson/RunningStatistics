@@ -1,42 +1,42 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace RunningStatistics;
 
 /// <summary>
 /// Minimum and maximum (and number of occurrences for each) for a data stream of type <see cref="double"/>.
 /// </summary>
-public class Extrema : IRunningStatistic<double>
+public class Extrema : IRunningStatistic<double, (double Min, long MinCount, double Max, long MaxCount), Extrema>
 {
     private const double Tolerance = 1.4901161193847656e-8;
 
 
+    
     public Extrema()
     {
         Min = double.PositiveInfinity;
         Max = double.NegativeInfinity;
-        CountMin = 0;
-        CountMax = 0;
+        MinCount = 0;
+        MaxCount = 0;
     }
 
-    public Extrema(Extrema other)
-    {
-        Min = other.Min;
-        Max = other.Max;
-        CountMin = other.CountMin;
-        CountMax = other.CountMax;
-        Count = other.Count;
-    }
+
+
+    public long MinCount { get; private set; }
     
-
-    public long CountMin { get; private set; }
-    public long CountMax { get; private set; }
+    public long MaxCount { get; private set; }
+    
     public double Max { get; private set; }
+    
     public double Min { get; private set; }
+    
     public double Range => Max - Min;
-    public long Count { get; private set; }
+    
+    public long Nobs { get; private set; }
 
+    public (double Min, long MinCount, double Max, long MaxCount) Value => (Min, MinCount, Max, MaxCount);
+
+    
 
     public void Fit(IEnumerable<double> values)
     {
@@ -48,78 +48,89 @@ public class Extrema : IRunningStatistic<double>
 
     public void Fit(double value)
     {
-        Count++;
+        Nobs++;
 
         if (value < Min)
         {
             Min = value;
-            CountMin = 1;
+            MinCount = 1;
         }
 
         if (value > Max)
         {
             Max = value;
-            CountMax = 1;
+            MaxCount = 1;
         }
 
 
         if (Math.Abs(value - Min) < Tolerance)
         {
-            CountMin++;
+            MinCount++;
         }
 
         if (Math.Abs(value - Max) < Tolerance)
         {
-            CountMax++;
+            MaxCount++;
         }
     }
 
-    public void Merge(IRunningStatistic<double> other)
+    public void Merge(Extrema extrema)
     {
-        if (other is not Extrema extrema) return;
-
-        Count += extrema.Count;
+        Nobs += extrema.Nobs;
 
         if (Math.Abs(Min - extrema.Min) < Tolerance)
         {
-            CountMin += extrema.CountMin;
+            MinCount += extrema.MinCount;
         }
         else if (extrema.Min < Min)
         {
             Min = extrema.Min;
-            CountMin = extrema.CountMin;
+            MinCount = extrema.MinCount;
         }
 
         if (Math.Abs(Max - extrema.Max) < Tolerance)
         {
-            CountMax += extrema.CountMax;
+            MaxCount += extrema.MaxCount;
         }
         else if (extrema.Max > Max)
         {
             Max = extrema.Max;
-            CountMax = extrema.CountMax;
+            MaxCount = extrema.MaxCount;
         }
     }
 
-    public static Extrema Merge(Extrema a, Extrema b)
+    public static Extrema Merge(Extrema first, Extrema second)
     {
-        var c = new Extrema(a);
-        c.Merge(b);
-        return c;
+        var stat = first.CloneEmpty();
+        stat.Merge(first);
+        stat.Merge(second);
+        return stat;
     }
 
     public void Reset()
     {
         Min = double.PositiveInfinity;
         Max = double.NegativeInfinity;
-        CountMin = 0;
-        CountMax = 0;
+        MinCount = 0;
+        MaxCount = 0;
     }
 
-    public override string ToString() => $"{typeof(Extrema)}(min={Min:F2}, max={Max:F2}, n={Count})";
-
-    public void Print(StreamWriter stream)
+    public Extrema CloneEmpty()
     {
-        stream.WriteLine($"{GetType()}(Min={Min}, Max={Max}, CountMin={CountMin}, CountMax={CountMax}, n={Count}");
+        return new Extrema();
     }
+
+    public Extrema Clone()
+    {
+        return new Extrema
+        {
+            Min = Min,
+            Max = Max,
+            MinCount = MinCount,
+            MaxCount = MaxCount,
+            Nobs = Nobs
+        };
+    }
+
+    public override string ToString() => $"{typeof(Extrema)}(min={Min:F2}, max={Max:F2}, n={Nobs})";
 }

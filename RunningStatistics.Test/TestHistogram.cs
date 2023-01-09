@@ -15,11 +15,11 @@ namespace RunningStatistics.Test
             // (-inf, 0], (0, 10], (10, 100]
             Histogram h = new(_edges, false, false);
 
-            Assert.Equal(0, h.Count);
+            Assert.Equal(0, h.Nobs);
 
-            foreach (var (_, count) in h)
+            foreach (var bin in h.Value)
             {
-                Assert.Equal(0, count);
+                Assert.Equal(0, bin.Nobs);
             }
         }
 
@@ -49,9 +49,9 @@ namespace RunningStatistics.Test
 
             a.Merge(b);
 
-            foreach (var ((_, countA), (_, countB)) in a.Zip(c))
+            foreach (var (binA, binC) in a.Value.Zip(c.Value))
             {
-                Assert.Equal(countA, countB);
+                Assert.Equal(binA.Nobs, binC.Nobs);
             }
         }
 
@@ -70,9 +70,9 @@ namespace RunningStatistics.Test
             Assert.Equal(0, h.OutOfBoundsCounts.Lower);
             Assert.Equal(1, h.OutOfBoundsCounts.Upper);
 
-            foreach (var (_, count) in h)
+            foreach (var bin in h.Value)
             {
-                Assert.Equal(1, count);
+                Assert.Equal(1, bin.Nobs);
             }
         }
 
@@ -91,9 +91,9 @@ namespace RunningStatistics.Test
             Assert.Equal(0, h.OutOfBoundsCounts.Lower);
             Assert.Equal(1, h.OutOfBoundsCounts.Upper);
 
-            foreach (var (_, count) in h)
+            foreach (var bin in h.Value)
             {
-                Assert.Equal(1, count);
+                Assert.Equal(1, bin.Nobs);
             }
         }
 
@@ -112,9 +112,9 @@ namespace RunningStatistics.Test
             Assert.Equal(0, h.OutOfBoundsCounts.Lower);
             Assert.Equal(1, h.OutOfBoundsCounts.Upper);
 
-            foreach (var (_, count) in h)
+            foreach (var bin in h.Value)
             {
-                Assert.Equal(1, count);
+                Assert.Equal(1, bin.Nobs);
             }
         }
 
@@ -134,30 +134,10 @@ namespace RunningStatistics.Test
             Assert.Equal(1, h.OutOfBoundsCounts.Lower);
             Assert.Equal(1, h.OutOfBoundsCounts.Upper);
 
-            foreach (var (_, count) in h)
+            foreach (var bin in h.Value)
             {
-                Assert.Equal(1, count);
+                Assert.Equal(1, bin.Nobs);
             }
-        }
-
-        [Fact]
-        public void CreateFromOther()
-        {
-            // (0.0, 0.1], (0.1, 0.5], (0.5, 0.9]
-            Histogram a = new(new []{0, 0.1, 0.5, 0.9}, leftClosed: false, endsClosed: false);
-            var rng = new Random();
-            for (var i = 0; i < 100; i++)
-            {
-                a.Fit(rng.NextDouble());
-            }
-
-            var b = new Histogram(a);
-
-            Assert.Equal(a.Count, b.Count);
-            Assert.Equal(a.OutOfBoundsCounts.Upper, b.OutOfBoundsCounts.Upper);
-            
-            b.Fit(0.99, 10);
-            Assert.Equal(a.OutOfBoundsCounts.Upper + 10, b.OutOfBoundsCounts.Upper);
         }
 
         [Fact]
@@ -173,7 +153,7 @@ namespace RunningStatistics.Test
             }
 
             var c = Histogram.Merge(a, b);
-            Assert.Equal(a.Count + b.Count, c.Count);
+            Assert.Equal(a.Nobs + b.Nobs, c.Nobs);
             Assert.Equal(a.OutOfBoundsCounts.Upper + b.OutOfBoundsCounts.Upper, c.OutOfBoundsCounts.Upper);
 
             c.Fit(0.99, 10);

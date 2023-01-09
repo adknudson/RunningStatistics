@@ -9,8 +9,6 @@ namespace RunningStatistics.Test
         public void AccessingNonExistentKeyReturnsZero()
         {
             Countmap<string> countmap = new();
-
-            Assert.Empty(countmap);
             Assert.Equal(0, countmap["nothing"]);
         }
 
@@ -53,9 +51,9 @@ namespace RunningStatistics.Test
             a.Fit("something", 1);
             a.Fit("everything", 2);
             
-            Assert.NotEmpty(a);
+            Assert.NotEmpty(a.Value);
             a.Reset();
-            Assert.Empty(a);
+            Assert.Empty(a.Value);
         }
 
         [Fact]
@@ -73,23 +71,7 @@ namespace RunningStatistics.Test
             
             Assert.Equal(5, a.Mode);
         }
-
-        [Fact]
-        public void CreateFromOther()
-        {
-            Countmap<int> a = new();
-            a.Fit(new [] {1, 1, 2, 3, 5, 8});
-
-            var b = new Countmap<int>(a);
-            
-            Assert.NotEmpty(b);
-            Assert.Equal(a.Count, b.Count);
-            
-            b.Fit(1);
-            Assert.Equal(2, a[1]);
-            Assert.Equal(3, b[1]);
-        }
-
+        
         [Fact]
         public void StaticMergeDoesntAffectOriginals()
         {
@@ -100,7 +82,7 @@ namespace RunningStatistics.Test
             b.Fit(new []{4, 5, 8, 11});
 
             var c = Countmap<int>.Merge(a, b);
-            Assert.Equal(a.Count + b.Count, c.Count);
+            Assert.Equal(a.Nobs + b.Nobs, c.Nobs);
             
             c.Fit(1);
 
