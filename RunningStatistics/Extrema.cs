@@ -46,32 +46,37 @@ public class Extrema : IRunningStatistic<double, (double Min, long MinCount, dou
         }
     }
 
-    public void Fit(double value)
+    public void Fit(double value, long k)
     {
-        Nobs++;
-
+        Nobs += k;
+        
         if (value < Min)
         {
             Min = value;
-            MinCount = 1;
+            MinCount = k;
         }
 
         if (value > Max)
         {
             Max = value;
-            MaxCount = 1;
+            MaxCount = k;
         }
 
 
         if (Math.Abs(value - Min) < Tolerance)
         {
-            MinCount++;
+            MinCount += k;
         }
 
         if (Math.Abs(value - Max) < Tolerance)
         {
-            MaxCount++;
+            MaxCount += k;
         }
+    }
+
+    public void Fit(double value)
+    {
+        Fit(value, 1);
     }
 
     public void Merge(Extrema extrema)
