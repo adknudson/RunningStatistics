@@ -65,7 +65,7 @@ namespace RunningStatistics.Test
         }
 
         [Fact]
-        public void StaticMergeDoesntAffectOriginals()
+        public void StaticMergeDoesNotAffectOriginals()
         {
             Extrema a = new();
             a.Fit(new double[] {1, 1, 2, 3, 5, 8, 13, 21, 34, 55});
