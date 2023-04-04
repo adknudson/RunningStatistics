@@ -2,27 +2,26 @@
 
 namespace RunningStatistics;
 
-public interface IRunningStatistic<in TObs, out TValue, TSelf> where TSelf : IRunningStatistic<TObs, TValue, TSelf>
+public interface IRunningStatistic<in TObs>
 {
-    /// <summary>
-    /// The number of observations.
-    /// </summary>
     public long Nobs { get; }
-    
-    /// <summary>
-    /// A generic representation of the running statistic.
-    /// </summary>
-    public TValue Value { get; }
     
     public void Fit(IEnumerable<TObs> values);
 
     public void Fit(TObs value);
     
-    /// <summary>
-    /// Reset the running statistic to zero observations.
-    /// </summary>
     public void Reset();
-    
+}
+
+
+public interface IRunningStatistic<in TObs, out TValue> : IRunningStatistic<TObs>
+{
+    public TValue Value { get; }
+}
+
+
+public interface IRunningStatistic<in TObs, out TValue, TSelf> : IRunningStatistic<TObs, TValue> where TSelf : IRunningStatistic<TObs, TValue, TSelf>
+{
     /// <summary>
     /// Create a copy of the running statistic with the same internal parameters but with zero observations.
     /// </summary>
