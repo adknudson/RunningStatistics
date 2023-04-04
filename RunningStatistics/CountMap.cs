@@ -8,19 +8,23 @@ namespace RunningStatistics;
 /// A dictionary that maps unique values to its number of occurrences. Accessing a non-existent key will return a count
 /// of zero, however a new key will not be added to the internal dictionary.
 /// </summary>
-public class Countmap<TObs> : 
-    IReadOnlyDictionary<TObs, long>, 
-    IRunningStatistic<TObs, IDictionary<TObs, long>, Countmap<TObs>> 
-    where TObs : notnull
+public sealed class CountMap<TObs> : IReadOnlyDictionary<TObs, long>,
+    IRunningStatistic<TObs, IDictionary<TObs, long>, CountMap<TObs>> where TObs : notnull
 {
-    public Countmap()
+    public CountMap()
     {
         Value = new Dictionary<TObs, long>();
         Nobs = 0;
     }
-    
-    
-    
+
+    public CountMap(IDictionary<TObs, long> dictionary)
+    {
+        Value = new Dictionary<TObs, long>(dictionary);
+        Nobs = dictionary.Values.Sum();
+    }
+
+
+
     public long Nobs { get; private set; }
 
     public IDictionary<TObs, long> Value { get; }
@@ -35,8 +39,6 @@ public class Countmap<TObs> :
     public IEnumerable<TObs> Keys => Value.Keys;
 
     public IEnumerable<long> Values => Value.Values;
-
-    public TObs Mode => Value.MaxBy(kvp => kvp.Value).Key;
 
     
     
@@ -67,9 +69,9 @@ public class Countmap<TObs> :
         }
     }
 
-    public void Merge(Countmap<TObs> countmap)
+    public void Merge(CountMap<TObs> countMap)
     {
-        foreach (var (key, value) in countmap.Value)
+        foreach (var (key, value) in countMap.Value)
         {
             Fit(key, value);
         }
@@ -81,14 +83,14 @@ public class Countmap<TObs> :
         Nobs = 0;
     }
 
-    public Countmap<TObs> CloneEmpty()
+    public CountMap<TObs> CloneEmpty()
     {
-        return new Countmap<TObs>();
+        return new CountMap<TObs>();
     }
 
-    public Countmap<TObs> Clone()
+    public CountMap<TObs> Clone()
     {
-        var countmap = new Countmap<TObs>();
+        var countmap = new CountMap<TObs>();
         
         foreach (var (key, nobs) in Value)
         {
@@ -98,7 +100,7 @@ public class Countmap<TObs> :
         return countmap;
     }
 
-    public static Countmap<TObs> Merge(Countmap<TObs> first, Countmap<TObs> second)
+    public static CountMap<TObs> Merge(CountMap<TObs> first, CountMap<TObs> second)
     {
         var stat = first.CloneEmpty();
         stat.Merge(first);
@@ -108,28 +110,11 @@ public class Countmap<TObs> :
 
     public bool ContainsKey(TObs key) => Value.ContainsKey(key);
 
-
-    
-    public IDictionary<TObs, long> AsDictionary() => Value;
-
-    public Dictionary<TObs, long> ToDictionary() => new(Value);
-
-    public SortedDictionary<TObs, long> ToSortedDictionary() => new(Value);
-
-    public IEnumerable<(TObs Value, double Probability)> ValueProbabilityPairs()
-    {
-        foreach (var (value, count) in Value)
-        {
-            yield return (value, (double) count / Nobs);
-        }
-    }
-
     public bool TryGetValue(TObs key, out long value) => Value.TryGetValue(key, out value);
     
     public IEnumerator<KeyValuePair<TObs, long>> GetEnumerator() => Value.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     
-    public override string ToString() => $"{typeof(Countmap<TObs>)}(n={Nobs}) with {Value.Keys.Count} unique values.";
-
+    public override string ToString() => $"{typeof(CountMap<TObs>)}(n={Nobs}) with {Value.Keys.Count} unique values.";
 }

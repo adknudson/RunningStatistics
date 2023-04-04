@@ -1,30 +1,29 @@
-﻿using System;
-using Xunit;
+﻿using Xunit;
 
 namespace RunningStatistics.Test
 {
-    public class TestCountmap
+    public class TestCountMap
     {
         [Fact]
         public void AccessingNonExistentKeyReturnsZero()
         {
-            Countmap<string> countmap = new();
-            Assert.Equal(0, countmap["nothing"]);
+            CountMap<string> countMap = new();
+            Assert.Equal(0, countMap["nothing"]);
         }
 
         [Fact]
         public void AccessingNonExistentKeyDoesNotAddKey()
         {
-            Countmap<string> countmap = new();
-            Assert.Equal(0, countmap["everything"]);
-            Assert.False(countmap.ContainsKey("everything"));
+            CountMap<string> countMap = new();
+            Assert.Equal(0, countMap["everything"]);
+            Assert.False(countMap.ContainsKey("everything"));
         }
 
         [Fact]
         public void MergingTwoCountmapsMergesKeys()
         {
-            Countmap<string> a = new(); 
-            Countmap<string> b = new();
+            CountMap<string> a = new(); 
+            CountMap<string> b = new();
 
             a.Fit("something", 1);
             a.Fit("everything", 2);
@@ -46,7 +45,7 @@ namespace RunningStatistics.Test
         [Fact]
         public void ResettingRemovesAllKeys()
         {
-            Countmap<string> a = new();
+            CountMap<string> a = new();
 
             a.Fit("something", 1);
             a.Fit("everything", 2);
@@ -54,34 +53,19 @@ namespace RunningStatistics.Test
             Assert.NotEmpty(a.Value);
             a.Reset();
             Assert.Empty(a.Value);
+            Assert.Equal(0, a.Nobs);
         }
 
         [Fact]
-        public void ModeReturnsMostObservedValue()
+        public void StaticMergeDoesNotAffectOriginals()
         {
-            Countmap<int> a = new();
-            var rng = new Random();
-
-            for (var i = 0; i < 10; i++)
-            {
-                a.Fit(i, rng.Next(1, 11));
-            }
-
-            a.Fit(5, 20);
-            
-            Assert.Equal(5, a.Mode);
-        }
-        
-        [Fact]
-        public void StaticMergeDoesntAffectOriginals()
-        {
-            Countmap<int> a = new();
+            CountMap<int> a = new();
             a.Fit(new [] {1, 1, 2, 3, 5, 8});
 
-            Countmap<int> b = new();
+            CountMap<int> b = new();
             b.Fit(new []{4, 5, 8, 11});
 
-            var c = Countmap<int>.Merge(a, b);
+            var c = CountMap<int>.Merge(a, b);
             Assert.Equal(a.Nobs + b.Nobs, c.Nobs);
             
             c.Fit(1);
