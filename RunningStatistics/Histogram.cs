@@ -183,6 +183,8 @@ public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Hi
     
     public override string ToString() => $"{typeof(Histogram)}(n={Nobs})";
     
+    
+    
     private bool BinsAreMatching(ICollection<HistogramBin> other)
     {
         return Bins.Count == other.Count && Bins.Zip(other).All(z => z.First.Equals(z.Second));

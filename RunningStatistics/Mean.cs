@@ -77,7 +77,5 @@ public class Mean : IRunningStatistic<double, double, Mean>
         };
     }
     
-
-    
     public override string ToString() => $"{typeof(Mean)}(μ={Value}, n={Nobs})";
 }
