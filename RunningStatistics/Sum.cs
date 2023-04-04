@@ -5,13 +5,13 @@ namespace RunningStatistics;
 
 public class Sum<TObs> : IRunningStatistic<TObs, TObs, Sum<TObs>> where TObs : INumber<TObs>
 {
-    public long Nobs { get; protected set; }
+    public long Nobs { get; private set; }
 
-    public TObs Value { get; protected set; } = TObs.Zero;
+    public TObs Value { get; private set; } = TObs.Zero;
 
     
     
-    public virtual void Fit(IEnumerable<TObs> values)
+    public void Fit(IEnumerable<TObs> values)
     {
         foreach (var value in values)
         {
@@ -52,7 +52,7 @@ public class Sum<TObs> : IRunningStatistic<TObs, TObs, Sum<TObs>> where TObs : I
 
     public Sum<TObs> Clone()
     {
-        return new Sum<TObs>()
+        return new Sum<TObs>
         {
             Nobs = Nobs,
             Value = Value

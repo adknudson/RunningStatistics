@@ -4,18 +4,18 @@ Online (single pass) algorithms for statistical measures based on the Julia pack
 
 ## List of Statistics
 
-| Statistic        | Description                                     |
-|:-----------------|:------------------------------------------------|
-| Mean             | The univariate mean                             |
-| Sum<T>           | The overall sum                                 |
-| Variance         | The univariate variance                         |
-| Extrema          | The min and max observations and their counts   |
-| Moments          | Mean, Variance, Skewness, and (excess) Kurtosis |
-| EmpiricalCdf     | Approximate order statistics (quantiles)        |
-| CountMap<T>      | Counts for each unique value                    |
- | ProportionMap<T> | Proportions for each unique value               |
-| Histogram        | A histogram with specified bin edges            |
-| Normal           | The univariate mean and variance                |
+| Statistic          | Description                                     |
+|:-------------------|:------------------------------------------------|
+| Mean               | The univariate mean                             |
+| Sum\<T\>           | The overall sum of any INumber\<T\> type        |
+| Variance           | The univariate variance                         |
+| Extrema            | The min and max observations and their counts   |
+| Moments            | Mean, Variance, Skewness, and (excess) Kurtosis |
+| EmpiricalCdf       | Approximate order statistics (quantiles)        |
+| CountMap\<T\>      | Counts for each unique value                    |
+ | ProportionMap\<T\> | Proportions for each unique value               |
+| Histogram          | A histogram with specified bin edges            |
+| Normal             | The univariate mean and variance                |
 
 ## Methods
 

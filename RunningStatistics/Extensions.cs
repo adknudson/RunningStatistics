@@ -5,13 +5,12 @@ namespace RunningStatistics;
 public static class Extensions
 {
     #region Sum
-
     
     public static double Mean(this Sum<double> sum)
     {
         return sum.Value / sum.Nobs;
     }
-
+    
     public static double Mean(this Sum<int> sum)
     {
         return (double) sum.Value / sum.Nobs;
@@ -27,11 +26,10 @@ public static class Extensions
         return sum.Value / sum.Nobs;
     }
     
-
     #endregion
 
+    
     #region CountMap
-
     
     public static T Mode<T>(this CountMap<T> countMap) where T : notnull
     {
@@ -58,8 +56,5 @@ public static class Extensions
         return countMap.Sum(kvp => kvp.Key * kvp.Value / countMap.Nobs);
     }
     
-
     #endregion
-
-    
 }
