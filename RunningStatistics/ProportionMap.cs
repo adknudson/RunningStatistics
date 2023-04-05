@@ -32,7 +32,7 @@ public class ProportionMap<TObs> : IReadOnlyDictionary<TObs, double>,
 
     public IDictionary<TObs, double> Value => new Dictionary<TObs, double>(this);
 
-    public int Count => _countMap.Count;
+    int IReadOnlyCollection<KeyValuePair<TObs, double>>.Count => _countMap.Value.Count;
 
     public double this[TObs key] => TryGetValue(key, out var value) ? value : default;
     
