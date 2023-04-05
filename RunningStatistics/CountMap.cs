@@ -8,7 +8,7 @@ namespace RunningStatistics;
 /// A dictionary that maps unique values to its number of occurrences. Accessing a non-existent key will return a count
 /// of zero, however a new key will not be added to the internal dictionary.
 /// </summary>
-public sealed class CountMap<TObs> : IReadOnlyDictionary<TObs, long>,
+public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>,
     IRunningStatistic<TObs, IDictionary<TObs, long>, CountMap<TObs>> where TObs : notnull
 {
     public CountMap()
@@ -28,12 +28,7 @@ public sealed class CountMap<TObs> : IReadOnlyDictionary<TObs, long>,
     public long Nobs { get; private set; }
 
     public IDictionary<TObs, long> Value { get; }
-    
-    /// <summary>
-    /// The number of unique observations in the countmap.
-    /// </summary>
-    public int Count => Value.Count;
-    
+
     public long this[TObs key] => Value.TryGetValue(key, out var value) ? value : 0;
 
     public IEnumerable<TObs> Keys => Value.Keys;
@@ -117,4 +112,6 @@ public sealed class CountMap<TObs> : IReadOnlyDictionary<TObs, long>,
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     
     public override string ToString() => $"{typeof(CountMap<TObs>)}(n={Nobs}) with {Value.Keys.Count} unique values.";
+
+    int IReadOnlyCollection<KeyValuePair<TObs, long>>.Count => Value.Count;
 }
