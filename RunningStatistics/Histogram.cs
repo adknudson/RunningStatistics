@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -7,7 +8,7 @@ namespace RunningStatistics;
 /// <summary>
 /// A histogram with bin partitions defined by edges.
 /// </summary>
-public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Histogram>
+public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Histogram>, IEnumerable<HistogramBin>
 {
     private OutOfBounds _outOfBounds;
     private readonly IList<double> _edges;
@@ -180,10 +181,12 @@ public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Hi
         
         return hist;
     }
-    
+
+    public IEnumerator<HistogramBin> GetEnumerator() => Bins.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
     public override string ToString() => $"{typeof(Histogram)}(n={Nobs})";
-    
-    
     
     private bool BinsAreMatching(ICollection<HistogramBin> other)
     {

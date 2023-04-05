@@ -4,7 +4,7 @@ namespace RunningStatistics;
 
 public class HistogramBin
 {
-    public HistogramBin(double lower, double upper, bool closedLeft, bool closedRight)
+    internal HistogramBin(double lower, double upper, bool closedLeft, bool closedRight)
     {
         if (lower >= upper)
         {
@@ -37,11 +37,11 @@ public class HistogramBin
 
     public bool ClosedRight { get; }
 
-    public double Midpoint => (Upper + Lower) / 2;
+    internal double Midpoint => (Upper + Lower) / 2;
 
 
     
-    public bool Contains(double value)
+    internal bool Contains(double value)
     {
         if (value < Lower || value > Upper)
         {
@@ -66,17 +66,17 @@ public class HistogramBin
         return false;
     }
 
-    public void Reset()
+    internal void Reset()
     {
         Nobs = 0;
     }
 
-    public void Merge(HistogramBin other)
+    internal void Merge(HistogramBin other)
     {
         Nobs += other.Nobs;
     }
 
-    public void Increment(long k = 1)
+    internal void Increment(long k = 1)
     {
         Nobs += k;
     }
