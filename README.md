@@ -4,18 +4,19 @@ Online (single pass) algorithms for statistical measures based on the Julia pack
 
 ## List of Statistics
 
-| Statistic          | Description                                     |
-|:-------------------|:------------------------------------------------|
-| Mean               | The univariate mean                             |
-| Sum\<T\>           | The overall sum of any INumber\<T\> type        |
-| Variance           | The univariate variance                         |
-| Extrema            | The min and max observations and their counts   |
-| Moments            | Mean, Variance, Skewness, and (excess) Kurtosis |
-| EmpiricalCdf       | Approximate order statistics (quantiles)        |
-| CountMap\<T\>      | Counts for each unique value                    |
- | ProportionMap\<T\> | Proportions for each unique value               |
-| Histogram          | A histogram with specified bin edges            |
-| Normal             | The univariate mean and variance                |
+| Statistic           | Description                                         |
+|:--------------------|:----------------------------------------------------|
+| Mean                | The univariate mean                                 |
+| Sum\<T\>            | The overall sum of any INumber\<T\> type            |
+| Variance            | The univariate variance                             |
+| Extrema             | The min and max observations and their counts       |
+| Moments             | Mean, Variance, Skewness, and (excess) Kurtosis     |
+| EmpiricalCdf        | Approximate order statistics (quantiles)            |
+| CountMap\<T\>       | Counts for each unique value                        |
+| ProportionMap\<T\>  | Proportions for each unique value                   |
+| Histogram           | A histogram with specified bin edges                |
+| Normal              | The univariate mean and variance                    |
+
 
 ## Methods
 
@@ -46,7 +47,8 @@ public interface IRunningStatistic<in TObs, out TValue> : IRunningStatistic<TObs
 Finally each statistic implements `IRunningStatistic<in TObs, out TValue, TSelf>` to ensure a consistent set of functionality:
 
 ```csharp
-public interface IRunningStatistic<in TObs, out TValue, TSelf> : IRunningStatistic<TObs, TValue> where TSelf : IRunningStatistic<TObs, TValue, TSelf>
+public interface IRunningStatistic<in TObs, out TValue, TSelf> : IRunningStatistic<TObs, TValue> 
+    where TSelf : IRunningStatistic<TObs, TValue, TSelf>
 {
     public TSelf CloneEmpty();
 
@@ -59,6 +61,8 @@ public interface IRunningStatistic<in TObs, out TValue, TSelf> : IRunningStatist
 ```
 
 Therefore merging can only be done when the concrete classes are known, and concrete classes may be cloned.
+
+
 
 ## Examples
 
@@ -82,4 +86,78 @@ for (var i = 0; i < 1000; i++)
 
 mean1.Merge(mean2);
 var q1 = ecdf.Quantile(0.25);
+```
+
+
+
+## Inheritance and Wrapping
+
+Currently inheriting from a running statistic has limited support, and may be removed altogether in favor of wrapping the statistic in a new class. The argument is that some running statistics implement specific fitting algorithms, and overriding those methods can result in undesired behavior.
+
+Here is an example of wrapping the `CountMap<T>` class.
+
+```csharp
+using System.Collections.Generic;
+
+namespace RunningStatistics;
+
+public class MyRunningStatistic : IRunningStatistic<double, CountMap<double>, MyRunningStatistic>
+{
+    public MyRunningStatistic()
+    {
+        Value = new CountMap<double>();
+    }
+
+    public MyRunningStatistic(CountMap<double> countMap)
+    {
+        Value = countMap;
+    }
+    
+    
+    public long Nobs => Value.Nobs;
+
+    public CountMap<double> Value { get; }
+    
+    
+    public void Fit(IEnumerable<double> values)
+    {
+        Value.Fit(values);
+    }
+
+    public void Fit(double value)
+    {
+        Value.Fit(value);
+    }
+
+    
+    public void Reset()
+    {
+        Value.Reset();
+    }
+
+    
+    public MyRunningStatistic CloneEmpty()
+    {
+        return new MyRunningStatistic();
+    }
+
+    public MyRunningStatistic Clone()
+    {
+        return new MyRunningStatistic(Value.Clone());
+    }
+
+    
+    public void Merge(MyRunningStatistic other)
+    {
+        Value.Merge(other.Value);
+    }
+
+    public static MyRunningStatistic Merge(MyRunningStatistic first, MyRunningStatistic second)
+    {
+        var stat = first.CloneEmpty();
+        stat.Merge(first);
+        stat.Merge(second);
+        return stat;
+    }
+}
 ```
