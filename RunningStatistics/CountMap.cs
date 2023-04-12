@@ -5,6 +5,8 @@ using System.Linq;
 
 namespace RunningStatistics;
 
+// TODO: Check the behavior of a class that inherits from CountMap
+
 /// <summary>
 /// A dictionary that maps unique values to its number of occurrences. Accessing a non-existent key will return a count
 /// of zero, however a new key will not be added to the internal dictionary.
@@ -12,6 +14,7 @@ namespace RunningStatistics;
 public class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IReadOnlyDictionary<TObs, long> where TObs : notnull
 {
     private readonly IDictionary<TObs, long> _dict;
+    private long _nobs;
     
     
     
@@ -23,12 +26,19 @@ public class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IR
     public CountMap(IDictionary<TObs, long> dictionary)
     {
         _dict = dictionary;
-        Nobs = dictionary.Values.Sum();
+        _nobs = dictionary.Values.Sum();
     }
 
 
     
     public long this[TObs key] => _dict.TryGetValue(key, out var value) ? value : 0;
+    
+    // 'Nobs' is not converted to an auto-property in order to avoid a virtual member in the constructor
+    public override long Nobs
+    {
+        get => _nobs; 
+        protected set => _nobs = value;
+    }
 
     public IEnumerable<TObs> Keys => _dict.Keys;
 
@@ -40,26 +50,16 @@ public class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IR
     
     public override void Fit(TObs value)
     {
-        Fit(value, 1);
+        UncheckedFit(value, 1);
     }
 
     /// <summary>
     /// Fit multiple counts of the same observation.
     /// </summary>
-    public void Fit(TObs obs, long count)
+    public void Fit(TObs value, long count)
     {
         if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Must be non-negative.");
-        
-        Nobs += count;
-
-        if (_dict.ContainsKey(obs))
-        {
-            _dict[obs] += count;
-        }
-        else
-        {
-            _dict[obs] = count;
-        }
+        UncheckedFit(value, count);
     }
     
     /// <summary>
@@ -70,6 +70,23 @@ public class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IR
         foreach (var (value, count) in keyValuePairs)
         {
             Fit(value, count);
+        }
+    }
+
+    /// <summary>
+    /// Fit the value without checking if the count is non-negative.
+    /// </summary>
+    private void UncheckedFit(TObs value, long count)
+    {
+        Nobs += count;
+
+        if (_dict.ContainsKey(value))
+        {
+            _dict[value] += count;
+        }
+        else
+        {
+            _dict[value] = count;
         }
     }
 
@@ -84,7 +101,7 @@ public class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IR
     public override void Reset()
     {
         _dict.Clear();
-        Nobs = 0;
+        _nobs = 0;
     }
 
     public override CountMap<TObs> CloneEmpty()
@@ -98,7 +115,7 @@ public class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IR
         
         foreach (var (key, nobs) in _dict)
         {
-            countmap.Fit(key, nobs);
+            countmap.UncheckedFit(key, nobs);
         }
 
         return countmap;
@@ -116,7 +133,25 @@ public class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IR
 
     int IReadOnlyCollection<KeyValuePair<TObs, long>>.Count => _dict.Count;
 
+    /// <summary>
+    /// Returns the current object as a dictionary of Observation-Count pairs.
+    /// </summary>
     public IDictionary<TObs, long> AsDictionary() => _dict;
 
+    /// <summary>
+    /// Returns a new dictionary with the current Observation-Count pairs.
+    /// </summary>
     public IDictionary<TObs, long> ToDictionary() => new Dictionary<TObs, long>(_dict);
+
+    /// <summary>
+    /// Returns the current object as a <see cref="ProportionMap{TObs}"/>.
+    /// </summary>
+    public ProportionMap<TObs> AsProportionMap() => new(this);
+
+    /// <summary>
+    /// Returns a clone of the current object as a <see cref="ProportionMap{TObs}"/>.
+    /// </summary>
+    /// <returns></returns>
+    public ProportionMap<TObs> ToProportionMap() => new(Clone());
+    
 }
