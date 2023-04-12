@@ -57,6 +57,25 @@ namespace RunningStatistics.Test
         }
 
         [Fact]
+        public void CloneIsIndependentOfOriginal()
+        {
+            CountMap<int> original = new();
+            original.Fit(123);
+            
+            var clone = original.Clone();
+            Assert.True(clone.ContainsKey(123));
+            
+            original.Fit(456);
+            Assert.False(clone.ContainsKey(456));
+            
+            clone.Fit(789);
+            Assert.False(original.ContainsKey(789));
+
+            Assert.Equal(2, original.Nobs);
+            Assert.Equal(2, clone.Nobs);
+        }
+
+        [Fact]
         public void StaticMergeDoesNotAffectOriginals()
         {
             CountMap<int> a = new();
