@@ -12,51 +12,88 @@ public sealed class Histogram : AbstractRunningStatistic<double, Histogram>, IEn
 {
     private HistogramOutOfBounds _outOfBounds;
     private readonly IList<double> _edges;
-    private readonly bool _leftClosed, _endsClosed;
+    private bool _binsAreInitialized;
 
     
     
     public Histogram(IEnumerable<double> edges, bool leftClosed = true, bool endsClosed = true)
     {
-        var es = edges.OrderBy(e => e).ToList();
-        _edges = es;
-        _leftClosed = leftClosed;
-        _endsClosed = endsClosed;
+        _edges = edges.OrderBy(e => e).ToList();
+        LeftClosed = leftClosed;
+        EndsClosed = endsClosed;
         
-        Bins = new List<HistogramBin>(es.Count - 1);
-        if (leftClosed)
+        InitializeBins();
+    }
+
+
+
+    public (long Lower, long Upper) OutOfBoundsCounts => _outOfBounds.Counts;
+    
+    private int NumBins => Bins.Count;
+
+    private IList<HistogramBin> Bins { get; } = new List<HistogramBin>();
+
+    /// <summary>
+    /// Get a list of the histogram edges.
+    /// </summary>
+    public IEnumerable<double> Edges => _edges;
+
+    /// <summary>
+    /// Are the bins closed on the left or the right?
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// LeftClosed= true: [a, b), [b, c)
+    /// LeftClosed=false: (a, b], (b, c]
+    /// </code>
+    /// </example>
+    public bool LeftClosed { get; }
+
+    /// <summary>
+    /// Is the bin on the end closed?
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// EndsClosed= true: [a, b), [b, c), [c, d]
+    /// EndsClosed=false: [a, b), [b, c), [c, d)
+    /// </code>
+    /// </example>
+    public bool EndsClosed { get; }
+
+
+    
+    /// <summary>
+    /// Initialize the bins according to the edges and end-bin behavior.
+    /// </summary>
+    private void InitializeBins()
+    {
+        if (_binsAreInitialized) return;
+
+        if (LeftClosed)
         {
             // add all but last normally
-            for (var i = 1; i < es.Count - 1; i++)
+            for (var i = 1; i < _edges.Count - 1; i++)
             {
-                Bins.Add(new HistogramBin(es[i-1], es[i], true, false));
+                Bins.Add(new HistogramBin(_edges[i - 1], _edges[i], true, false));
             }
 
-            var lastTwoEdges = es.TakeLast(2).ToList();
-            Bins.Add(new HistogramBin(lastTwoEdges[0], lastTwoEdges[1], true, endsClosed));
+            var lastTwoEdges = _edges.TakeLast(2).ToList();
+            Bins.Add(new HistogramBin(lastTwoEdges[0], lastTwoEdges[1], true, EndsClosed));
         }
         else
         {
             // add all but first normally
-            var firstTwoEdges = es.Take(2).ToList();
-            Bins.Add(new HistogramBin(firstTwoEdges[0], firstTwoEdges[1], endsClosed, true));
-            for (var i = 2; i < es.Count; i++)
+            var firstTwoEdges = _edges.Take(2).ToList();
+            Bins.Add(new HistogramBin(firstTwoEdges[0], firstTwoEdges[1], EndsClosed, true));
+            for (var i = 2; i < _edges.Count; i++)
             {
-                Bins.Add(new HistogramBin(es[i-1], es[i], false, true));
+                Bins.Add(new HistogramBin(_edges[i - 1], _edges[i], false, true));
             }
         }
+
+        _binsAreInitialized = true;
     }
     
-    
-    
-    public (long Lower, long Upper) OutOfBoundsCounts => _outOfBounds.Counts;
-    
-    private int NumBins => Bins.Count;
-    
-    private IList<HistogramBin> Bins { get; }
-
-    
-
     /// <summary>
     /// Fit a list of value-count pairs.
     /// </summary>
@@ -146,7 +183,7 @@ public sealed class Histogram : AbstractRunningStatistic<double, Histogram>, IEn
         _outOfBounds.Reset();
     }
 
-    public override Histogram CloneEmpty() => new(_edges, _leftClosed, _endsClosed);
+    public override Histogram CloneEmpty() => new(_edges, LeftClosed, EndsClosed);
 
     public override Histogram Clone()
     {
