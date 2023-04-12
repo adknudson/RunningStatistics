@@ -25,39 +25,43 @@ Online (single pass) algorithms for statistical measures based on the Julia pack
 | Normal       | The univariate mean and variance                    |
 
 
-## Interface
+## Common Interface
 
-The `IRunningStatistic<in TObs>` interface provides the following members:
-
-```csharp
-public interface IRunningStatistic<in TObs>
-{
-    public long Nobs { get; }
-
-    public void Fit(IEnumerable<TObs> values);
-
-    public void Fit(TObs value);
-
-    public void Reset();
-}
-```
-
-The `IRunningStatistic<in TObs, TSelf>` provides methods for cloning/merging:
+All running statistics inherit from the following abstract class:
 
 ```csharp
-public interface IRunningStatistic<in TObs, TSelf> : IRunningStatistic<TObs> where TSelf : IRunningStatistic<TObs, TSelf>
+public abstract class AbstractRunningStatistic<TObs, TSelf> where TSelf : AbstractRunningStatistic<TObs, TSelf>
 {
-    public TSelf CloneEmpty();
+    public virtual long Nobs { get; protected set; }
 
-    public TSelf Clone();
+    public abstract void Fit(TObs value);
 
-    public void Merge(TSelf other);
+    public virtual void Fit(IEnumerable<TObs> values)
+    {
+        foreach (var value in values)
+        {
+            Fit(value);
+        }
+    }
 
-    public static abstract TSelf Merge(TSelf first, TSelf second);
+    public abstract void Reset();
+
+    public abstract TSelf CloneEmpty();
+
+    public abstract TSelf Clone();
+
+    public abstract void Merge(TSelf other);
+
+    public static TSelf Merge(TSelf first, TSelf second)
+    {
+        var stat = first.CloneEmpty();
+        stat.Merge(first);
+        stat.Merge(second);
+        return stat;
+    }
 }
-```
 
-Therefore merging can only be done when the concrete classes are known, and concrete classes may be cloned.
+```
 
 
 ## Examples
@@ -82,4 +86,52 @@ for (var i = 0; i < 1000; i++)
 
 mean1.Merge(mean2);
 var q1 = ecdf.Quantile(0.25);
+```
+
+## Combining Statistics
+
+Different statistics are intended to be used on their own. If a collection of statistics is appropriate, then we recommend that you write your own class that inherits from `AbstractRunningStatistic<TObs, YourClass>` and use the desired statistics as private members. Example:
+
+```csharp
+public class MyClass : AbstractRunningStatistic<double, MyClass>
+{
+    private EmpiricalCdf Ecdf { get; init; } = new();
+    
+    private CountMap<double> CountMap { get; init; } = new();
+
+    public override long Nobs => Ecdf.Nobs;
+
+
+    public override void Fit(double value)
+    {
+        Ecdf.Fit(value);
+        CountMap.Fit(value);
+    }
+
+    public override void Reset()
+    {
+        Ecdf.Reset();
+        CountMap.Reset();
+    }
+
+    public override MyClass CloneEmpty()
+    {
+        return new MyClass();
+    }
+
+    public override MyClass Clone()
+    {
+        return new MyClass
+        {
+            Ecdf = Ecdf.Clone(),
+            CountMap = CountMap.Clone()
+        };
+    }
+
+    public override void Merge(MyClass other)
+    {
+        Ecdf.Merge(other.Ecdf);
+        CountMap.Merge(other.CountMap);
+    }
+}
 ```
