@@ -1,4 +1,5 @@
 ﻿using System;
+using MathNet.Numerics.Distributions;
 using Xunit;
 
 namespace RunningStatistics.Tests
@@ -105,51 +106,47 @@ namespace RunningStatistics.Tests
         [Theory]
         [InlineData(2.0, 1.0)]
         [InlineData(2.0, 10.0)]
-        public void TestNormal(double mu, double sd)
+        public void TestNormal(double mean, double stdDev)
         {
             const int n = 10_000_000;
-            var rng = new Random();
+            var dist = new MathNet.Numerics.Distributions.Normal(mean, stdDev);
 
             var moments = new Moments();
 
             for (var i = 0; i < n; i++)
             {
-                moments.Fit(rng.RandNorm(mu, sd));
+                moments.Fit(dist.Sample());
             }
 
-            const double skewness = 0.0;
             const double excessKurtosis = 0.0;
 
-            Assert.Equal(0.0, Utils.RelError(mu, moments.Mean), 2);
-            Assert.Equal(0.0, Utils.RelError(sd, Math.Sqrt(moments.Variance)), 2);
-            Assert.Equal(skewness, moments.Skewness, 2);
+            Assert.Equal(0.0, Utils.RelError(dist.Mean, moments.Mean), 2);
+            Assert.Equal(0.0, Utils.RelError(dist.StdDev, Math.Sqrt(moments.Variance)), 2);
+            Assert.Equal(dist.Skewness, moments.Skewness, 2);
             Assert.Equal(excessKurtosis, moments.ExcessKurtosis, 2);
         }
 
         [Fact]
         public void TestLogNormal()
         {
+            const int n = 100_000_000;
             const double mu = 0.0;
             const double sd = 0.5;
             const double s2 = sd * sd;
-            const int n = 100_000_000;
-            var rng = new Random();
+            var dist = new LogNormal(mu, sd);
 
             var moments = new Moments();
 
             for (var i = 0; i < n; i++)
             {
-                moments.Fit(rng.RandLogNorm(mu, sd));
+                moments.Fit(dist.Sample());
             }
-
-            var mean = Math.Exp(mu + s2 / 2.0);
-            var variance = (Math.Exp(s2) - 1) * Math.Exp(2.0 * mu + s2);
-            var skewness = (Math.Exp(s2) + 2) * Math.Sqrt(Math.Exp(s2) - 1.0);
+            
             var excessKurtosis = Math.Exp(4.0 * s2) + 2.0 * Math.Exp(3.0 * s2) + 3.0 * Math.Exp(2.0 * s2) - 6;
 
-            Assert.Equal(0.0, Utils.RelError(mean, moments.Mean), 2);
-            Assert.Equal(0.0, Utils.RelError(variance, moments.Variance), 2);
-            Assert.Equal(0.0, Utils.RelError(skewness, moments.Skewness), 2);
+            Assert.Equal(0.0, Utils.RelError(dist.Mean, moments.Mean), 2);
+            Assert.Equal(0.0, Utils.RelError(dist.Variance, moments.Variance), 2);
+            Assert.Equal(0.0, Utils.RelError(dist.Skewness, moments.Skewness), 2);
             Assert.Equal(0.0, Utils.RelError(excessKurtosis, moments.ExcessKurtosis), 2);
         }
     }
