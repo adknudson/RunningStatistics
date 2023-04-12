@@ -7,17 +7,17 @@ namespace RunningStatistics;
 /// <summary>
 /// Approximate order statistics (CDF) with batches of a given size.
 /// </summary>
-public class EmpiricalCdf : IRunningStatistic<double, double[], EmpiricalCdf>
+public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
 {
     private readonly Extrema _extrema;
-    private readonly double[] _buffer;
+    private readonly double[] _buffer, _value;
 
     
 
     public EmpiricalCdf(int numBins = 200)
     {
         NumBins = numBins;
-        Value = new double[NumBins];
+        _value = new double[NumBins];
         _buffer = new double[NumBins];
         _extrema = new Extrema();
     }
@@ -25,7 +25,7 @@ public class EmpiricalCdf : IRunningStatistic<double, double[], EmpiricalCdf>
     private EmpiricalCdf(EmpiricalCdf other)
     {
         NumBins = other.NumBins;
-        Value = other.Value.ToArray();
+        _value = other._value.ToArray();
         _buffer = other._buffer.ToArray();
         _extrema = other._extrema.Clone();
     }
@@ -33,8 +33,6 @@ public class EmpiricalCdf : IRunningStatistic<double, double[], EmpiricalCdf>
 
     
     public long Nobs => _extrema.Nobs;
-    
-    public double[] Value { get; }
 
     public double Median => Quantile(0.5);
     
@@ -67,7 +65,7 @@ public class EmpiricalCdf : IRunningStatistic<double, double[], EmpiricalCdf>
         Array.Sort(_buffer);
         for (var k = 0; k < NumBins; k++)
         {
-            Value[k] = Utils.Smooth(Value[k], _buffer[k], (double) NumBins / Nobs);
+            _value[k] = Utils.Smooth(_value[k], _buffer[k], (double) NumBins / Nobs);
         }
     }
 
@@ -92,7 +90,7 @@ public class EmpiricalCdf : IRunningStatistic<double, double[], EmpiricalCdf>
 
         for (var k = 0; k < NumBins; k++)
         {
-            Value[k] = Utils.Smooth(Value[k], empiricalCdf.Value[k], (double) empiricalCdf.Nobs / Nobs);
+            _value[k] = Utils.Smooth(_value[k], empiricalCdf._value[k], (double) empiricalCdf.Nobs / Nobs);
         }
     }
 
@@ -108,7 +106,7 @@ public class EmpiricalCdf : IRunningStatistic<double, double[], EmpiricalCdf>
     {
         for (var i = 0; i < NumBins; i++)
         {
-            Value[i] = 0;
+            _value[i] = 0;
             _buffer[i] = 0;
         }
 
@@ -127,8 +125,8 @@ public class EmpiricalCdf : IRunningStatistic<double, double[], EmpiricalCdf>
         }
 
         var i = (int) Math.Floor((NumBins - 1) * p);
-        return Value[i];
+        return _value[i];
     }
     
-    public override string ToString() => $"{typeof(EmpiricalCdf)}(n={Nobs})";
+    public override string ToString() => $"{typeof(EmpiricalCdf)} Nobs={Nobs} | NumBins={NumBins}";
 }

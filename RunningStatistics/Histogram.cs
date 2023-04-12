@@ -7,7 +7,7 @@ namespace RunningStatistics;
 /// <summary>
 /// A histogram with bin partitions defined by edges.
 /// </summary>
-public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Histogram>, IEnumerable<HistogramBin>
+public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<HistogramBin>
 {
     private HistogramOutOfBounds _outOfBounds;
     private readonly IList<double> _edges;
@@ -49,8 +49,6 @@ public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Hi
     
     
     public long Nobs { get; private set; }
-
-    public IEnumerable<HistogramBin> Value => Bins;
 
     public (long Lower, long Upper) OutOfBoundsCounts => _outOfBounds.Counts;
     
@@ -189,7 +187,7 @@ public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Hi
         var hist = CloneEmpty();
         hist._outOfBounds = _outOfBounds.Clone();
         
-        foreach (var bin in Value)
+        foreach (var bin in this)
         {
             hist.Fit(bin.Midpoint, bin.Nobs);
         }
@@ -201,7 +199,7 @@ public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Hi
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    public override string ToString() => $"{typeof(Histogram)}(n={Nobs})";
+    public override string ToString() => $"{typeof(Histogram)} Nobs={Nobs} | NumBins={NumBins}";
     
     private bool BinsAreMatching(ICollection<HistogramBin> other)
     {

@@ -43,25 +43,11 @@ public class HistogramBin
     
     internal bool Contains(double value)
     {
-        if (value < Lower || value > Upper)
-        {
-            return false;
-        }
-
-        if (Lower < value && value < Upper)
-        {
-            return true;
-        }
-
-        if (value.Equals(Lower))
-        {
-            return ClosedLeft;
-        }
-
-        if (value.Equals(Upper))
-        {
-            return ClosedRight;
-        }
+        if (value < Lower || value > Upper) return false;
+        if (Lower < value && value < Upper) return true;
+        
+        if (value.Equals(Lower)) return ClosedLeft;
+        if (value.Equals(Upper)) return ClosedRight;
 
         return false;
     }
@@ -76,14 +62,14 @@ public class HistogramBin
         Nobs += other.Nobs;
     }
 
-    internal void Increment(long k = 1)
+    internal void Increment(long count = 1)
     {
-        Nobs += k;
+        Nobs += count;
     }
 
     public override string ToString()
     {
-        return $"Bin {BinName}, n={Nobs}";
+        return $"{typeof(HistogramBin)} Nobs={Nobs} | Bin={BinName}";
     }
 
     public bool Equals(HistogramBin other)

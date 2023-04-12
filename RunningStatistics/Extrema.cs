@@ -6,8 +6,11 @@ namespace RunningStatistics;
 /// <summary>
 /// Minimum and maximum (and number of occurrences for each) for a data stream of type <see cref="double"/>.
 /// </summary>
-public class Extrema : IRunningStatistic<double, (double Min, long MinCount, double Max, long MaxCount), Extrema>
+public class Extrema : IRunningStatistic<double, Extrema>
 {
+    /// <summary>
+    /// Square root of double machine precision
+    /// </summary>
     private const double Tolerance = 1.4901161193847656e-8;
 
 
@@ -22,21 +25,19 @@ public class Extrema : IRunningStatistic<double, (double Min, long MinCount, dou
 
 
 
-    public long MinCount { get; private set; }
-    
-    public long MaxCount { get; private set; }
+    public double Min { get; private set; }
     
     public double Max { get; private set; }
     
-    public double Min { get; private set; }
+    public long MinCount { get; private set; }
+    
+    public long MaxCount { get; private set; }
     
     public double Range => Max - Min;
     
     public long Nobs { get; private set; }
 
-    public (double Min, long MinCount, double Max, long MaxCount) Value => (Min, MinCount, Max, MaxCount);
 
-    
 
     public void Fit(IEnumerable<double> values)
     {
@@ -46,37 +47,31 @@ public class Extrema : IRunningStatistic<double, (double Min, long MinCount, dou
         }
     }
 
-    public void Fit(double value, long k)
+    public void Fit(double value)
     {
-        Nobs += k;
+        Fit(value, 1);
+    }
+
+    public void Fit(double value, long count)
+    {
+        if (Nobs == 0) Min = Max = value;
+
+        Nobs += count;
         
         if (value < Min)
         {
             Min = value;
-            MinCount = k;
+            MinCount = count;
         }
 
         if (value > Max)
         {
             Max = value;
-            MaxCount = k;
+            MaxCount = count;
         }
-
-
-        if (Math.Abs(value - Min) < Tolerance)
-        {
-            MinCount += k;
-        }
-
-        if (Math.Abs(value - Max) < Tolerance)
-        {
-            MaxCount += k;
-        }
-    }
-
-    public void Fit(double value)
-    {
-        Fit(value, 1);
+        
+        if (Math.Abs(value - Min) < Tolerance) MinCount += count;
+        if (Math.Abs(value - Max) < Tolerance) MaxCount += count;
     }
 
     public void Merge(Extrema extrema)
@@ -137,5 +132,5 @@ public class Extrema : IRunningStatistic<double, (double Min, long MinCount, dou
         };
     }
 
-    public override string ToString() => $"{typeof(Extrema)}(min={Min:F2}, max={Max:F2}, n={Nobs})";
+    public override string ToString() => $"{typeof(Extrema)} Nobs={Nobs} | Min={Min:F2}, Max={Max:F2}, MinCount={MinCount}, MaxCount={MaxCount}";
 }

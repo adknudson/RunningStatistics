@@ -9,7 +9,7 @@ namespace RunningStatistics.Test
         public void EmptyMomentsAreNaN()
         {
             Moments moments = new();
-            var (mean, variance, skewness, kurtosis) = moments.Value;
+            var (mean, variance, skewness, kurtosis) = moments;
 
             Assert.Equal(double.NaN, mean);
             Assert.Equal(double.NaN, variance);
@@ -21,7 +21,7 @@ namespace RunningStatistics.Test
         public void MergeEmptyAreNaN()
         {
             Moments a = new(); Moments b = new(); a.Merge(b);
-            var (mean, variance, skewness, kurtosis) = a.Value;
+            var (mean, variance, skewness, kurtosis) = a;
 
             Assert.Equal(double.NaN, mean);
             Assert.Equal(double.NaN, variance);
@@ -94,12 +94,12 @@ namespace RunningStatistics.Test
             const double mean = (0.0 + 1.0 - double.Epsilon) / 2.0;
             var variance = Math.Pow(1.0 - double.Epsilon, 2) / 12.0;
             const double skewness = 0.0;
-            const double kurtosis = -6.0 / 5.0;
+            const double excessKurtosis = -6.0 / 5.0;
 
             Assert.Equal(mean, moments.Mean, 2);
             Assert.Equal(variance, moments.Variance, 2);
             Assert.Equal(skewness, moments.Skewness, 2);
-            Assert.Equal(kurtosis, moments.Kurtosis, 2);
+            Assert.Equal(excessKurtosis, moments.ExcessKurtosis, 2);
         }
 
         [Theory]
@@ -118,12 +118,12 @@ namespace RunningStatistics.Test
             }
 
             const double skewness = 0.0;
-            const double kurtosis = 0.0;
+            const double excessKurtosis = 0.0;
 
             Assert.Equal(0.0, Utils.RelError(mu, moments.Mean), 2);
-            Assert.Equal(0.0, Utils.RelError(sd, moments.StandardDeviation), 2);
+            Assert.Equal(0.0, Utils.RelError(sd, Math.Sqrt(moments.Variance)), 2);
             Assert.Equal(skewness, moments.Skewness, 2);
-            Assert.Equal(kurtosis, moments.Kurtosis, 2);
+            Assert.Equal(excessKurtosis, moments.ExcessKurtosis, 2);
         }
 
         [Fact]
@@ -145,12 +145,12 @@ namespace RunningStatistics.Test
             var mean = Math.Exp(mu + s2 / 2.0);
             var variance = (Math.Exp(s2) - 1) * Math.Exp(2.0 * mu + s2);
             var skewness = (Math.Exp(s2) + 2) * Math.Sqrt(Math.Exp(s2) - 1.0);
-            var kurtosis = Math.Exp(4.0 * s2) + 2.0 * Math.Exp(3.0 * s2) + 3.0 * Math.Exp(2.0 * s2) - 6;
+            var excessKurtosis = Math.Exp(4.0 * s2) + 2.0 * Math.Exp(3.0 * s2) + 3.0 * Math.Exp(2.0 * s2) - 6;
 
             Assert.Equal(0.0, Utils.RelError(mean, moments.Mean), 2);
             Assert.Equal(0.0, Utils.RelError(variance, moments.Variance), 2);
             Assert.Equal(0.0, Utils.RelError(skewness, moments.Skewness), 2);
-            Assert.Equal(0.0, Utils.RelError(kurtosis, moments.Kurtosis), 2);
+            Assert.Equal(0.0, Utils.RelError(excessKurtosis, moments.ExcessKurtosis), 2);
         }
     }
 }

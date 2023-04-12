@@ -17,7 +17,7 @@ namespace RunningStatistics.Test
 
             Assert.Equal(0, h.Nobs);
 
-            foreach (var bin in h.Value)
+            foreach (var bin in h)
             {
                 Assert.Equal(0, bin.Nobs);
             }
@@ -49,7 +49,7 @@ namespace RunningStatistics.Test
 
             a.Merge(b);
 
-            foreach (var (binA, binC) in a.Value.Zip(c.Value))
+            foreach (var (binA, binC) in a.Zip(c))
             {
                 Assert.Equal(binA.Nobs, binC.Nobs);
             }
@@ -70,7 +70,7 @@ namespace RunningStatistics.Test
             Assert.Equal(0, h.OutOfBoundsCounts.Lower);
             Assert.Equal(1, h.OutOfBoundsCounts.Upper);
 
-            foreach (var bin in h.Value)
+            foreach (var bin in h)
             {
                 Assert.Equal(1, bin.Nobs);
             }
@@ -91,7 +91,7 @@ namespace RunningStatistics.Test
             Assert.Equal(0, h.OutOfBoundsCounts.Lower);
             Assert.Equal(1, h.OutOfBoundsCounts.Upper);
 
-            foreach (var bin in h.Value)
+            foreach (var bin in h)
             {
                 Assert.Equal(1, bin.Nobs);
             }
@@ -112,7 +112,7 @@ namespace RunningStatistics.Test
             Assert.Equal(0, h.OutOfBoundsCounts.Lower);
             Assert.Equal(1, h.OutOfBoundsCounts.Upper);
 
-            foreach (var bin in h.Value)
+            foreach (var bin in h)
             {
                 Assert.Equal(1, bin.Nobs);
             }
@@ -134,7 +134,7 @@ namespace RunningStatistics.Test
             Assert.Equal(1, h.OutOfBoundsCounts.Lower);
             Assert.Equal(1, h.OutOfBoundsCounts.Upper);
 
-            foreach (var bin in h.Value)
+            foreach (var bin in h)
             {
                 Assert.Equal(1, bin.Nobs);
             }

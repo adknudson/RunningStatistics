@@ -6,7 +6,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Tracks the first four non-central moments, stored as a <see cref="double"/>.
 /// </summary>
-public class Moments : IRunningStatistic<double, (double Mean, double Variance, double Skewness, double ExcessKurtosis), Moments>
+public class Moments : IRunningStatistic<double, Moments>
 {
     private double _mean, _variance, _skewness, _kurtosis;
 
@@ -25,26 +25,29 @@ public class Moments : IRunningStatistic<double, (double Mean, double Variance, 
 
     public long Nobs { get; private set; }
     
+    /// <summary>
+    /// The first central moment is the measure of central location.
+    /// </summary>
     public double Mean => Nobs == 0 ? double.NaN : _mean;
 
     /// <summary>
-    /// The bias-corrected variance.
+    /// The second central moment is the measure of the spread of the distribution.
     /// </summary>
     public double Variance => Nobs == 0 ? double.NaN : Utils.BesselCorrection(Nobs) * (_variance - _mean * _mean);
+    
+    /// <summary>
+    /// The bias-corrected variance.
+    /// </summary>
+    public double BiasCorrectedVariance => Nobs == 0 ? double.NaN : Utils.BesselCorrection(Nobs) * (_variance - _mean * _mean);
 
     /// <summary>
-    /// The sample standard deviation.
+    /// The third central moment is the measure of the lopsidedness of the distribution
     /// </summary>
-    public double StandardDeviation => Math.Sqrt(Variance);
-
     public double Skewness
     {
         get
         {
-            if (Nobs == 0)
-            {
-                return double.NaN;
-            }
+            if (Nobs == 0) return double.NaN;
 
             var mean2 = _mean * _mean;
             var vr = _variance - mean2;
@@ -52,14 +55,14 @@ public class Moments : IRunningStatistic<double, (double Mean, double Variance, 
         }
     }
 
+    /// <summary>
+    /// The fourth central moment is a measure of the heaviness of the tail of the distribution. This is the non-excess (historical) kurtosis.
+    /// </summary>
     public double Kurtosis
     {
         get
         {
-            if (Nobs == 0)
-            {
-                return double.NaN;
-            }
+            if (Nobs == 0) return double.NaN;
 
             var mean2 = _mean * _mean;
             var mean4 = mean2 * mean2;
@@ -69,11 +72,15 @@ public class Moments : IRunningStatistic<double, (double Mean, double Variance, 
         }
     }
     
+    /// <summary>
+    /// The amount of kurtosis relative to a Gaussian distribution.
+    /// </summary>
     public double ExcessKurtosis => Kurtosis - 3;
 
-    public (double Mean, double Variance, double Skewness, double ExcessKurtosis) Value =>
-        (Mean, Variance, Skewness, ExcessKurtosis);
+    public bool IsLeptokurtic => ExcessKurtosis > 0;
 
+    public bool IsPlatykurtic => ExcessKurtosis < 0;
+    
     
     
     public void Fit(IEnumerable<double> values)
@@ -110,7 +117,7 @@ public class Moments : IRunningStatistic<double, (double Mean, double Variance, 
     {
         Nobs += moments.Nobs;
 
-        if (Nobs <= 0) return;
+        if (Nobs == 0) return;
 
         var g = (double) moments.Nobs / Nobs;
         _mean = Utils.Smooth(_mean, moments._mean, g);
@@ -146,6 +153,32 @@ public class Moments : IRunningStatistic<double, (double Mean, double Variance, 
 
     public override string ToString()
     {
-        return $"{typeof(Moments)}(M=[{Mean:F2}, {Variance:F2}, {Skewness:F2}, {ExcessKurtosis:F2}], n={Nobs})";
+        return $"{typeof(Moments)} Nobs={Nobs} | M1={Mean:F2}, M2={Variance:F2}, M3={Skewness:F2}, M4={Kurtosis:F2}";
+    }
+
+    public void Deconstruct(out double mean)
+    {
+        mean = Mean;
+    }
+
+    public void Deconstruct(out double mean, out double variance)
+    {
+        mean = Mean;
+        variance = Variance;
+    }
+
+    public void Deconstruct(out double mean, out double variance, out double skewness)
+    {
+        mean = Mean;
+        variance = Variance;
+        skewness = Skewness;
+    }
+    
+    public void Deconstruct(out double mean, out double variance, out double skewness, out double kurtosis)
+    {
+        mean = Mean;
+        variance = Variance;
+        skewness = Skewness;
+        kurtosis = Kurtosis;
     }
 }

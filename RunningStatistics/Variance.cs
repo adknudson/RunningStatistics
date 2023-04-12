@@ -3,15 +3,14 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public class Variance : IRunningStatistic<double, double, Variance>
+public class Variance : IRunningStatistic<double, Variance>
 {
     private double _mean, _variance;
 
 
 
     public long Nobs { get; private set; }
-
-
+    
     /// <summary>
     /// Returns the bias-corrected variance.
     /// </summary>
@@ -24,6 +23,8 @@ public class Variance : IRunningStatistic<double, double, Variance>
         }
     }
 
+    
+    
     public void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();
@@ -90,5 +91,7 @@ public class Variance : IRunningStatistic<double, double, Variance>
         };
     }
 
-    public override string ToString() => $"{typeof(Variance)}(σ²={Value}, n={Nobs})";
+    public override string ToString() => $"{typeof(Variance)} Nobs={Nobs} | σ²={Value}";
+
+    public static explicit operator double(Variance variance) => variance.Value;
 }

@@ -2,6 +2,9 @@
 
 namespace RunningStatistics;
 
+/// <summary>
+/// The common interface for all statistics that can fit observations of type <see cref="TObs"/>
+/// </summary>
 public interface IRunningStatistic<in TObs>
 {
     /// <summary>
@@ -26,16 +29,12 @@ public interface IRunningStatistic<in TObs>
 }
 
 
-public interface IRunningStatistic<in TObs, out TValue> : IRunningStatistic<TObs>
-{
-    /// <summary>
-    /// A generic representation of the running statistic.
-    /// </summary>
-    public TValue Value { get; }
-}
 
-
-public interface IRunningStatistic<in TObs, out TValue, TSelf> : IRunningStatistic<TObs, TValue> where TSelf : IRunningStatistic<TObs, TValue, TSelf>
+/// <summary>
+/// The common interface for statistics that can fit observations of type <see cref="TObs"/> and adds the clone/merge
+/// interface.
+/// </summary>
+public interface IRunningStatistic<in TObs, TSelf> : IRunningStatistic<TObs> where TSelf : IRunningStatistic<TObs, TSelf>
 {
     /// <summary>
     /// Create a copy of the running statistic with the same internal parameters but with zero observations.

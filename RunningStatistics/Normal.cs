@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public class Normal : IRunningStatistic<double, (double Mean, double Variance), Normal>
+public class Normal : IRunningStatistic<double, Normal>
 {
     private readonly Mean _mean;
     private readonly Variance _variance;
@@ -27,10 +27,11 @@ public class Normal : IRunningStatistic<double, (double Mean, double Variance), 
 
     public long Nobs => _mean.Nobs;
 
-    public (double Mean, double Variance) Value => (Mean, Variance);
-
     public double Mean => _mean.Value;
     
+    /// <summary>
+    /// The bias-corrected variance.
+    /// </summary>
     public double Variance => _variance.Value;
     
     public double StandardDeviation => Math.Sqrt(_variance.Value);
@@ -82,6 +83,6 @@ public class Normal : IRunningStatistic<double, (double Mean, double Variance), 
 
     public override string ToString()
     {
-        return $"{typeof(Normal)}(μ={Mean}, σ²={Variance}, n={Nobs}";
+        return $"{typeof(Normal)} Nobs={Nobs} | μ={Mean}, σ²={Variance}";
     }
 }

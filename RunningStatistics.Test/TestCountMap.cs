@@ -50,9 +50,9 @@ namespace RunningStatistics.Test
             a.Fit("something", 1);
             a.Fit("everything", 2);
             
-            Assert.NotEmpty(a.Value);
+            Assert.NotEmpty(a);
             a.Reset();
-            Assert.Empty(a.Value);
+            Assert.Empty(a);
             Assert.Equal(0, a.Nobs);
         }
 

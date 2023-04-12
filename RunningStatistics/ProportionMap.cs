@@ -4,8 +4,7 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public class ProportionMap<TObs> : IReadOnlyDictionary<TObs, double>,
-    IRunningStatistic<TObs, IDictionary<TObs, double>, ProportionMap<TObs>> where TObs: notnull
+public class ProportionMap<TObs> : IReadOnlyDictionary<TObs, double>, IRunningStatistic<TObs, ProportionMap<TObs>> where TObs: notnull
 {
     private readonly CountMap<TObs> _countMap;
 
@@ -18,7 +17,7 @@ public class ProportionMap<TObs> : IReadOnlyDictionary<TObs, double>,
 
     public ProportionMap(CountMap<TObs> countMap)
     {
-        _countMap = countMap.Clone();
+        _countMap = countMap;
     }
 
     public ProportionMap(IDictionary<TObs, long> valueCounts)
@@ -30,11 +29,11 @@ public class ProportionMap<TObs> : IReadOnlyDictionary<TObs, double>,
 
     public long Nobs => _countMap.Nobs;
 
-    public IDictionary<TObs, double> Value => new Dictionary<TObs, double>(this);
-
-    int IReadOnlyCollection<KeyValuePair<TObs, double>>.Count => _countMap.Value.Count;
-
     public double this[TObs key] => TryGetValue(key, out var value) ? value : default;
+
+    int IReadOnlyCollection<KeyValuePair<TObs, double>>.Count => _countMap.AsDictionary().Count;
+
+    public int NumUnique => _countMap.NumUnique;
     
     public IEnumerable<TObs> Keys => _countMap.Keys;
 
@@ -46,7 +45,7 @@ public class ProportionMap<TObs> : IReadOnlyDictionary<TObs, double>,
 
     public void Fit(TObs value) => _countMap.Fit(value);
 
-    public void Fit(TObs obs, long k) => _countMap.Fit(obs, k);
+    public void Fit(TObs obs, long count) => _countMap.Fit(obs, count);
 
     public void Merge(ProportionMap<TObs> other) => _countMap.Merge(other._countMap);
 
@@ -101,5 +100,7 @@ public class ProportionMap<TObs> : IReadOnlyDictionary<TObs, double>,
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     
-    public override string ToString() => $"{typeof(ProportionMap<TObs>)}(n={Nobs}) with {Value.Keys.Count} unique values.";
+    public override string ToString() => $"{typeof(ProportionMap<TObs>)} Nobs={Nobs} | {NumUnique} unique values";
+
+    public IDictionary<TObs, double> ToDictionary() => this.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 }

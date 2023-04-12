@@ -8,18 +8,21 @@ namespace RunningStatistics;
 /// A dictionary that maps unique values to its number of occurrences. Accessing a non-existent key will return a count
 /// of zero, however a new key will not be added to the internal dictionary.
 /// </summary>
-public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>,
-    IRunningStatistic<TObs, IDictionary<TObs, long>, CountMap<TObs>> where TObs : notnull
+public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>, IRunningStatistic<TObs, CountMap<TObs>> where TObs : notnull
 {
+    private readonly IDictionary<TObs, long> _dict;
+    
+    
+    
     public CountMap()
     {
-        Value = new Dictionary<TObs, long>();
+        _dict = new Dictionary<TObs, long>();
         Nobs = 0;
     }
 
     public CountMap(IDictionary<TObs, long> dictionary)
     {
-        Value = dictionary;
+        _dict = dictionary;
         Nobs = dictionary.Values.Sum();
     }
 
@@ -27,13 +30,13 @@ public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>,
 
     public long Nobs { get; private set; }
 
-    public IDictionary<TObs, long> Value { get; }
+    public long this[TObs key] => _dict.TryGetValue(key, out var value) ? value : 0;
 
-    public long this[TObs key] => Value.TryGetValue(key, out var value) ? value : 0;
+    public IEnumerable<TObs> Keys => _dict.Keys;
 
-    public IEnumerable<TObs> Keys => Value.Keys;
+    public IEnumerable<long> Values => _dict.Values;
 
-    public IEnumerable<long> Values => Value.Values;
+    public int NumUnique => _dict.Count;
 
     
     
@@ -50,23 +53,34 @@ public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>,
         Fit(value, 1);
     }
 
-    public void Fit(TObs obs, long k)
+    public void Fit(TObs obs, long count)
     {
-        Nobs += k;
+        Nobs += count;
 
-        if (Value.ContainsKey(obs))
+        if (_dict.ContainsKey(obs))
         {
-            Value[obs] += k;
+            _dict[obs] += count;
         }
         else
         {
-            Value[obs] = k;
+            _dict[obs] = count;
+        }
+    }
+    
+    /// <summary>
+    /// Fit a list of value-count pairs.
+    /// </summary>
+    public void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs)
+    {
+        foreach (var (value, count) in keyValuePairs)
+        {
+            Fit(value, count);
         }
     }
 
     public void Merge(CountMap<TObs> countMap)
     {
-        foreach (var (key, value) in countMap.Value)
+        foreach (var (key, value) in countMap._dict)
         {
             Fit(key, value);
         }
@@ -74,7 +88,7 @@ public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>,
 
     public void Reset()
     {
-        Value.Clear();
+        _dict.Clear();
         Nobs = 0;
     }
 
@@ -87,7 +101,7 @@ public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>,
     {
         var countmap = new CountMap<TObs>();
         
-        foreach (var (key, nobs) in Value)
+        foreach (var (key, nobs) in _dict)
         {
             countmap.Fit(key, nobs);
         }
@@ -103,15 +117,19 @@ public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>,
         return stat;
     }
 
-    public bool ContainsKey(TObs key) => Value.ContainsKey(key);
+    public bool ContainsKey(TObs key) => _dict.ContainsKey(key);
 
-    public bool TryGetValue(TObs key, out long value) => Value.TryGetValue(key, out value);
+    public bool TryGetValue(TObs key, out long value) => _dict.TryGetValue(key, out value);
     
-    public IEnumerator<KeyValuePair<TObs, long>> GetEnumerator() => Value.GetEnumerator();
+    public IEnumerator<KeyValuePair<TObs, long>> GetEnumerator() => _dict.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     
-    public override string ToString() => $"{typeof(CountMap<TObs>)}(n={Nobs}) with {Value.Keys.Count} unique values.";
+    public override string ToString() => $"{typeof(CountMap<TObs>)} Nobs={Nobs} | {NumUnique} unique values";
 
-    int IReadOnlyCollection<KeyValuePair<TObs, long>>.Count => Value.Count;
+    int IReadOnlyCollection<KeyValuePair<TObs, long>>.Count => _dict.Count;
+
+    public IDictionary<TObs, long> AsDictionary() => _dict;
+
+    public IDictionary<TObs, long> ToDictionary() => new Dictionary<TObs, long>(_dict);
 }

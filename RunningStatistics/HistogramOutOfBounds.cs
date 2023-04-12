@@ -22,6 +22,8 @@ internal struct HistogramOutOfBounds
         
     public (long, long) Counts => (Lower, Upper);
 
+    public long Nobs => Lower + Upper;
+
         
         
     public void Reset()
@@ -58,5 +60,10 @@ internal struct HistogramOutOfBounds
             Lower = Lower,
             Upper = Upper
         };
+    }
+
+    public override string ToString()
+    {
+        return $"{typeof(HistogramOutOfBounds)} Nobs={Nobs} | LowerCount={Lower}, UpperCount={Upper}";
     }
 }

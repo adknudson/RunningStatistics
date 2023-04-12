@@ -3,7 +3,11 @@ using System.Numerics;
 
 namespace RunningStatistics;
 
-public class Sum<TObs> : IRunningStatistic<TObs, TObs, Sum<TObs>> where TObs : INumber<TObs>
+/// <summary>
+/// Keep track of the univariate sum.
+/// </summary>
+/// <typeparam name="TObs">Any generic number type.</typeparam>
+public class Sum<TObs> : IRunningStatistic<TObs, Sum<TObs>> where TObs : INumber<TObs>
 {
     public long Nobs { get; private set; }
 
@@ -59,5 +63,7 @@ public class Sum<TObs> : IRunningStatistic<TObs, TObs, Sum<TObs>> where TObs : I
         };
     }
 
-    public override string ToString() => $"{typeof(Sum<TObs>)}(Σ={Value}, n={Nobs})";
+    public override string ToString() => $"{typeof(Sum<TObs>)} Nobs={Nobs} | Σ={Value}";
+
+    public static explicit operator TObs(Sum<TObs> sum) => sum.Value;
 }

@@ -6,7 +6,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Tracks the univariate mean, stored as a <see cref="double"/>.
 /// </summary>
-public class Mean : IRunningStatistic<double, double, Mean>
+public class Mean : IRunningStatistic<double, Mean>
 {
     private double _value;
 
@@ -77,5 +77,7 @@ public class Mean : IRunningStatistic<double, double, Mean>
         };
     }
     
-    public override string ToString() => $"{typeof(Mean)}(μ={Value}, n={Nobs})";
+    public override string ToString() => $"{typeof(Mean)} Nobs={Nobs} | μ={Value}";
+
+    public static explicit operator double(Mean mean) => mean.Value;
 }
