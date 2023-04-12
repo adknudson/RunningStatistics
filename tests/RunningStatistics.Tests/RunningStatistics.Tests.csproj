@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RunningStatistics\RunningStatistics.csproj" />
+    <ProjectReference Include="..\..\src\RunningStatistics\RunningStatistics.csproj" />
   </ItemGroup>
 
 </Project>

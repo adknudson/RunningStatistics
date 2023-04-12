@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RunningStatistics.Test
+namespace RunningStatistics.Tests
 {
     internal static class Utils
     {

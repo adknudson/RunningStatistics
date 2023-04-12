@@ -1,6 +1,6 @@
 ﻿using Xunit;
 
-namespace RunningStatistics.Test
+namespace RunningStatistics.Tests
 {
     public class TestCountMap
     {

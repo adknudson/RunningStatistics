@@ -1,7 +1,7 @@
 ﻿using System;
 using Xunit;
 
-namespace RunningStatistics.Test
+namespace RunningStatistics.Tests
 {
     public class TestExtrema
     {
