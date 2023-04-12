@@ -19,7 +19,7 @@ public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>,
 
     public CountMap(IDictionary<TObs, long> dictionary)
     {
-        Value = new Dictionary<TObs, long>(dictionary);
+        Value = dictionary;
         Nobs = dictionary.Values.Sum();
     }
 
