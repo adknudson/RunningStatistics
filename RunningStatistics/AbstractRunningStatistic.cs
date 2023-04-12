@@ -18,10 +18,10 @@ public abstract class AbstractRunningStatistic<TObs, TSelf> where TSelf : Abstra
         protected set => _nobs = value;
     }
 
-    protected virtual long GetNobs()
-    {
-        return _nobs;
-    }
+    /// <summary>
+    /// The default method for retrieving the number of observations.
+    /// </summary>
+    protected virtual long GetNobs() => _nobs;
 
     /// <summary>
     /// Fit a single observation. 
