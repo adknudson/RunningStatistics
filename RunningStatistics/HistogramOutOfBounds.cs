@@ -22,17 +22,17 @@ internal struct HistogramOutOfBounds
         
     public (long, long) Counts => (Lower, Upper);
 
-    public long Nobs => Lower + Upper;
+    private long Nobs => Lower + Upper;
 
         
         
-    public void Reset()
+    internal void Reset()
     {
         Lower = 0;
         Upper = 0;
     }
 
-    public void Update(OutOfBoundsSide side, long count)
+    internal void Update(OutOfBoundsSide side, long count)
     {
         switch (side)
         {
@@ -47,13 +47,13 @@ internal struct HistogramOutOfBounds
         }
     }
 
-    public void Merge(HistogramOutOfBounds other)
+    internal void Merge(HistogramOutOfBounds other)
     {
         Lower += other.Lower;
         Upper += other.Upper;
     }
 
-    public HistogramOutOfBounds Clone()
+    internal HistogramOutOfBounds Clone()
     {
         return new HistogramOutOfBounds
         {
