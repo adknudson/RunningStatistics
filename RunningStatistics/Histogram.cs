@@ -68,11 +68,6 @@ public class Histogram : AbstractRunningStatistic<double, Histogram>, IEnumerabl
         }
     }
 
-    public override void Fit(double value)
-    {
-        Fit(value, 1);
-    }
-
     /// <summary>
     /// Fit a value with a specified number of observations.
     /// </summary>
@@ -81,7 +76,19 @@ public class Histogram : AbstractRunningStatistic<double, Histogram>, IEnumerabl
     public void Fit(double value, long count)
     {
         if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Must be non-negative.");
-        
+        UncheckedFit(value, count);
+    }
+    
+    public override void Fit(double value)
+    {
+        UncheckedFit(value, 1);
+    }
+
+    /// <summary>
+    /// Fit the value without checking if the count is non-negative.
+    /// </summary>
+    private void UncheckedFit(double value, long count)
+    {
         Nobs += count;
         
         var firstBin = Bins.First();
@@ -151,7 +158,7 @@ public class Histogram : AbstractRunningStatistic<double, Histogram>, IEnumerabl
         
         foreach (var bin in this)
         {
-            hist.Fit(bin.Midpoint, bin.Nobs);
+            hist.UncheckedFit(bin.Midpoint, bin.Nobs);
         }
         
         return hist;
@@ -175,7 +182,7 @@ public class Histogram : AbstractRunningStatistic<double, Histogram>, IEnumerabl
             // Using midpoints of source bins as approximate locations for merging
             foreach (var bin in histogram.Bins)
             {
-                Fit(bin.Midpoint, bin.Nobs);
+                UncheckedFit(bin.Midpoint, bin.Nobs);
             }
         }
     }

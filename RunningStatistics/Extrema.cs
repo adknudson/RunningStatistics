@@ -39,15 +39,22 @@ public class Extrema : AbstractRunningStatistic<double, Extrema>
 
     public override void Fit(double value)
     {
-        Fit(value, 1);
+        UncheckedFit(value, 1);
     }
 
     public void Fit(double value, long count)
     {
         if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Must be non-negative.");
-        
-        if (Nobs == 0) Min = Max = value;
+        UncheckedFit(value, count);
+    }
 
+    /// <summary>
+    /// Fit the value without checking if the count is non-negative.
+    /// </summary>
+    private void UncheckedFit(double value, long count)
+    {
+        if (Nobs == 0) Min = Max = value;
+        
         Nobs += count;
         
         if (value < Min)
