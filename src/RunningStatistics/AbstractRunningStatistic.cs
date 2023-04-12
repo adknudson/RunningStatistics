@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace RunningStatistics;
 
@@ -62,13 +64,21 @@ public abstract class AbstractRunningStatistic<TObs, TSelf> where TSelf : Abstra
     public abstract void Merge(TSelf other);
 
     /// <summary>
-    /// Merge two running statistics together into a new instance.
+    /// Merge one or more running statistics together into a new instance. If only a source statistic is supplied, then
+    /// this is equivalent to creating a clone of the source statistic.
     /// </summary>
-    public static TSelf Merge(TSelf first, TSelf second)
+    /// <param name="sourceStatistic">The running statistic which acts as the base for the returned statistic.</param>
+    /// <param name="stats">Extra statistics to be merged.</param>
+    /// <returns>A new instance of a running statistic.</returns>
+    public static TSelf Merge(TSelf sourceStatistic, params TSelf[] stats)
     {
-        var stat = first.CloneEmpty();
-        stat.Merge(first);
-        stat.Merge(second);
-        return stat;
+        var newStat = sourceStatistic.Clone();
+        
+        foreach (var stat in stats)
+        {
+            newStat.Merge(stat);
+        }
+
+        return newStat;
     }
 }
