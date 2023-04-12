@@ -22,7 +22,7 @@ internal struct HistogramOutOfBounds
         
     public (long, long) Counts => (Lower, Upper);
 
-    private long Nobs => Lower + Upper;
+    public long Nobs => Lower + Upper;
 
         
         
