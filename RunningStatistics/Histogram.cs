@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,7 +9,7 @@ namespace RunningStatistics;
 /// </summary>
 public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Histogram>, IEnumerable<HistogramBin>
 {
-    private OutOfBounds _outOfBounds;
+    private HistogramOutOfBounds _outOfBounds;
     private readonly IList<double> _edges;
     private readonly bool _leftClosed, _endsClosed;
 
@@ -46,9 +45,9 @@ public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Hi
             }
         }
     }
-
-
-
+    
+    
+    
     public long Nobs { get; private set; }
 
     public IEnumerable<HistogramBin> Value => Bins;
@@ -69,27 +68,43 @@ public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Hi
         }
     }
 
+    /// <summary>
+    /// Fit a list of value-count pairs.
+    /// </summary>
+    public void Fit(IEnumerable<KeyValuePair<double, long>> keyValuePairs)
+    {
+        foreach (var (value, count) in keyValuePairs)
+        {
+            Fit(value, count);
+        }
+    }
+
     public void Fit(double value)
     {
         Fit(value, 1);
     }
 
-    public void Fit(double value, long k)
+    /// <summary>
+    /// Fit a value with a specified number of observations.
+    /// </summary>
+    /// <param name="value">The value being fitted.</param>
+    /// <param name="count">The number of times the value is observed.</param>
+    public void Fit(double value, long count)
     {
-        Nobs += k;
+        Nobs += count;
         
         var firstBin = Bins.First();
         var lastBin = Bins.Last();
 
         if (value < firstBin.Lower)
         {
-            _outOfBounds.Update(Side.Lower, k);
+            _outOfBounds.Update(OutOfBoundsSide.Lower, count);
             return;
         }
 
         if (value > lastBin.Upper)
         {
-            _outOfBounds.Update(Side.Upper, k);
+            _outOfBounds.Update(OutOfBoundsSide.Upper, count);
             return;
         }
 
@@ -97,11 +112,11 @@ public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Hi
         {
             if (lastBin.ClosedRight)
             {
-                lastBin.Increment(k);
+                lastBin.Increment(count);
             }
             else
             {
-                _outOfBounds.Update(Side.Upper, k);
+                _outOfBounds.Update(OutOfBoundsSide.Upper, count);
             }
             return;
         }
@@ -110,17 +125,17 @@ public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Hi
         {
             if (firstBin.ClosedLeft)
             {
-                firstBin.Increment(k);
+                firstBin.Increment(count);
             }
             else
             {
-                _outOfBounds.Update(Side.Lower, k);
+                _outOfBounds.Update(OutOfBoundsSide.Lower, count);
             }
             return;
         }
 
         var bin = Bins.First(bin => bin.Contains(value));
-        bin.Increment(k);
+        bin.Increment(count);
     }
 
     public void Merge(Histogram histogram)
@@ -191,57 +206,5 @@ public class Histogram : IRunningStatistic<double, IEnumerable<HistogramBin>, Hi
     private bool BinsAreMatching(ICollection<HistogramBin> other)
     {
         return Bins.Count == other.Count && Bins.Zip(other).All(z => z.First.Equals(z.Second));
-    }
-    
-    private enum Side
-    {
-        Lower, Upper
-    }
-
-    private struct OutOfBounds
-    {
-        private long Lower { get; set; }
-
-        private long Upper { get; set; }
-        
-        public (long, long) Counts => (Lower, Upper);
-
-        
-        
-        public void Reset()
-        {
-            Lower = 0;
-            Upper = 0;
-        }
-
-        public void Update(Side side, long k)
-        {
-            switch (side)
-            {
-                case Side.Lower:
-                    Lower += k;
-                    return;
-                case Side.Upper:
-                    Upper += k;
-                    return;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(side), side, null);
-            }
-        }
-
-        public void Merge(OutOfBounds other)
-        {
-            Lower += other.Lower;
-            Upper += other.Upper;
-        }
-
-        public OutOfBounds Clone()
-        {
-            return new OutOfBounds
-            {
-                Lower = Lower,
-                Upper = Upper
-            };
-        }
     }
 }
