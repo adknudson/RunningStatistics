@@ -37,10 +37,10 @@ public sealed class HistogramBin
 
     public bool ClosedRight { get; }
 
-    internal double Midpoint => (Upper + Lower) / 2;
+    // TODO: Check behavior when ends are +/-Inf
+    internal double Midpoint => (Lower + Upper) / 2;
 
 
-    
     internal bool Contains(double value)
     {
         if (value < Lower || value > Upper) return false;
