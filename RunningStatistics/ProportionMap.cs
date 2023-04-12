@@ -29,9 +29,12 @@ public sealed class ProportionMap<TObs> : AbstractRunningStatistic<TObs, Proport
     
     public double this[TObs key] => TryGetValue(key, out var value) ? value : default;
 
-    int IReadOnlyCollection<KeyValuePair<TObs, double>>.Count => _countMap.NumUnique;
+    int IReadOnlyCollection<KeyValuePair<TObs, double>>.Count => _countMap.NumUniqueObs;
 
-    public int NumUnique => _countMap.NumUnique;
+    /// <summary>
+    /// The number of unique observations that have been fitted.
+    /// </summary>
+    public int NumUniqueObs => _countMap.NumUniqueObs;
     
     public IEnumerable<TObs> Keys => _countMap.Keys;
 
@@ -89,7 +92,7 @@ public sealed class ProportionMap<TObs> : AbstractRunningStatistic<TObs, Proport
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     
-    public override string ToString() => $"{typeof(ProportionMap<TObs>)} Nobs={Nobs} | {NumUnique} unique values";
+    public override string ToString() => $"{typeof(ProportionMap<TObs>)} Nobs={Nobs} | {NumUniqueObs} unique values";
 
     /// <summary>
     /// Returns a new dictionary with the current Observation-Proportion pairs.

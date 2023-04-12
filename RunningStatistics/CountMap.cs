@@ -34,7 +34,10 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
 
     public IEnumerable<long> Values => _dict.Values;
 
-    public int NumUnique => _dict.Count;
+    /// <summary>
+    /// The number of unique observations that have been fitted.
+    /// </summary>
+    public int NumUniqueObs => _dict.Count;
 
     
     
@@ -119,7 +122,7 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     
-    public override string ToString() => $"{typeof(CountMap<TObs>)} Nobs={Nobs} | {NumUnique} unique values";
+    public override string ToString() => $"{typeof(CountMap<TObs>)} Nobs={Nobs} | {NumUniqueObs} unique values";
 
     int IReadOnlyCollection<KeyValuePair<TObs, long>>.Count => _dict.Count;
 
