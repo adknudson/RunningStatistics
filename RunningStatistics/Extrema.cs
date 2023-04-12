@@ -54,7 +54,7 @@ public class Extrema : AbstractRunningStatistic<double, Extrema>
     private void UncheckedFit(double value, long count)
     {
         if (Nobs == 0) Min = Max = value;
-        
+
         Nobs += count;
         
         if (value < Min)

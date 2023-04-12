@@ -14,7 +14,6 @@ namespace RunningStatistics;
 public class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IReadOnlyDictionary<TObs, long> where TObs : notnull
 {
     private readonly IDictionary<TObs, long> _dict;
-    private long _nobs;
     
     
     
@@ -26,19 +25,12 @@ public class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IR
     public CountMap(IDictionary<TObs, long> dictionary)
     {
         _dict = dictionary;
-        _nobs = dictionary.Values.Sum();
+        Nobs = dictionary.Values.Sum();
     }
 
 
     
     public long this[TObs key] => _dict.TryGetValue(key, out var value) ? value : 0;
-    
-    // 'Nobs' is not converted to an auto-property in order to avoid a virtual member in the constructor
-    public override long Nobs
-    {
-        get => _nobs; 
-        protected set => _nobs = value;
-    }
 
     public IEnumerable<TObs> Keys => _dict.Keys;
 
@@ -101,7 +93,7 @@ public class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IR
     public override void Reset()
     {
         _dict.Clear();
-        _nobs = 0;
+        Nobs = 0;
     }
 
     public override CountMap<TObs> CloneEmpty()

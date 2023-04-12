@@ -7,10 +7,21 @@ namespace RunningStatistics;
 /// </summary>
 public abstract class AbstractRunningStatistic<TObs, TSelf> where TSelf : AbstractRunningStatistic<TObs, TSelf>
 {
+    private long _nobs;
+
     /// <summary>
     /// The number of observations that have been fitted.
     /// </summary>
-    public virtual long Nobs { get; protected set; }
+    public long Nobs
+    {
+        get => GetNobs();
+        protected set => _nobs = value;
+    }
+
+    protected virtual long GetNobs()
+    {
+        return _nobs;
+    }
 
     /// <summary>
     /// Fit a single observation. 

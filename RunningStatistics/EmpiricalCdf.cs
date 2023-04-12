@@ -39,10 +39,10 @@ public class EmpiricalCdf : AbstractRunningStatistic<double, EmpiricalCdf>
     
     private int NumBins { get; }
 
-    public override long Nobs => _extrema.Nobs;
-
 
     
+    protected override long GetNobs() => _extrema.Nobs;
+
     public override void Fit(double value)
     {
         var i = Nobs % NumBins;

@@ -23,9 +23,7 @@ public class Normal : AbstractRunningStatistic<double, Normal>
         _variance = other._variance.Clone();
     }
 
-    
 
-    public override long Nobs => _mean.Nobs;
 
     public double Mean => _mean.Value;
     
@@ -37,6 +35,8 @@ public class Normal : AbstractRunningStatistic<double, Normal>
     public double StandardDeviation => Math.Sqrt(_variance.Value);
     
     
+    
+    protected override long GetNobs() => _mean.Nobs;
     
     public override void Fit(IEnumerable<double> values)
     {

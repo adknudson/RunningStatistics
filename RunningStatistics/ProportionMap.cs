@@ -26,9 +26,7 @@ public class ProportionMap<TObs> : AbstractRunningStatistic<TObs, ProportionMap<
     }
 
 
-
-    public override long Nobs => _countMap.Nobs;
-
+    
     public double this[TObs key] => TryGetValue(key, out var value) ? value : default;
 
     int IReadOnlyCollection<KeyValuePair<TObs, double>>.Count => _countMap.NumUnique;
@@ -38,9 +36,11 @@ public class ProportionMap<TObs> : AbstractRunningStatistic<TObs, ProportionMap<
     public IEnumerable<TObs> Keys => _countMap.Keys;
 
     public IEnumerable<double> Values => _countMap.Values.Select(count => (double) count / Nobs);
+
     
-    
-    
+
+    protected override long GetNobs() => _countMap.Nobs;
+
     public override void Fit(IEnumerable<TObs> values) => _countMap.Fit(values);
 
     public override void Fit(TObs value) => _countMap.Fit(value);
@@ -49,10 +49,7 @@ public class ProportionMap<TObs> : AbstractRunningStatistic<TObs, ProportionMap<
 
     public override void Reset() => _countMap.Reset();
     
-    public override ProportionMap<TObs> CloneEmpty()
-    {
-        return new ProportionMap<TObs>();
-    }
+    public override ProportionMap<TObs> CloneEmpty() => new();
 
     public override ProportionMap<TObs> Clone()
     {
