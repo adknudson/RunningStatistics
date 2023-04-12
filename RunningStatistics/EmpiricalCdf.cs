@@ -56,7 +56,7 @@ public class EmpiricalCdf : IRunningStatistic<double, double[], EmpiricalCdf>
 
     public void Fit(double value)
     {
-        var i = (Nobs % NumBins);
+        var i = Nobs % NumBins;
         var bufferCount = i + 1;
         _buffer[i] = value;
         
