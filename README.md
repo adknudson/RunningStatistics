@@ -32,7 +32,15 @@ All running statistics inherit from the following abstract class:
 ```csharp
 public abstract class AbstractRunningStatistic<TObs, TSelf> where TSelf : AbstractRunningStatistic<TObs, TSelf>
 {
-    public virtual long Nobs { get; protected set; }
+    private long _nobs;
+
+    public long Nobs
+    {
+        get => GetNobs();
+        protected set => _nobs = value;
+    }
+
+    protected virtual long GetNobs() => _nobs;
 
     public abstract void Fit(TObs value);
 
@@ -99,8 +107,8 @@ public class MyClass : AbstractRunningStatistic<double, MyClass>
     
     private CountMap<double> CountMap { get; init; } = new();
 
-    public override long Nobs => Ecdf.Nobs;
 
+    protected override long GetNobs() => _ecdf.Nobs; 
 
     public override void Fit(double value)
     {
@@ -114,10 +122,7 @@ public class MyClass : AbstractRunningStatistic<double, MyClass>
         CountMap.Reset();
     }
 
-    public override MyClass CloneEmpty()
-    {
-        return new MyClass();
-    }
+    public override MyClass CloneEmpty() => return new();
 
     public override MyClass Clone()
     {
@@ -135,3 +140,5 @@ public class MyClass : AbstractRunningStatistic<double, MyClass>
     }
 }
 ```
+
+Notice that in this class, the number of observations is retrieved from `_ecdf.Nobs` by overriding `GetNobs`, and therefore `Nobs` never needs to be updated in the `Fit` method.
