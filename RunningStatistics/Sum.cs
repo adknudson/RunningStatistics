@@ -6,7 +6,7 @@ namespace RunningStatistics;
 /// Keep track of the univariate sum.
 /// </summary>
 /// <typeparam name="TObs">Any generic number type.</typeparam>
-public class Sum<TObs> : AbstractRunningStatistic<TObs, Sum<TObs>> where TObs : INumber<TObs>
+public sealed class Sum<TObs> : AbstractRunningStatistic<TObs, Sum<TObs>> where TObs : INumber<TObs>
 {
     public TObs Value { get; private set; } = TObs.Zero;
 

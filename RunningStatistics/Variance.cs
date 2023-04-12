@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public class Variance : AbstractRunningStatistic<double, Variance>
+public sealed class Variance : AbstractRunningStatistic<double, Variance>
 {
     private double _mean, _variance;
 

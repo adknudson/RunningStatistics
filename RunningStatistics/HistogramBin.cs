@@ -2,7 +2,7 @@
 
 namespace RunningStatistics;
 
-public class HistogramBin
+public sealed class HistogramBin
 {
     internal HistogramBin(double lower, double upper, bool closedLeft, bool closedRight)
     {

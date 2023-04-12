@@ -5,13 +5,11 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-// TODO: Check the behavior of a class that inherits from CountMap
-
 /// <summary>
 /// A dictionary that maps unique values to its number of occurrences. Accessing a non-existent key will return a count
 /// of zero, however a new key will not be added to the internal dictionary.
 /// </summary>
-public class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IReadOnlyDictionary<TObs, long> where TObs : notnull
+public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IReadOnlyDictionary<TObs, long> where TObs : notnull
 {
     private readonly IDictionary<TObs, long> _dict;
     

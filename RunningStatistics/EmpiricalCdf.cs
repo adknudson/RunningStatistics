@@ -6,7 +6,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Approximate order statistics (CDF) with batches of a given size.
 /// </summary>
-public class EmpiricalCdf : AbstractRunningStatistic<double, EmpiricalCdf>
+public sealed class EmpiricalCdf : AbstractRunningStatistic<double, EmpiricalCdf>
 {
     private readonly Extrema _extrema;
     private readonly double[] _buffer, _value;

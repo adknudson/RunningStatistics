@@ -6,7 +6,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Minimum and maximum (and number of occurrences for each) for a data stream of type <see cref="double"/>.
 /// </summary>
-public class Extrema : AbstractRunningStatistic<double, Extrema>
+public sealed class Extrema : AbstractRunningStatistic<double, Extrema>
 {
     /// <summary>
     /// Square root of double machine precision

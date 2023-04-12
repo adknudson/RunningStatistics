@@ -6,7 +6,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Tracks the univariate mean, stored as a <see cref="double"/>.
 /// </summary>
-public class Mean : AbstractRunningStatistic<double, Mean>
+public sealed class Mean : AbstractRunningStatistic<double, Mean>
 {
     private double _value;
     

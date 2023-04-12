@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public class Normal : AbstractRunningStatistic<double, Normal>
+public sealed class Normal : AbstractRunningStatistic<double, Normal>
 {
     private readonly Mean _mean;
     private readonly Variance _variance;
