@@ -4,18 +4,33 @@ namespace RunningStatistics;
 
 public interface IRunningStatistic<in TObs>
 {
+    /// <summary>
+    /// The number of observations that have been fitted.
+    /// </summary>
     public long Nobs { get; }
     
+    /// <summary>
+    /// Fit a list of observations.
+    /// </summary>
     public void Fit(IEnumerable<TObs> values);
 
+    /// <summary>
+    /// Fit a single observation.
+    /// </summary>
     public void Fit(TObs value);
     
+    /// <summary>
+    /// Reset the running statistic to its initial state.
+    /// </summary>
     public void Reset();
 }
 
 
 public interface IRunningStatistic<in TObs, out TValue> : IRunningStatistic<TObs>
 {
+    /// <summary>
+    /// A generic representation of the running statistic.
+    /// </summary>
     public TValue Value { get; }
 }
 
