@@ -1,4 +1,5 @@
 ﻿using System;
+using MathNet.Numerics.Distributions;
 using Xunit;
 
 namespace RunningStatistics.Tests
@@ -36,6 +37,22 @@ namespace RunningStatistics.Tests
         }
 
         [Fact]
+        public void Reset()
+        {
+            EmpiricalCdf a = new(10);
+            var rng = new Random();
+            
+            for (var i = 0; i < 1000; i++)
+            {
+                a.Fit(rng.NextDouble());
+            }
+
+            Assert.Equal(1000, a.Nobs);
+            a.Reset();
+            Assert.Equal(0, a.Nobs);
+        }
+
+        [Fact]
         public void MergingWhereOneIsEmptyEqualsNonEmptyInstance()
         {
             EmpiricalCdf a = new(20), b = new(20);
@@ -68,7 +85,7 @@ namespace RunningStatistics.Tests
             var rng = new Random();
 
             EmpiricalCdf a = new(), b = new(), c = new();
-
+            
             double v;
             for (var i = 0; i < n; i++)
             {
@@ -94,70 +111,86 @@ namespace RunningStatistics.Tests
         public void TestUnitUniform()
         {
             const int n = 10_000_000;
-            var rng = new Random();
 
+            var dist = new ContinuousUniform();
             EmpiricalCdf o = new();
 
             for (var i = 0; i < n; i++)
             {
-                o.Fit(rng.NextDouble());
+                o.Fit(dist.Sample());
             }
 
-            Assert.Equal(0.00, o.Quantile(0.00), 2);
-            Assert.Equal(0.25, o.Quantile(0.25), 2);
-            Assert.Equal(0.50, o.Quantile(0.50), 2);
-            Assert.Equal(0.75, o.Quantile(0.75), 2);
-            Assert.Equal(1.00, o.Quantile(1.00), 2);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.00), o.Quantile(0.00), 2);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.25), o.Quantile(0.25), 2);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.50), o.Quantile(0.50), 2);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.75), o.Quantile(0.75), 2);
+            Assert.Equal(dist.InverseCumulativeDistribution(1.00), o.Quantile(1.00), 2);
+            
+            Assert.Equal(dist.CumulativeDistribution(0.00), o.Cdf(0.00), 2);
+            Assert.Equal(dist.CumulativeDistribution(0.25), o.Cdf(0.25), 2);
+            Assert.Equal(dist.CumulativeDistribution(0.50), o.Cdf(0.50), 2);
+            Assert.Equal(dist.CumulativeDistribution(0.75), o.Cdf(0.75), 2);
+            Assert.Equal(dist.CumulativeDistribution(1.00), o.Cdf(1.00), 2);
         }
 
         [Fact]
-        public void TestNormal()
+        public void TestStandardNormal()
         {
             const int n = 10_000_000;
-            var rng = new Random();
+            var dist = new MathNet.Numerics.Distributions.Normal(0, 1);
 
             EmpiricalCdf o = new();
 
             for (var i = 0; i < n; i++)
             {
-                o.Fit(rng.RandNorm());
+                o.Fit(dist.Sample());
             }
 
             var relErr = Utils.RelError(-2.326347874040846, o.Quantile(0.01));
             Assert.Equal(0.0, relErr, 1);
 
-            Assert.Equal(-1.2815515655446004, o.Quantile(0.10), 1);
-            Assert.Equal(-0.6744897501960818, o.Quantile(0.25), 1);
-            Assert.Equal(0.0, o.Median, 1);
-            Assert.Equal(0.6744897501960818, o.Quantile(0.75), 1);
-            Assert.Equal(1.2815515655446004, o.Quantile(0.90), 1);
-
-            relErr = Utils.RelError(2.326347874040846, o.Quantile(0.99));
+            Assert.Equal(dist.InverseCumulativeDistribution(0.10), o.Quantile(0.10), 1);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.25), o.Quantile(0.25), 1);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.50), o.Quantile(0.50), 1);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.75), o.Quantile(0.75), 1);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.90), o.Quantile(0.90), 1);
+            relErr = Utils.RelError(dist.InverseCumulativeDistribution(0.99), o.Quantile(0.99));
             Assert.Equal(0.0, relErr, 1);
+            
+            Assert.Equal(dist.CumulativeDistribution(-2), o.Cdf(-2), 1);
+            Assert.Equal(dist.CumulativeDistribution(-1), o.Cdf(-1), 1);
+            Assert.Equal(dist.CumulativeDistribution( 0), o.Cdf( 0), 1);
+            Assert.Equal(dist.CumulativeDistribution( 1), o.Cdf( 1), 1);
+            Assert.Equal(dist.CumulativeDistribution( 2), o.Cdf( 2), 1);
         }
 
         [Fact]
         public void TestLogNormal()
         {
             const int n = 10_000_000;
-            var rng = new Random();
-            const double mu = 0.0;
-            const double sd = 0.1;
+            var dist = new LogNormal(0.0, 0.1);
 
             EmpiricalCdf o = new();
 
             for (var i = 0; i < n; i++)
             {
-                o.Fit(rng.RandLogNorm(mu, sd));
+                o.Fit(dist.Sample());
             }
 
-            Assert.Equal(0.7924429308225133, o.Quantile(0.01), 1);
-            Assert.Equal(0.8797168747159579, o.Quantile(0.10), 1);
-            Assert.Equal(0.9347754162964689, o.Quantile(0.25), 1);
-            Assert.Equal(1.0, o.Median, 1);
-            Assert.Equal(1.0697756729225374, o.Quantile(0.75), 1);
-            Assert.Equal(1.136729360026064, o.Quantile(0.90), 1);
-            Assert.Equal(1.2619205258882853, o.Quantile(0.99), 1);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.01), o.Quantile(0.01), 1);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.10), o.Quantile(0.10), 1);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.25), o.Quantile(0.25), 1);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.50), o.Quantile(0.50), 1);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.75), o.Quantile(0.75), 1);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.90), o.Quantile(0.90), 1);
+            Assert.Equal(dist.InverseCumulativeDistribution(0.99), o.Quantile(0.99), 1);
+            
+            Assert.Equal(dist.CumulativeDistribution(0.7), o.Cdf(0.7), 1);
+            Assert.Equal(dist.CumulativeDistribution(0.8), o.Cdf(0.8), 1);
+            Assert.Equal(dist.CumulativeDistribution(0.9), o.Cdf(0.9), 1);
+            Assert.Equal(dist.CumulativeDistribution(1.0), o.Cdf(1.0), 1);
+            Assert.Equal(dist.CumulativeDistribution(1.1), o.Cdf(1.1), 1);
+            Assert.Equal(dist.CumulativeDistribution(1.2), o.Cdf(1.2), 1);
         }
     }
 }
