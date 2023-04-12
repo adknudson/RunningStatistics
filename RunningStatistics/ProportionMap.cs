@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public class ProportionMap<TObs> : IReadOnlyDictionary<TObs, double>, IRunningStatistic<TObs, ProportionMap<TObs>> where TObs: notnull
+public class ProportionMap<TObs> : AbstractRunningStatistic<TObs, ProportionMap<TObs>>, IReadOnlyDictionary<TObs, double> where TObs: notnull
 {
     private readonly CountMap<TObs> _countMap;
 
@@ -27,11 +27,11 @@ public class ProportionMap<TObs> : IReadOnlyDictionary<TObs, double>, IRunningSt
 
 
 
-    public long Nobs => _countMap.Nobs;
+    public override long Nobs => _countMap.Nobs;
 
     public double this[TObs key] => TryGetValue(key, out var value) ? value : default;
 
-    int IReadOnlyCollection<KeyValuePair<TObs, double>>.Count => _countMap.AsDictionary().Count;
+    int IReadOnlyCollection<KeyValuePair<TObs, double>>.Count => _countMap.NumUnique;
 
     public int NumUnique => _countMap.NumUnique;
     
@@ -41,22 +41,20 @@ public class ProportionMap<TObs> : IReadOnlyDictionary<TObs, double>, IRunningSt
     
     
     
-    public void Fit(IEnumerable<TObs> values) => _countMap.Fit(values);
+    public override void Fit(IEnumerable<TObs> values) => _countMap.Fit(values);
 
-    public void Fit(TObs value) => _countMap.Fit(value);
+    public override void Fit(TObs value) => _countMap.Fit(value);
 
     public void Fit(TObs obs, long count) => _countMap.Fit(obs, count);
 
-    public void Merge(ProportionMap<TObs> other) => _countMap.Merge(other._countMap);
-
-    public void Reset() => _countMap.Reset();
-
-    public ProportionMap<TObs> CloneEmpty()
+    public override void Reset() => _countMap.Reset();
+    
+    public override ProportionMap<TObs> CloneEmpty()
     {
         return new ProportionMap<TObs>();
     }
 
-    public ProportionMap<TObs> Clone()
+    public override ProportionMap<TObs> Clone()
     {
         var propMap = new ProportionMap<TObs>();
 
@@ -68,13 +66,7 @@ public class ProportionMap<TObs> : IReadOnlyDictionary<TObs, double>, IRunningSt
         return propMap;
     }
 
-    public static ProportionMap<TObs> Merge(ProportionMap<TObs> first, ProportionMap<TObs> second)
-    {
-        var stat = first.CloneEmpty();
-        stat.Merge(first);
-        stat.Merge(second);
-        return stat;
-    }
+    public override void Merge(ProportionMap<TObs> other) => _countMap.Merge(other._countMap);
     
     public bool ContainsKey(TObs key) => _countMap.ContainsKey(key);
 

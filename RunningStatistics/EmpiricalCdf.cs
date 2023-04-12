@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -7,7 +6,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Approximate order statistics (CDF) with batches of a given size.
 /// </summary>
-public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
+public class EmpiricalCdf : AbstractRunningStatistic<double, EmpiricalCdf>
 {
     private readonly Extrema _extrema;
     private readonly double[] _buffer, _value;
@@ -32,8 +31,6 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
 
 
     
-    public long Nobs => _extrema.Nobs;
-
     public double Median => Quantile(0.5);
     
     public double Min => _extrema.Min;
@@ -42,17 +39,11 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
     
     private int NumBins { get; }
 
-    
-    
-    public void Fit(IEnumerable<double> values)
-    {
-        foreach (var value in values)
-        {
-            Fit(value);
-        }
-    }
+    public override long Nobs => _extrema.Nobs;
 
-    public void Fit(double value)
+
+    
+    public override void Fit(double value)
     {
         var i = Nobs % NumBins;
         var bufferCount = i + 1;
@@ -68,15 +59,26 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
             _value[k] = Utils.Smooth(_value[k], _buffer[k], (double) NumBins / Nobs);
         }
     }
+    
+    public override void Reset()
+    {
+        for (var i = 0; i < NumBins; i++)
+        {
+            _value[i] = 0;
+            _buffer[i] = 0;
+        }
 
-    public EmpiricalCdf CloneEmpty()
+        _extrema.Reset();
+    }
+    
+    public override EmpiricalCdf CloneEmpty()
     {
         return new EmpiricalCdf(NumBins);
     }
 
-    public EmpiricalCdf Clone() => new(this);
+    public override EmpiricalCdf Clone() => new(this);
 
-    public void Merge(EmpiricalCdf empiricalCdf)
+    public override void Merge(EmpiricalCdf empiricalCdf)
     {
         if (NumBins != empiricalCdf.NumBins)
         {
@@ -93,27 +95,7 @@ public class EmpiricalCdf : IRunningStatistic<double, EmpiricalCdf>
             _value[k] = Utils.Smooth(_value[k], empiricalCdf._value[k], (double) empiricalCdf.Nobs / Nobs);
         }
     }
-
-    public static EmpiricalCdf Merge(EmpiricalCdf first, EmpiricalCdf second)
-    {
-        var stat = first.CloneEmpty();
-        stat.Merge(first);
-        stat.Merge(second);
-        return stat;
-    }
-
-    public void Reset()
-    {
-        for (var i = 0; i < NumBins; i++)
-        {
-            _value[i] = 0;
-            _buffer[i] = 0;
-        }
-
-        _extrema.Reset();
-    }
-
-
+    
     /// <summary>
     /// Finds the pth quantile of the empirical CDF.
     /// </summary>

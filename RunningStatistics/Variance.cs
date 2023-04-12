@@ -3,13 +3,11 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public class Variance : IRunningStatistic<double, Variance>
+public class Variance : AbstractRunningStatistic<double, Variance>
 {
     private double _mean, _variance;
 
 
-
-    public long Nobs { get; private set; }
     
     /// <summary>
     /// Returns the bias-corrected variance.
@@ -25,7 +23,7 @@ public class Variance : IRunningStatistic<double, Variance>
 
     
     
-    public void Fit(IEnumerable<double> values)
+    public override void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();
         Nobs += ys.Count;
@@ -39,7 +37,7 @@ public class Variance : IRunningStatistic<double, Variance>
         _mean = Utils.Smooth(_mean, mean, g);
     }
 
-    public void Fit(double value)
+    public override void Fit(double value)
     {
         Nobs += 1;
         var mu = _mean;
@@ -48,7 +46,29 @@ public class Variance : IRunningStatistic<double, Variance>
         _variance = Utils.Smooth(_variance, (value - _mean) * (value - mu), g);
     }
 
-    public void Merge(Variance variance)
+    public override void Reset()
+    {
+        Nobs = 0;
+        _mean = 0;
+        _variance = 0;
+    }
+
+    public override Variance CloneEmpty()
+    {
+        return new Variance();
+    }
+
+    public override Variance Clone()
+    {
+        return new Variance
+        {
+            Nobs = Nobs,
+            _mean = _mean,
+            _variance = _variance
+        };
+    }
+    
+    public override void Merge(Variance variance)
     {
         Nobs += variance.Nobs;
 
@@ -60,37 +80,7 @@ public class Variance : IRunningStatistic<double, Variance>
         _variance = Utils.Smooth(_variance, variance._variance, g) + delta * delta * g * (1 - g);
         _mean = Utils.Smooth(_mean, variance._mean, g);
     }
-
-    public static Variance Merge(Variance first, Variance second)
-    {
-        var stat = first.CloneEmpty();
-        stat.Merge(first);
-        stat.Merge(second);
-        return stat;
-    }
-
-    public void Reset()
-    {
-        Nobs = 0;
-        _mean = 0;
-        _variance = 0;
-    }
-
-    public Variance CloneEmpty()
-    {
-        return new Variance();
-    }
-
-    public Variance Clone()
-    {
-        return new Variance
-        {
-            Nobs = Nobs,
-            _mean = _mean,
-            _variance = _variance
-        };
-    }
-
+    
     public override string ToString() => $"{typeof(Variance)} Nobs={Nobs} | σ²={Value}";
 
     public static explicit operator double(Variance variance) => variance.Value;

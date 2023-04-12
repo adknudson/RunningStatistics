@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace RunningStatistics;
 
@@ -7,60 +6,41 @@ namespace RunningStatistics;
 /// Keep track of the univariate sum.
 /// </summary>
 /// <typeparam name="TObs">Any generic number type.</typeparam>
-public class Sum<TObs> : IRunningStatistic<TObs, Sum<TObs>> where TObs : INumber<TObs>
+public class Sum<TObs> : AbstractRunningStatistic<TObs, Sum<TObs>> where TObs : INumber<TObs>
 {
-    public long Nobs { get; private set; }
-
     public TObs Value { get; private set; } = TObs.Zero;
 
     
     
-    public void Fit(IEnumerable<TObs> values)
-    {
-        foreach (var value in values)
-        {
-            Fit(value);
-        }
-    }
-
-    public void Fit(TObs value)
+    public override void Fit(TObs value)
     {
         Nobs++;
         Value += value;
     }
 
-    public void Reset()
+    public override void Reset()
     {
         Nobs = 0;
         Value = TObs.Zero;
     }
 
-    public void Merge(Sum<TObs> sum)
-    {
-        Nobs += sum.Nobs;
-        Value += sum.Value;
-    }
-
-    public static Sum<TObs> Merge(Sum<TObs> first, Sum<TObs> second)
-    {
-        var stat = first.CloneEmpty();
-        stat.Merge(first);
-        stat.Merge(second);
-        return stat;
-    }
-
-    public Sum<TObs> CloneEmpty()
+    public override Sum<TObs> CloneEmpty()
     {
         return new Sum<TObs>();
     }
-
-    public Sum<TObs> Clone()
+    
+    public override Sum<TObs> Clone()
     {
         return new Sum<TObs>
         {
             Nobs = Nobs,
             Value = Value
         };
+    }
+    public override void Merge(Sum<TObs> sum)
+    {
+        Nobs += sum.Nobs;
+        Value += sum.Value;
     }
 
     public override string ToString() => $"{typeof(Sum<TObs>)} Nobs={Nobs} | Σ={Value}";

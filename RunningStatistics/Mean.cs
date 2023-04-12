@@ -6,22 +6,12 @@ namespace RunningStatistics;
 /// <summary>
 /// Tracks the univariate mean, stored as a <see cref="double"/>.
 /// </summary>
-public class Mean : IRunningStatistic<double, Mean>
+public class Mean : AbstractRunningStatistic<double, Mean>
 {
     private double _value;
-
-
-    
-    public Mean()
-    {
-        Nobs = 0;
-        Value = 0;
-    }
-
     
     
-    public long Nobs { get; private set; }
-
+    
     public double Value
     {
         get => Nobs == 0 ? double.NaN : _value;
@@ -30,51 +20,42 @@ public class Mean : IRunningStatistic<double, Mean>
 
     
     
-    public void Fit(IEnumerable<double> values)
+    public override void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();
         Nobs += ys.Count;
         Value = Utils.Smooth(Value, ys.Average(), (double) ys.Count / Nobs);
     }
 
-    public void Fit(double value)
+    public override void Fit(double value)
     {
         Nobs++;
         Value = Utils.Smooth(Value, value, 1.0 / Nobs);
     }
 
-    public void Merge(Mean mean)
-    {
-        Nobs += mean.Nobs;
-        Value = Nobs == 0 ? 0 : Utils.Smooth(Value, mean.Value, (double) mean.Nobs / Nobs);
-    }
-
-    public static Mean Merge(Mean first, Mean second)
-    {
-        var stat = first.CloneEmpty();
-        stat.Merge(first);
-        stat.Merge(second);
-        return stat;
-    }
-
-    public void Reset()
+    public override void Reset()
     {
         Nobs = 0;
         Value = 0;
     }
 
-    public Mean CloneEmpty()
+    public override Mean CloneEmpty()
     {
         return new Mean();
     }
 
-    public Mean Clone()
+    public override Mean Clone()
     {
         return new Mean
         {
             Nobs = Nobs,
             Value = Value
         };
+    }
+    public override void Merge(Mean mean)
+    {
+        Nobs += mean.Nobs;
+        Value = Nobs == 0 ? 0 : Utils.Smooth(Value, mean.Value, (double) mean.Nobs / Nobs);
     }
     
     public override string ToString() => $"{typeof(Mean)} Nobs={Nobs} | μ={Value}";

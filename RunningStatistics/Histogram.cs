@@ -7,7 +7,7 @@ namespace RunningStatistics;
 /// <summary>
 /// A histogram with bin partitions defined by edges.
 /// </summary>
-public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<HistogramBin>
+public class Histogram : AbstractRunningStatistic<double, Histogram>, IEnumerable<HistogramBin>
 {
     private HistogramOutOfBounds _outOfBounds;
     private readonly IList<double> _edges;
@@ -48,23 +48,13 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<Histo
     
     
     
-    public long Nobs { get; private set; }
-
     public (long Lower, long Upper) OutOfBoundsCounts => _outOfBounds.Counts;
     
     private int NumBins => Bins.Count;
     
     private IList<HistogramBin> Bins { get; }
 
-
     
-    public void Fit(IEnumerable<double> values)
-    {
-        foreach (var value in values)
-        {
-            Fit(value);
-        }
-    }
 
     /// <summary>
     /// Fit a list of value-count pairs.
@@ -77,7 +67,7 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<Histo
         }
     }
 
-    public void Fit(double value)
+    public override void Fit(double value)
     {
         Fit(value, 1);
     }
@@ -136,7 +126,35 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<Histo
         bin.Increment(count);
     }
 
-    public void Merge(Histogram histogram)
+    public override void Reset()
+    {
+        Nobs = 0;
+        foreach (var bin in Bins)
+        {
+            bin.Reset();
+        }
+        _outOfBounds.Reset();
+    }
+
+    public override Histogram CloneEmpty()
+    {
+        return new Histogram(_edges, _leftClosed, _endsClosed);
+    }
+
+    public override Histogram Clone()
+    {
+        var hist = CloneEmpty();
+        hist._outOfBounds = _outOfBounds.Clone();
+        
+        foreach (var bin in this)
+        {
+            hist.Fit(bin.Midpoint, bin.Nobs);
+        }
+        
+        return hist;
+    }
+    
+    public override void Merge(Histogram histogram)
     {
         _outOfBounds.Merge(histogram._outOfBounds);
         
@@ -158,43 +176,7 @@ public class Histogram : IRunningStatistic<double, Histogram>, IEnumerable<Histo
             }
         }
     }
-
-    public static Histogram Merge(Histogram first, Histogram second)
-    {
-        var stat = first.CloneEmpty();
-        stat.Merge(first);
-        stat.Merge(second);
-        return stat;
-    }
-
-    public void Reset()
-    {
-        Nobs = 0;
-        foreach (var bin in Bins)
-        {
-            bin.Reset();
-        }
-        _outOfBounds.Reset();
-    }
-
-    public Histogram CloneEmpty()
-    {
-        return new Histogram(_edges, _leftClosed, _endsClosed);
-    }
-
-    public Histogram Clone()
-    {
-        var hist = CloneEmpty();
-        hist._outOfBounds = _outOfBounds.Clone();
-        
-        foreach (var bin in this)
-        {
-            hist.Fit(bin.Midpoint, bin.Nobs);
-        }
-        
-        return hist;
-    }
-
+    
     public IEnumerator<HistogramBin> GetEnumerator() => Bins.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

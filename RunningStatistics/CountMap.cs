@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,7 +9,7 @@ namespace RunningStatistics;
 /// A dictionary that maps unique values to its number of occurrences. Accessing a non-existent key will return a count
 /// of zero, however a new key will not be added to the internal dictionary.
 /// </summary>
-public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>, IRunningStatistic<TObs, CountMap<TObs>> where TObs : notnull
+public class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IReadOnlyDictionary<TObs, long> where TObs : notnull
 {
     private readonly IDictionary<TObs, long> _dict;
     
@@ -17,7 +18,6 @@ public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>, IRunningStatistic
     public CountMap()
     {
         _dict = new Dictionary<TObs, long>();
-        Nobs = 0;
     }
 
     public CountMap(IDictionary<TObs, long> dictionary)
@@ -27,9 +27,7 @@ public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>, IRunningStatistic
     }
 
 
-
-    public long Nobs { get; private set; }
-
+    
     public long this[TObs key] => _dict.TryGetValue(key, out var value) ? value : 0;
 
     public IEnumerable<TObs> Keys => _dict.Keys;
@@ -40,21 +38,18 @@ public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>, IRunningStatistic
 
     
     
-    public void Fit(IEnumerable<TObs> values)
-    {
-        foreach (var value in values)
-        {
-            Fit(value);
-        }
-    }
-
-    public void Fit(TObs value)
+    public override void Fit(TObs value)
     {
         Fit(value, 1);
     }
 
+    /// <summary>
+    /// Fit multiple counts of the same observation.
+    /// </summary>
     public void Fit(TObs obs, long count)
     {
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Must be non-negative.");
+        
         Nobs += count;
 
         if (_dict.ContainsKey(obs))
@@ -78,7 +73,7 @@ public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>, IRunningStatistic
         }
     }
 
-    public void Merge(CountMap<TObs> countMap)
+    public override void Merge(CountMap<TObs> countMap)
     {
         foreach (var (key, value) in countMap._dict)
         {
@@ -86,18 +81,18 @@ public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>, IRunningStatistic
         }
     }
 
-    public void Reset()
+    public override void Reset()
     {
         _dict.Clear();
         Nobs = 0;
     }
 
-    public CountMap<TObs> CloneEmpty()
+    public override CountMap<TObs> CloneEmpty()
     {
         return new CountMap<TObs>();
     }
 
-    public CountMap<TObs> Clone()
+    public override CountMap<TObs> Clone()
     {
         var countmap = new CountMap<TObs>();
         
@@ -107,14 +102,6 @@ public class CountMap<TObs> : IReadOnlyDictionary<TObs, long>, IRunningStatistic
         }
 
         return countmap;
-    }
-
-    public static CountMap<TObs> Merge(CountMap<TObs> first, CountMap<TObs> second)
-    {
-        var stat = first.CloneEmpty();
-        stat.Merge(first);
-        stat.Merge(second);
-        return stat;
     }
 
     public bool ContainsKey(TObs key) => _dict.ContainsKey(key);

@@ -6,7 +6,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Tracks the first four non-central moments, stored as a <see cref="double"/>.
 /// </summary>
-public class Moments : IRunningStatistic<double, Moments>
+public class Moments : AbstractRunningStatistic<double, Moments>
 {
     private double _mean, _variance, _skewness, _kurtosis;
 
@@ -22,8 +22,6 @@ public class Moments : IRunningStatistic<double, Moments>
     }
 
     
-
-    public long Nobs { get; private set; }
     
     /// <summary>
     /// The first central moment is the measure of central location.
@@ -31,15 +29,10 @@ public class Moments : IRunningStatistic<double, Moments>
     public double Mean => Nobs == 0 ? double.NaN : _mean;
 
     /// <summary>
-    /// The second central moment is the measure of the spread of the distribution.
+    /// The second central moment is the measure of the spread of the distribution. This returns the bias-corrected variance.
     /// </summary>
     public double Variance => Nobs == 0 ? double.NaN : Utils.BesselCorrection(Nobs) * (_variance - _mean * _mean);
     
-    /// <summary>
-    /// The bias-corrected variance.
-    /// </summary>
-    public double BiasCorrectedVariance => Nobs == 0 ? double.NaN : Utils.BesselCorrection(Nobs) * (_variance - _mean * _mean);
-
     /// <summary>
     /// The third central moment is the measure of the lopsidedness of the distribution
     /// </summary>
@@ -82,16 +75,8 @@ public class Moments : IRunningStatistic<double, Moments>
     public bool IsPlatykurtic => ExcessKurtosis < 0;
     
     
-    
-    public void Fit(IEnumerable<double> values)
-    {
-        foreach (var value in values)
-        {
-            Fit(value);
-        }
-    }
 
-    public void Fit(double value)
+    public override void Fit(double value)
     {
         Nobs++;
 
@@ -104,7 +89,7 @@ public class Moments : IRunningStatistic<double, Moments>
         _kurtosis = Utils.Smooth(_kurtosis, y2 * y2, g);
     }
 
-    public void Reset()
+    public override void Reset()
     {
         Nobs = 0;
         _mean = 0;
@@ -113,7 +98,23 @@ public class Moments : IRunningStatistic<double, Moments>
         _kurtosis = 0;
     }
 
-    public void Merge(Moments moments)
+    public override Moments CloneEmpty()
+    {
+        return new Moments();
+    }
+
+    public override Moments Clone()
+    {
+        return new Moments
+        {
+            Nobs = Nobs,
+            _mean = _mean,
+            _variance = _variance,
+            _skewness = _skewness,
+            _kurtosis = _kurtosis
+        };
+    }
+    public override void Merge(Moments moments)
     {
         Nobs += moments.Nobs;
 
@@ -125,32 +126,7 @@ public class Moments : IRunningStatistic<double, Moments>
         _skewness = Utils.Smooth(_skewness, moments._skewness, g);
         _kurtosis = Utils.Smooth(_kurtosis, moments._kurtosis, g);
     }
-
-    public static Moments Merge(Moments first, Moments second)
-    {
-        var stat = first.CloneEmpty();
-        stat.Merge(first);
-        stat.Merge(second);
-        return stat;
-    }
-
-    public Moments CloneEmpty()
-    {
-        return new Moments();
-    }
-
-    public Moments Clone()
-    {
-        return new Moments
-        {
-            Nobs = Nobs,
-            _mean = _mean,
-            _variance = _variance,
-            _skewness = _skewness,
-            _kurtosis = _kurtosis
-        };
-    }
-
+    
     public override string ToString()
     {
         return $"{typeof(Moments)} Nobs={Nobs} | M1={Mean:F2}, M2={Variance:F2}, M3={Skewness:F2}, M4={Kurtosis:F2}";

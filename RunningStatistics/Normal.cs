@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public class Normal : IRunningStatistic<double, Normal>
+public class Normal : AbstractRunningStatistic<double, Normal>
 {
     private readonly Mean _mean;
     private readonly Variance _variance;
@@ -25,7 +25,7 @@ public class Normal : IRunningStatistic<double, Normal>
 
     
 
-    public long Nobs => _mean.Nobs;
+    public override long Nobs => _mean.Nobs;
 
     public double Mean => _mean.Value;
     
@@ -38,47 +38,38 @@ public class Normal : IRunningStatistic<double, Normal>
     
     
     
-    public void Fit(IEnumerable<double> values)
+    public override void Fit(IEnumerable<double> values)
     {
         var xs = values.ToList();
         _mean.Fit(xs);
         _variance.Fit(xs);
     }
 
-    public void Fit(double value)
+    public override void Fit(double value)
     {
         _mean.Fit(value);
         _variance.Fit(value);
     }
 
-    public void Reset()
+    public override void Reset()
     {
         _mean.Reset();
         _variance.Reset();
     }
 
-    public void Merge(Normal normal)
-    {
-        _mean.Merge(normal._mean);
-        _variance.Merge(normal._variance);
-    }
-
-    public static Normal Merge(Normal first, Normal second)
-    {
-        var stat = first.CloneEmpty();
-        stat.Merge(first);
-        stat.Merge(second);
-        return stat;
-    }
-
-    public Normal CloneEmpty()
+    public override Normal CloneEmpty()
     {
         return new Normal();
     }
 
-    public Normal Clone()
+    public override Normal Clone()
     {
         return new Normal(this);
+    }
+    public override void Merge(Normal normal)
+    {
+        _mean.Merge(normal._mean);
+        _variance.Merge(normal._variance);
     }
 
     public override string ToString()
