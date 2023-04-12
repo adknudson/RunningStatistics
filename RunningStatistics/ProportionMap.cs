@@ -95,4 +95,8 @@ public class ProportionMap<TObs> : AbstractRunningStatistic<TObs, ProportionMap<
     public override string ToString() => $"{typeof(ProportionMap<TObs>)} Nobs={Nobs} | {NumUnique} unique values";
 
     public IDictionary<TObs, double> ToDictionary() => this.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+    public CountMap<TObs> AsCountMap() => _countMap;
+
+    public CountMap<TObs> ToCountMap() => _countMap.Clone();
 }
