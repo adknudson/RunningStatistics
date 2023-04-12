@@ -91,9 +91,19 @@ public sealed class ProportionMap<TObs> : AbstractRunningStatistic<TObs, Proport
     
     public override string ToString() => $"{typeof(ProportionMap<TObs>)} Nobs={Nobs} | {NumUnique} unique values";
 
+    /// <summary>
+    /// Returns a new dictionary with the current Observation-Proportion pairs.
+    /// </summary>
     public IDictionary<TObs, double> ToDictionary() => this.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
+    /// <summary>
+    /// Returns the current object as a <see cref="CountMap{TObs}"/>.
+    /// </summary>
     public CountMap<TObs> AsCountMap() => _countMap;
 
+    /// <summary>
+    /// Returns the current object as a new <see cref="CountMap{TObs}"/> instance.
+    /// </summary>
+    /// <returns></returns>
     public CountMap<TObs> ToCountMap() => _countMap.Clone();
 }

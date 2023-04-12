@@ -139,7 +139,7 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
     public ProportionMap<TObs> AsProportionMap() => new(this);
 
     /// <summary>
-    /// Returns a clone of the current object as a <see cref="ProportionMap{TObs}"/>.
+    /// Returns a clone of the current object as a new <see cref="ProportionMap{TObs}"/>.
     /// </summary>
     /// <returns></returns>
     public ProportionMap<TObs> ToProportionMap() => new(Clone());
