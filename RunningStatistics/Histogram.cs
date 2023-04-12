@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -79,6 +80,8 @@ public class Histogram : AbstractRunningStatistic<double, Histogram>, IEnumerabl
     /// <param name="count">The number of times the value is observed.</param>
     public void Fit(double value, long count)
     {
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Must be non-negative.");
+        
         Nobs += count;
         
         var firstBin = Bins.First();

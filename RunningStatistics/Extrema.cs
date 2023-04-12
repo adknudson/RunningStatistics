@@ -44,6 +44,8 @@ public class Extrema : AbstractRunningStatistic<double, Extrema>
 
     public void Fit(double value, long count)
     {
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Must be non-negative.");
+        
         if (Nobs == 0) Min = Max = value;
 
         Nobs += count;
