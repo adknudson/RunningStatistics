@@ -141,12 +141,15 @@ namespace RunningStatistics.Tests
         }
 
         [Fact]
-        public void StaticMergeDoesntAffectOriginals()
+        public void StaticMergeDoesNotAffectOriginals()
         {
+            // (0, 0.1], (0.1, 0.5], (0.5, 0.9]
             Histogram a = new(new []{0, 0.1, 0.5, 0.9}, leftClosed: false, endsClosed: false);
             Histogram b = new(new []{0, 0.1, 0.5, 0.9}, leftClosed: false, endsClosed: false);
+            
             var rng = new Random();
-            for (var i = 0; i < 100; i++)
+            
+            for (var i = 0; i < 1000; i++)
             {
                 a.Fit(rng.NextDouble());
                 b.Fit(rng.NextDouble());
@@ -158,6 +161,21 @@ namespace RunningStatistics.Tests
 
             c.Fit(0.99, 10);
             Assert.Equal(a.OutOfBoundsCounts.Upper + b.OutOfBoundsCounts.Upper + 10, c.OutOfBoundsCounts.Upper);
+        }
+
+        [Fact]
+        public void Reset()
+        {
+            // [-inf, 0), [0, 10), [10, 100]
+            Histogram h = new(_edges);
+
+            h.Fit(-1);
+            h.Fit(1);
+            h.Fit(20);
+            h.Fit(1000);
+            
+            h.Reset();
+            Assert.Equal(0, h.Nobs);
         }
     }
 }

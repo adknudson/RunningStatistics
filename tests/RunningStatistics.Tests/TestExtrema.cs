@@ -84,5 +84,15 @@ namespace RunningStatistics.Tests
             Assert.Equal(-1, c.Min);
             Assert.Equal(55, c.Max);
         }
+
+        [Fact]
+        public void Reset()
+        {
+            Extrema a = new();
+            a.Fit(new double[] {1, 1, 2, 3, 5, 8, 13, 21, 34, 55});
+            Assert.Equal(10, a.Nobs);
+            a.Reset();
+            Assert.Equal(0, a.Nobs);
+        }
     }
 }

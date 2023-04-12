@@ -20,6 +20,16 @@ namespace RunningStatistics.Tests
         }
 
         [Fact]
+        public void FittingZeroDoesNotAddKey()
+        {
+            CountMap<int> countMap = new();
+            countMap.Fit(10, 0);
+            Assert.False(countMap.ContainsKey(10));
+            Assert.Equal(0, countMap.Nobs);
+            Assert.Equal(0, countMap.NumUniqueObs);
+        }
+
+        [Fact]
         public void MergingTwoCountmapsMergesKeys()
         {
             CountMap<string> a = new(); 
@@ -40,6 +50,9 @@ namespace RunningStatistics.Tests
             Assert.Equal(1, a["something"]);
             Assert.Equal(3, a["nothing"]);
             Assert.Equal(6, a["everything"]);
+            
+            Assert.Equal(10, a.Nobs);
+            Assert.Equal(7, b.Nobs);
         }
 
         [Fact]
