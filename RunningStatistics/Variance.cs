@@ -83,7 +83,7 @@ public class Variance : IRunningStatistic<double, Variance>
 
     public Variance Clone()
     {
-        return new Variance()
+        return new Variance
         {
             Nobs = Nobs,
             _mean = _mean,

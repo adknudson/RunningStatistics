@@ -70,10 +70,10 @@ public class Mean : IRunningStatistic<double, Mean>
 
     public Mean Clone()
     {
-        return new Mean()
+        return new Mean
         {
             Nobs = Nobs,
-            Value = Value,
+            Value = Value
         };
     }
     

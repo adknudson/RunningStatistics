@@ -141,13 +141,13 @@ public class Moments : IRunningStatistic<double, Moments>
 
     public Moments Clone()
     {
-        return new Moments()
+        return new Moments
         {
             Nobs = Nobs,
             _mean = _mean,
             _variance = _variance,
             _skewness = _skewness,
-            _kurtosis = _kurtosis,
+            _kurtosis = _kurtosis
         };
     }
 

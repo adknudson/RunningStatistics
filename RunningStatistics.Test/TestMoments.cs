@@ -61,7 +61,7 @@ namespace RunningStatistics.Test
         }
 
         [Fact]
-        public void StaticMergeDoesntAffectOriginals()
+        public void StaticMergeDoesNotAffectOriginals()
         {
             Moments a = new(), b = new();
             var rng = new Random();
