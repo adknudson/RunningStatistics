@@ -51,8 +51,16 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
     /// </summary>
     public void Fit(TObs value, long count)
     {
-        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Must be non-negative.");
-        UncheckedFit(value, count);
+        switch (count.CompareTo(0))
+        {
+            case -1:
+                throw new ArgumentOutOfRangeException(nameof(count), "Must be non-negative.");
+            case 0:
+                return;
+            case 1:
+                UncheckedFit(value, count);
+                break;
+        }
     }
     
     /// <summary>
@@ -144,7 +152,5 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
     /// <summary>
     /// Returns a clone of the current object as a new <see cref="ProportionMap{TObs}"/>.
     /// </summary>
-    /// <returns></returns>
     public ProportionMap<TObs> ToProportionMap() => new(Clone());
-    
 }
