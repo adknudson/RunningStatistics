@@ -24,11 +24,8 @@ public sealed class Sum<TObs> : AbstractRunningStatistic<TObs, Sum<TObs>> where 
         Value = TObs.Zero;
     }
 
-    public override Sum<TObs> CloneEmpty()
-    {
-        return new Sum<TObs>();
-    }
-    
+    public override Sum<TObs> CloneEmpty() => new();
+
     public override Sum<TObs> Clone()
     {
         return new Sum<TObs>

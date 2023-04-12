@@ -53,10 +53,7 @@ public sealed class Variance : AbstractRunningStatistic<double, Variance>
         _variance = 0;
     }
 
-    public override Variance CloneEmpty()
-    {
-        return new Variance();
-    }
+    public override Variance CloneEmpty() => new();
 
     public override Variance Clone()
     {

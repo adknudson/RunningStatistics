@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace RunningStatistics;
 
@@ -82,10 +81,7 @@ public sealed class Extrema : AbstractRunningStatistic<double, Extrema>
         Nobs = 0;
     }
 
-    public override Extrema CloneEmpty()
-    {
-        return new Extrema();
-    }
+    public override Extrema CloneEmpty() => new();
 
     public override Extrema Clone()
     {

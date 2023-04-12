@@ -146,10 +146,7 @@ public sealed class Histogram : AbstractRunningStatistic<double, Histogram>, IEn
         _outOfBounds.Reset();
     }
 
-    public override Histogram CloneEmpty()
-    {
-        return new Histogram(_edges, _leftClosed, _endsClosed);
-    }
+    public override Histogram CloneEmpty() => new(_edges, _leftClosed, _endsClosed);
 
     public override Histogram Clone()
     {

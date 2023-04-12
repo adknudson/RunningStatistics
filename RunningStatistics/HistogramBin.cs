@@ -62,7 +62,7 @@ public sealed class HistogramBin
         Nobs += other.Nobs;
     }
 
-    internal void Increment(long count = 1)
+    internal void Increment(long count)
     {
         Nobs += count;
     }

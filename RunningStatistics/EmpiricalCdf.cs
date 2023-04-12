@@ -71,10 +71,7 @@ public sealed class EmpiricalCdf : AbstractRunningStatistic<double, EmpiricalCdf
         _extrema.Reset();
     }
     
-    public override EmpiricalCdf CloneEmpty()
-    {
-        return new EmpiricalCdf(NumBins);
-    }
+    public override EmpiricalCdf CloneEmpty() => new(NumBins);
 
     public override EmpiricalCdf Clone() => new(this);
 

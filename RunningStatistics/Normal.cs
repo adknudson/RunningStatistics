@@ -57,23 +57,15 @@ public sealed class Normal : AbstractRunningStatistic<double, Normal>
         _variance.Reset();
     }
 
-    public override Normal CloneEmpty()
-    {
-        return new Normal();
-    }
+    public override Normal CloneEmpty() => new();
 
-    public override Normal Clone()
-    {
-        return new Normal(this);
-    }
+    public override Normal Clone() => new(this);
+
     public override void Merge(Normal normal)
     {
         _mean.Merge(normal._mean);
         _variance.Merge(normal._variance);
     }
 
-    public override string ToString()
-    {
-        return $"{typeof(Normal)} Nobs={Nobs} | μ={Mean}, σ²={Variance}";
-    }
+    public override string ToString() => $"{typeof(Normal)} Nobs={Nobs} | μ={Mean}, σ²={Variance}";
 }

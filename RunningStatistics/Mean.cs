@@ -39,10 +39,7 @@ public sealed class Mean : AbstractRunningStatistic<double, Mean>
         Value = 0;
     }
 
-    public override Mean CloneEmpty()
-    {
-        return new Mean();
-    }
+    public override Mean CloneEmpty() => new();
 
     public override Mean Clone()
     {

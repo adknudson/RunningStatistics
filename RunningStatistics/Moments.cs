@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace RunningStatistics;
 
@@ -14,7 +13,6 @@ public sealed class Moments : AbstractRunningStatistic<double, Moments>
 
     public Moments()
     {
-        Nobs = 0;
         _mean = 0;
         _variance = 0;
         _skewness = 0;
@@ -98,10 +96,7 @@ public sealed class Moments : AbstractRunningStatistic<double, Moments>
         _kurtosis = 0;
     }
 
-    public override Moments CloneEmpty()
-    {
-        return new Moments();
-    }
+    public override Moments CloneEmpty() => new();
 
     public override Moments Clone()
     {
