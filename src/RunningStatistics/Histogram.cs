@@ -188,6 +188,7 @@ public sealed class Histogram : AbstractRunningStatistic<double, Histogram>, IEn
     public override Histogram Clone()
     {
         var hist = CloneEmpty();
+        hist.Nobs = _outOfBounds.Nobs;
         hist._outOfBounds = _outOfBounds.Clone();
         
         foreach (var bin in this)
