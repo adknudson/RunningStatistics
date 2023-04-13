@@ -2,6 +2,50 @@
 
 namespace RunningStatistics;
 
+public sealed class Sum : AbstractRunningStatistic<double, Sum>
+{
+    public double Value { get; private set; }
+
+    
+    
+    public override void Fit(double value)
+    {
+        Nobs++;
+        Value += value;
+    }
+
+    public override void Reset()
+    {
+        Nobs = 0;
+        Value = 0;
+    }
+
+    public override Sum CloneEmpty() => new();
+
+    public override Sum Clone()
+    {
+        return new Sum
+        {
+            Nobs = Nobs,
+            Value = Value
+        };
+    }
+    public override void Merge(Sum sum)
+    {
+        Nobs += sum.Nobs;
+        Value += sum.Value;
+    }
+
+    public override string ToString() => $"{typeof(Sum)} Nobs={Nobs} | Σ={Value}";
+
+    public static explicit operator double(Sum sum) => sum.Value;
+    
+    public double Mean() => Value / Nobs;
+}
+
+
+#if NET7_0_OR_GREATER
+
 /// <summary>
 /// Keep track of the univariate sum.
 /// </summary>
@@ -44,3 +88,5 @@ public sealed class Sum<TObs> : AbstractRunningStatistic<TObs, Sum<TObs>> where 
 
     public static explicit operator TObs(Sum<TObs> sum) => sum.Value;
 }
+
+#endif

@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageVersion>1.0.0</PackageVersion>
+		<PackageVersion>1.0.1</PackageVersion>
 		<Authors>Alex Knudson</Authors>
 		<Title>Running Statistics</Title>
 		<Description>A library of single pass algorithms for statistical measures.</Description>
@@ -12,9 +12,9 @@
 		<RepositoryUrl>https://github.com/adknudson/RunningStatistics</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
-		<LangVersion>11</LangVersion>
+		<LangVersion>default</LangVersion>
 		<Nullable>enable</Nullable>
-		<TargetFrameworks>net7.0;net7.0-windows</TargetFrameworks>
+		<TargetFrameworks>net6.0;net6.0-windows;net7.0;net7.0-windows;netstandard2.1</TargetFrameworks>
 	</PropertyGroup>
 
 </Project>

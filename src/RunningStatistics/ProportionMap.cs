@@ -84,7 +84,7 @@ public sealed class ProportionMap<TObs> : AbstractRunningStatistic<TObs, Proport
     
     public IEnumerator<KeyValuePair<TObs, double>> GetEnumerator()
     {
-        foreach (var (key, prop) in Keys.Zip(Values))
+        foreach (var (key, prop) in Keys.Zip(Values, (obs, prop) => (obs, prop)))
         {
             yield return new KeyValuePair<TObs, double>(key, prop);
         }

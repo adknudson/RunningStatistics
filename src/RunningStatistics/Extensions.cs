@@ -5,7 +5,8 @@ namespace RunningStatistics;
 
 public static class Extensions
 {
-    #region Sum
+
+#if NET7_0_OR_GREATER
     
     public static double Mean(this Sum<double> sum)
     {
@@ -26,16 +27,8 @@ public static class Extensions
     {
         return sum.Value / sum.Nobs;
     }
-    
-    #endregion
 
-    
-    #region CountMap
-
-    public static T Mode<T>(this CountMap<T> countMap) where T : notnull
-    {
-        return countMap.MaxBy(b => b.Value).Key;
-    }
+#endif
 
     public static double Mean(this CountMap<double> countMap)
     {
@@ -55,32 +48,6 @@ public static class Extensions
     public static decimal Mean(this CountMap<decimal> countMap)
     {
         return countMap.Sum(kvp => kvp.Key * kvp.Value / countMap.Nobs);
-    }
-    
-    public static T Median<T>(this CountMap<T> countMap) where T : notnull
-    {
-        var sortedData = countMap.OrderBy(kvp => kvp.Key).ToList();
-        var nobs = countMap.Nobs;
-        var sum = 0.0;
-        
-        if (sortedData.Count % 2 != 0) // if N is odd
-        {
-            foreach (var (key, count) in sortedData)
-            {
-                sum += (double)count / nobs;
-                if (sum > 0.5) return key;
-            }
-        }
-        else // if N is even
-        {
-            foreach (var (key, count) in sortedData)
-            {
-                sum += (double)count / nobs;
-                if (sum >= 0.5) return key;
-            }
-        }
-
-        throw new Exception("Median not found");
     }
 
     public static double Variance(this CountMap<double> countMap)
@@ -130,6 +97,4 @@ public static class Extensions
     {
         return countMap.Kurtosis(mean, variance) - 3;
     }
-    
-    #endregion
 }

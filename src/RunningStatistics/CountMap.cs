@@ -153,4 +153,44 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
     /// Returns a clone of the current object as a new <see cref="ProportionMap{TObs}"/>.
     /// </summary>
     public ProportionMap<TObs> ToProportionMap() => new(Clone());
+
+    public TObs Mode()
+    {
+        var currentMode = this.First();
+
+        foreach (var obs in this)
+        {
+            if (obs.Value > currentMode.Value)
+            {
+                currentMode = obs;
+            }
+        }
+
+        return currentMode.Key;
+    }
+    
+    public TObs Median()
+    {
+        var sortedData = this.OrderBy(kvp => kvp.Key).ToList();
+        var sum = 0.0;
+        
+        if (sortedData.Count % 2 != 0) // if N is odd
+        {
+            foreach (var (key, count) in sortedData)
+            {
+                sum += (double)count / Nobs;
+                if (sum > 0.5) return key;
+            }
+        }
+        else // if N is even
+        {
+            foreach (var (key, count) in sortedData)
+            {
+                sum += (double)count / Nobs;
+                if (sum >= 0.5) return key;
+            }
+        }
+
+        throw new Exception("Median not found");
+    }
 }

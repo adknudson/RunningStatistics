@@ -230,6 +230,6 @@ public sealed class Histogram : AbstractRunningStatistic<double, Histogram>, IEn
     
     private bool BinsAreMatching(ICollection<HistogramBin> other)
     {
-        return Bins.Count == other.Count && Bins.Zip(other).All(z => z.First.Equals(z.Second));
+        return Bins.Count == other.Count && Bins.Zip(other, (bin1, bin2) => (bin1, bin2)).All(z => z.bin1.Equals(z.bin2));
     }
 }
