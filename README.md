@@ -5,17 +5,18 @@ Online (single pass) algorithms for statistical measures based on the Julia pack
 
 ## List of Statistics
 
-| Statistic           | Description                                     |
-|:--------------------|:------------------------------------------------|
-| Mean                | The univariate mean                             |
-| Sum\<T\>            | The overall sum of any INumber\<T\> type        |
-| Variance            | The univariate variance                         |
-| Extrema             | The min and max observations and their counts   |
-| Moments             | Mean, Variance, Skewness, and (excess) Kurtosis |
-| EmpiricalCdf        | Approximate order statistics (quantiles)        |
-| CountMap\<T\>       | Counts for each unique value                    |
-| ProportionMap\<T\>  | Proportions for each unique value               |
-| Histogram           | A histogram with specified bin edges            |
+| Statistic          | Description                                                    |
+|:-------------------|:---------------------------------------------------------------|
+| Mean               | The univariate mean                                            |
+| Sum                | The overall sum of `double` observations                       |
+| Sum\<T\>           | The overall sum of any `INumber<T>` (requires .NET7 or higher) |
+| Variance           | The univariate variance                                        |
+| Extrema            | The min and max observations and their counts                  |
+| Moments            | Mean, Variance, Skewness, and (excess) Kurtosis                |
+| EmpiricalCdf       | Approximate order statistics (quantiles)                       |
+| CountMap\<T\>      | Counts for each unique value                                   |
+| ProportionMap\<T\> | Proportions for each unique value                              |
+| Histogram          | A histogram with specified bin edges                           |
 
 
 ## List of Distributions
@@ -60,12 +61,16 @@ public abstract class AbstractRunningStatistic<TObs, TSelf> where TSelf : Abstra
 
     public abstract void Merge(TSelf other);
 
-    public static TSelf Merge(TSelf first, TSelf second)
+    public static TSelf Merge(TSelf sourceStatistic, params TSelf[] stats)
     {
-        var stat = first.CloneEmpty();
-        stat.Merge(first);
-        stat.Merge(second);
-        return stat;
+        var newStat = sourceStatistic.Clone();
+        
+        foreach (var stat in stats)
+        {
+            newStat.Merge(stat);
+        }
+
+        return newStat;
     }
 }
 
