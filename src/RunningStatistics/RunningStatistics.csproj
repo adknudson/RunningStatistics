@@ -2,19 +2,19 @@
 
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageVersion>1.0.1</PackageVersion>
+		<PackageVersion>1.0.3</PackageVersion>
 		<Authors>Alex Knudson</Authors>
 		<Title>Running Statistics</Title>
 		<Description>A library of single pass algorithms for statistical measures.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<Copyright>Copyright (c) Alex Knudson 2023</Copyright>
+		<Copyright>Copyright Alex Knudson</Copyright>
 		<PackageProjectUrl>https://github.com/adknudson/RunningStatistics</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/adknudson/RunningStatistics</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
 		<LangVersion>default</LangVersion>
 		<Nullable>enable</Nullable>
-		<TargetFrameworks>net6.0;net6.0-windows;net7.0;net7.0-windows;netstandard2.1</TargetFrameworks>
+		<TargetFrameworks>net7.0;netstandard2.0</TargetFrameworks>
 	</PropertyGroup>
 
 </Project>

@@ -58,9 +58,9 @@ public sealed class ProportionMap<TObs> : AbstractRunningStatistic<TObs, Proport
     {
         var propMap = new ProportionMap<TObs>();
 
-        foreach (var (key, nobs) in _countMap)
+        foreach (var kvp in _countMap)
         {
-            propMap.Fit(key, nobs);
+            propMap.Fit(kvp.Key, kvp.Value);
         }
 
         return propMap;

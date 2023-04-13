@@ -76,8 +76,8 @@ public sealed class Histogram : AbstractRunningStatistic<double, Histogram>, IEn
             {
                 Bins.Add(new HistogramBin(_edges[i - 1], _edges[i], true, false));
             }
-
-            var lastTwoEdges = _edges.TakeLast(2).ToList();
+            
+            var lastTwoEdges = _edges.Reverse().Take(2).Reverse().ToList();
             Bins.Add(new HistogramBin(lastTwoEdges[0], lastTwoEdges[1], true, EndsClosed));
         }
         else
@@ -85,6 +85,7 @@ public sealed class Histogram : AbstractRunningStatistic<double, Histogram>, IEn
             // add all but first normally
             var firstTwoEdges = _edges.Take(2).ToList();
             Bins.Add(new HistogramBin(firstTwoEdges[0], firstTwoEdges[1], EndsClosed, true));
+            
             for (var i = 2; i < _edges.Count; i++)
             {
                 Bins.Add(new HistogramBin(_edges[i - 1], _edges[i], false, true));
@@ -99,9 +100,9 @@ public sealed class Histogram : AbstractRunningStatistic<double, Histogram>, IEn
     /// </summary>
     public void Fit(IEnumerable<KeyValuePair<double, long>> keyValuePairs)
     {
-        foreach (var (value, count) in keyValuePairs)
+        foreach (var kvp in keyValuePairs)
         {
-            Fit(value, count);
+            Fit(kvp.Key, kvp.Value);
         }
     }
 

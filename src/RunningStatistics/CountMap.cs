@@ -68,9 +68,9 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
     /// </summary>
     public void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs)
     {
-        foreach (var (value, count) in keyValuePairs)
+        foreach (var kvp in keyValuePairs)
         {
-            Fit(value, count);
+            Fit(kvp.Key, kvp.Value);
         }
     }
 
@@ -93,9 +93,9 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
 
     public override void Merge(CountMap<TObs> countMap)
     {
-        foreach (var (key, value) in countMap._dict)
+        foreach (var kvp in countMap._dict)
         {
-            Fit(key, value);
+            Fit(kvp.Key, kvp.Value);
         }
     }
 
@@ -114,9 +114,9 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
     {
         var countmap = new CountMap<TObs>();
         
-        foreach (var (key, nobs) in _dict)
+        foreach (var kvp in _dict)
         {
-            countmap.UncheckedFit(key, nobs);
+            countmap.UncheckedFit(kvp.Key, kvp.Value);
         }
 
         return countmap;
@@ -176,18 +176,18 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
         
         if (sortedData.Count % 2 != 0) // if N is odd
         {
-            foreach (var (key, count) in sortedData)
+            foreach (var kvp in sortedData)
             {
-                sum += (double)count / Nobs;
-                if (sum > 0.5) return key;
+                sum += (double) kvp.Value / Nobs;
+                if (sum > 0.5) return kvp.Key;
             }
         }
         else // if N is even
         {
-            foreach (var (key, count) in sortedData)
+            foreach (var kvp in sortedData)
             {
-                sum += (double)count / Nobs;
-                if (sum >= 0.5) return key;
+                sum += (double)kvp.Value / Nobs;
+                if (sum >= 0.5) return kvp.Key;
             }
         }
 
