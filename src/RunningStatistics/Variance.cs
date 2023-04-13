@@ -17,7 +17,7 @@ public sealed class Variance : AbstractRunningStatistic<double, Variance>
         get
         {
             if (Nobs > 1) return _variance * Utils.BesselCorrection(Nobs);
-            return double.IsFinite(_mean) ? 1.0 : double.NaN;
+            return double.IsInfinity(_mean) ? double.NaN : 1.0;
         }
     }
 
