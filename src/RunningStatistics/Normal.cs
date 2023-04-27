@@ -67,5 +67,21 @@ public sealed class Normal : AbstractRunningStatistic<double, Normal>
         _variance.Merge(normal._variance);
     }
 
+    public double Pdf(double x)
+    {
+        var d = (x - Mean) / StandardDeviation;
+        return Math.Exp(-0.5 * d * d) / (Constants.Sqrt2Pi * StandardDeviation);
+    }
+
+    public double Cdf(double x)
+    {
+        return 0.5 * SpecialFunctions.Erfc((Mean - x) / (StandardDeviation * Constants.Sqrt2));
+    }
+
+    public double Quantile(double p)
+    {
+        return Mean - StandardDeviation * Constants.Sqrt2 * SpecialFunctions.ErfcInv(2.0 * p);
+    }
+
     public override string ToString() => $"{typeof(Normal)} Nobs={Nobs} | μ={Mean}, σ²={Variance}";
 }
