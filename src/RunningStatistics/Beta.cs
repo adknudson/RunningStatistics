@@ -18,10 +18,10 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
         _b = 0;
     }
 
-    public Beta(long numHits, long numMisses)
+    public Beta(long numSuccesses, long numFailures)
     {
-        _a = numHits;
-        _b = numMisses;
+        _a = numSuccesses;
+        _b = numFailures;
     }
 
 
@@ -42,19 +42,19 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
     
     protected override long GetNobs() => _a + _b;
     
-    public void Fit(long numHits = 0, long numMisses = 0)
+    public void Fit(long numSuccesses = 0, long numFailures = 0)
     {
-        if (numHits < 0)
+        if (numSuccesses < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(numHits), "Number of hits must be non-negative");
+            throw new ArgumentOutOfRangeException(nameof(numSuccesses), "Number of successes must be non-negative");
         }
 
-        if (numMisses < 0)
+        if (numFailures < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(numMisses), "Number of misses must be non-negative");
+            throw new ArgumentOutOfRangeException(nameof(numFailures), "Number of failures must be non-negative");
         }
 
-        UncheckedFit(numHits, numMisses);
+        UncheckedFit(numSuccesses, numFailures);
     }
 
     public override void Fit(bool success)
@@ -69,10 +69,10 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
         }
     }
 
-    private void UncheckedFit(long numHits, long numMisses)
+    private void UncheckedFit(long numSuccesses, long numFailures)
     {
-        _a += numHits;
-        _b += numMisses;
+        _a += numSuccesses;
+        _b += numFailures;
     }
 
     public override void Reset()

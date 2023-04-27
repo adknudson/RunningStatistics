@@ -21,9 +21,11 @@ Online (single pass) algorithms for statistical measures based on the Julia pack
 
 ## List of Distributions
 
-| Distribution | Description                                         |
-|:-------------|:----------------------------------------------------|
-| Normal       | The univariate mean and variance                    |
+| Distribution | Description                          |
+|:-------------|:-------------------------------------|
+| Normal       | The univariate mean and variance     |
+| Beta         | The number of successes and failures |
+
 
 
 ## Common Interface
