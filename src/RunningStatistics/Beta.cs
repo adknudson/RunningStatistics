@@ -1,5 +1,8 @@
 ﻿using System;
 using RunningStatistics.RootFinding;
+// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
+// ReSharper disable CompareOfFloatsByEqualityOperator
+// ReSharper disable ConvertIfStatementToSwitchStatement
 
 namespace RunningStatistics;
 
@@ -23,6 +26,10 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
 
 
 
+    public long NumSuccesses => _a;
+
+    public long NumFailures => _b;
+    
     public double Mean => Nobs > 0 ? (double)_a / Nobs : double.NaN;
 
     public double Median => _a > 1 && _b > 1 ? (_a - 0.33333333333333331) / (Nobs - 0.66666666666666663) : double.NaN;
@@ -212,7 +219,7 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
     {
         if (p is < 0.0 or > 1.0)
         {
-            throw new ArgumentException("Invalid parametrization for the distribution.");
+            throw new ArgumentOutOfRangeException(nameof(p), "Invalid parametrization for the distribution.");
         } 
         
         return Brent.FindRoot(x => SpecialFunctions.UnsafeBetaRegularized(_a, _b, x) - p, 0.0, 1.0, accuracy: 1e-12);
