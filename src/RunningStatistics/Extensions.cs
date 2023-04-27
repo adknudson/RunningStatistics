@@ -5,24 +5,23 @@ namespace RunningStatistics;
 
 public static class Extensions
 {
-
 #if NET7_0_OR_GREATER
-    
+
     public static double Mean(this Sum<double> sum)
     {
         return sum.Value / sum.Nobs;
     }
-    
+
     public static double Mean(this Sum<int> sum)
     {
         return (double) sum.Value / sum.Nobs;
     }
-    
+
     public static double Mean(this Sum<long> sum)
     {
         return (double) sum.Value / sum.Nobs;
     }
-    
+
     public static decimal Mean(this Sum<decimal> sum)
     {
         return sum.Value / sum.Nobs;
@@ -39,7 +38,7 @@ public static class Extensions
     {
         return countMap.Sum(kvp => (double) kvp.Key * kvp.Value / countMap.Nobs);
     }
-    
+
     public static double Mean(this CountMap<long> countMap)
     {
         return countMap.Sum(kvp => (double) kvp.Key * kvp.Value / countMap.Nobs);
