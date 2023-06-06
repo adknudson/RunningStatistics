@@ -12,31 +12,26 @@ public sealed class Mean : AbstractRunningStatistic<double, Mean>
     
     
     
-    public double Value
-    {
-        get => Nobs == 0 ? double.NaN : _value;
-        private set => _value = value;
-    }
+    public double Value => Nobs == 0 ? double.NaN : _value;
 
-    
-    
+
     public override void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();
         Nobs += ys.Count;
-        Value = Utils.Smooth(Value, ys.Average(), (double) ys.Count / Nobs);
+        _value = Utils.Smooth(_value, ys.Average(), (double) ys.Count / Nobs);
     }
 
     public override void Fit(double value)
     {
         Nobs++;
-        Value = Utils.Smooth(Value, value, 1.0 / Nobs);
+        _value = Utils.Smooth(_value, value, 1.0 / Nobs);
     }
 
     public override void Reset()
     {
         Nobs = 0;
-        Value = 0;
+        _value = 0;
     }
 
     public override Mean CloneEmpty() => new();
@@ -46,13 +41,13 @@ public sealed class Mean : AbstractRunningStatistic<double, Mean>
         return new Mean
         {
             Nobs = Nobs,
-            Value = Value
+            _value = Value
         };
     }
     public override void Merge(Mean mean)
     {
         Nobs += mean.Nobs;
-        Value = Nobs == 0 ? 0 : Utils.Smooth(Value, mean.Value, (double) mean.Nobs / Nobs);
+        _value = Nobs == 0 ? 0 : Utils.Smooth(_value, mean._value, (double) mean.Nobs / Nobs);
     }
     
     public override string ToString() => $"{typeof(Mean)} Nobs={Nobs} | μ={Value}";

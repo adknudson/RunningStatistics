@@ -31,6 +31,21 @@ public class TestMean
     }
 
     [Fact]
+    public void MergeEmptyDoesNotPropagateNaNs()
+    {
+        var a = new Mean();
+        a.Fit(3.14159);
+        a.Fit(2.71828);
+        var m = a.Value;
+
+        var b = new Mean();
+        Assert.Equal(double.NaN, b.Value);
+        
+        a.Merge(b);
+        Assert.Equal(a.Value, m);
+    }
+
+    [Fact]
     public void ResetMean()
     {
         Mean a = new();
