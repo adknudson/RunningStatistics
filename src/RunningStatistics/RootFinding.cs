@@ -29,9 +29,12 @@
 
 using System;
 
-namespace RunningStatistics.RootFinding;
+namespace RunningStatistics;
 
-internal static class Brent
+/// <summary>
+/// Root finding using the Brent method
+/// </summary>
+internal static class RootFinding
 {
     public static double FindRoot(Func<double, double> f, double lowerBound, double upperBound, double accuracy = 1e-8,
         int maxIterations = 100)

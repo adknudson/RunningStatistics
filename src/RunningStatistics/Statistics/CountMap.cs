@@ -9,10 +9,10 @@ namespace RunningStatistics;
 /// A dictionary that maps unique values to its number of occurrences. Accessing a non-existent key will return a count
 /// of zero, however a new key will not be added to the internal dictionary.
 /// </summary>
-public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IReadOnlyDictionary<TObs, long> where TObs : notnull
+public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TObs>>, IReadOnlyDictionary<TObs, long> 
+    where TObs : notnull
 {
     private readonly IDictionary<TObs, long> _dict;
-    
     
     
     public CountMap()
@@ -39,7 +39,6 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
     /// </summary>
     public int NumUniqueObs => _dict.Count;
 
-    
     
     public override void Fit(TObs value)
     {

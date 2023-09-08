@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageVersion>1.1.1</PackageVersion>
+		<PackageVersion>1.2.0</PackageVersion>
 		<Authors>Alex Knudson</Authors>
 		<Title>Running Statistics</Title>
 		<Description>A library of single pass algorithms for statistical measures.</Description>
@@ -16,5 +16,5 @@
 		<Nullable>enable</Nullable>
 		<TargetFrameworks>net7.0;netstandard2.0</TargetFrameworks>
 	</PropertyGroup>
-
+	
 </Project>

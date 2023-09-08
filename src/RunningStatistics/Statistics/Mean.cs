@@ -11,11 +11,9 @@ public sealed class Mean : AbstractRunningStatistic<double, Mean>
     private double _value;
     
     
-    
     public double Value => Nobs == 0 ? double.NaN : _value;
 
-
-
+    
     public override void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();

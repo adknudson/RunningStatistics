@@ -4,10 +4,10 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public sealed class ProportionMap<TObs> : AbstractRunningStatistic<TObs, ProportionMap<TObs>>, IReadOnlyDictionary<TObs, double> where TObs: notnull
+public sealed class ProportionMap<TObs> : AbstractRunningStatistic<TObs, ProportionMap<TObs>>, IReadOnlyDictionary<TObs, double> 
+    where TObs: notnull
 {
     private readonly CountMap<TObs> _countMap;
-
     
     
     public ProportionMap()
@@ -25,7 +25,6 @@ public sealed class ProportionMap<TObs> : AbstractRunningStatistic<TObs, Proport
         _countMap = new CountMap<TObs>(valueCounts);
     }
 
-
     
     public double this[TObs key] => TryGetValue(key, out var value) ? value : default;
 
@@ -39,7 +38,6 @@ public sealed class ProportionMap<TObs> : AbstractRunningStatistic<TObs, Proport
     public IEnumerable<TObs> Keys => _countMap.Keys;
 
     public IEnumerable<double> Values => _countMap.Values.Select(count => (double) count / Nobs);
-
     
 
     protected override long GetNobs() => _countMap.Nobs;

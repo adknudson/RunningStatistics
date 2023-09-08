@@ -1,8 +1,7 @@
 ﻿using System;
-using RunningStatistics.RootFinding;
-// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
+
 // ReSharper disable CompareOfFloatsByEqualityOperator
-// ReSharper disable ConvertIfStatementToSwitchStatement
+// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
 
 namespace RunningStatistics;
 
@@ -222,6 +221,6 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
             throw new ArgumentOutOfRangeException(nameof(p), "Invalid parametrization for the distribution.");
         } 
         
-        return Brent.FindRoot(x => SpecialFunctions.UnsafeBetaRegularized(_a, _b, x) - p, 0.0, 1.0, accuracy: 1e-12);
+        return RootFinding.FindRoot(x => SpecialFunctions.UnsafeBetaRegularized(_a, _b, x) - p, 0.0, 1.0, accuracy: 1e-12);
     }
 }

@@ -13,29 +13,17 @@ public sealed class Extrema : AbstractRunningStatistic<double, Extrema>
     private const double Tolerance = 1.4901161193847656e-8;
 
 
-    
-    public Extrema()
-    {
-        Min = double.PositiveInfinity;
-        Max = double.NegativeInfinity;
-        MinCount = 0;
-        MaxCount = 0;
-    }
+    public double Min { get; private set; } = double.PositiveInfinity;
 
+    public double Max { get; private set; } = double.NegativeInfinity;
 
-
-    public double Min { get; private set; }
-    
-    public double Max { get; private set; }
-    
     public long MinCount { get; private set; }
-    
+
     public long MaxCount { get; private set; }
-    
+
     public double Range => Max - Min;
 
     
-
     public override void Fit(double value)
     {
         UncheckedFit(value, 1);
@@ -68,8 +56,8 @@ public sealed class Extrema : AbstractRunningStatistic<double, Extrema>
             MaxCount = count;
         }
         
-        if (Math.Abs(value - Min) < Tolerance) MinCount += count;
-        if (Math.Abs(value - Max) < Tolerance) MaxCount += count;
+        if (Math.Abs(value - Min) <= Tolerance) MinCount += count;
+        if (Math.Abs(value - Max) <= Tolerance) MaxCount += count;
     }
     
     public override void Reset()
@@ -99,7 +87,7 @@ public sealed class Extrema : AbstractRunningStatistic<double, Extrema>
     {
         Nobs += extrema.Nobs;
 
-        if (Math.Abs(Min - extrema.Min) < Tolerance)
+        if (Math.Abs(Min - extrema.Min) <= Tolerance)
         {
             MinCount += extrema.MinCount;
         }
@@ -109,7 +97,7 @@ public sealed class Extrema : AbstractRunningStatistic<double, Extrema>
             MinCount = extrema.MinCount;
         }
 
-        if (Math.Abs(Max - extrema.Max) < Tolerance)
+        if (Math.Abs(Max - extrema.Max) <= Tolerance)
         {
             MaxCount += extrema.MaxCount;
         }
