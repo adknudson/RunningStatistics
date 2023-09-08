@@ -4,10 +4,7 @@ public static class TwoTypesOfSum
 {
     public static void Example()
     {
-        var sum = new Sum(); // defaults to observations of type 'double'
-        var genericSum = new Sum<int>();
-
-        sum.Mean(); // member of the Sum class
-        genericSum.Mean(); // provided via extension methods
+        var sum = new Sum(); // stores observations of type 'double'
+        var dSum = new Sum<double>(); // explicitly stores observations of type 'double'. Requires .NET 7 or greater
     }
 }

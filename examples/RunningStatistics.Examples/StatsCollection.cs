@@ -2,17 +2,8 @@
 
 public class StatsCollection : AbstractRunningStatistic<double, StatsCollection>
 {
-    public StatsCollection()
-    {
-        CountMap = new CountMap<double>();
-        Ecdf = new EmpiricalCdf();
-    }
-    
-    
-    
-    private CountMap<double> CountMap { get; init; }
-    private EmpiricalCdf Ecdf { get; init; }
-
+    private CountMap<double> CountMap { get; init; } = new();
+    private EmpiricalCdf Ecdf { get; init; } = new();
 
 
     protected override long GetNobs() => Ecdf.Nobs;
