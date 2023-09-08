@@ -12,7 +12,7 @@ Online (single pass) algorithms for statistical measures based on the Julia pack
 | Sum\<T\>           | The overall sum of any `INumber<T>` (requires .NET7 or higher)              |
 | Variance           | The univariate variance                                                     |
 | Extrema            | The min and max observations and their counts                               |
-| Extrema<T>         | The min and max observations of any `INumber<T>` (requires .NET7 or higher) |
+| Extrema\<T\>       | The min and max observations of any `INumber<T>` (requires .NET7 or higher) |
 | Moments            | Mean, Variance, Skewness, and (excess) Kurtosis                             |
 | EmpiricalCdf       | Approximate order statistics (quantiles)                                    |
 | CountMap\<T\>      | Counts for each unique value                                                |
