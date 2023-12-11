@@ -411,12 +411,12 @@ internal static partial class SpecialFunctions
             // We're going to calculate erf:
             if (z < 1e-10)
             {
-                result = z*1.125 + z*0.003379167095512573896158903121545171688;
+                result = z * 1.125 + z * 0.003379167095512573896158903121545171688;
             }
             else
             {
                 // Worst case absolute error found: 6.688618532e-21
-                result = z*1.125 + z*Polynomial.Evaluate(z, ErfImpAn)/Polynomial.Evaluate(z, ErfImpAd);
+                result = z * 1.125 + z * Polynomial.Evaluate(z, ErfImpAn) / Polynomial.Evaluate(z, ErfImpAd);
             }
         }
         else if (z < 110)
@@ -427,84 +427,84 @@ internal static partial class SpecialFunctions
             if (z < 0.75)
             {
                 // Worst case absolute error found: 5.582813374e-21
-                r = Polynomial.Evaluate(z - 0.5, ErfImpBn)/Polynomial.Evaluate(z - 0.5, ErfImpBd);
+                r = Polynomial.Evaluate(z - 0.5, ErfImpBn) / Polynomial.Evaluate(z - 0.5, ErfImpBd);
                 b = 0.3440242112F;
             }
             else if (z < 1.25)
             {
                 // Worst case absolute error found: 4.01854729e-21
-                r = Polynomial.Evaluate(z - 0.75, ErfImpCn)/Polynomial.Evaluate(z - 0.75, ErfImpCd);
+                r = Polynomial.Evaluate(z - 0.75, ErfImpCn) / Polynomial.Evaluate(z - 0.75, ErfImpCd);
                 b = 0.419990927F;
             }
             else if (z < 2.25)
             {
                 // Worst case absolute error found: 2.866005373e-21
-                r = Polynomial.Evaluate(z - 1.25, ErfImpDn)/Polynomial.Evaluate(z - 1.25, ErfImpDd);
+                r = Polynomial.Evaluate(z - 1.25, ErfImpDn) / Polynomial.Evaluate(z - 1.25, ErfImpDd);
                 b = 0.4898625016F;
             }
             else if (z < 3.5)
             {
                 // Worst case absolute error found: 1.045355789e-21
-                r = Polynomial.Evaluate(z - 2.25, ErfImpEn) /Polynomial.Evaluate(z - 2.25, ErfImpEd);
+                r = Polynomial.Evaluate(z - 2.25, ErfImpEn) / Polynomial.Evaluate(z - 2.25, ErfImpEd);
                 b = 0.5317370892F;
             }
             else if (z < 5.25)
             {
                 // Worst case absolute error found: 8.300028706e-22
-                r = Polynomial.Evaluate(z - 3.5, ErfImpFn) /Polynomial.Evaluate(z - 3.5, ErfImpFd);
+                r = Polynomial.Evaluate(z - 3.5, ErfImpFn) / Polynomial.Evaluate(z - 3.5, ErfImpFd);
                 b = 0.5489973426F;
             }
             else if (z < 8)
             {
                 // Worst case absolute error found: 1.700157534e-21
-                r = Polynomial.Evaluate(z - 5.25, ErfImpGn) /Polynomial.Evaluate(z - 5.25, ErfImpGd);
+                r = Polynomial.Evaluate(z - 5.25, ErfImpGn) / Polynomial.Evaluate(z - 5.25, ErfImpGd);
                 b = 0.5571740866F;
             }
             else if (z < 11.5)
             {
                 // Worst case absolute error found: 3.002278011e-22
-                r = Polynomial.Evaluate(z - 8, ErfImpHn) /Polynomial.Evaluate(z - 8, ErfImpHd);
+                r = Polynomial.Evaluate(z - 8, ErfImpHn) / Polynomial.Evaluate(z - 8, ErfImpHd);
                 b = 0.5609807968F;
             }
             else if (z < 17)
             {
                 // Worst case absolute error found: 6.741114695e-21
-                r = Polynomial.Evaluate(z - 11.5, ErfImpIn) /Polynomial.Evaluate(z - 11.5, ErfImpId);
+                r = Polynomial.Evaluate(z - 11.5, ErfImpIn) / Polynomial.Evaluate(z - 11.5, ErfImpId);
                 b = 0.5626493692F;
             }
             else if (z < 24)
             {
                 // Worst case absolute error found: 7.802346984e-22
-                r = Polynomial.Evaluate(z - 17, ErfImpJn) /Polynomial.Evaluate(z - 17, ErfImpJd);
+                r = Polynomial.Evaluate(z - 17, ErfImpJn) / Polynomial.Evaluate(z - 17, ErfImpJd);
                 b = 0.5634598136F;
             }
             else if (z < 38)
             {
                 // Worst case absolute error found: 2.414228989e-22
-                r = Polynomial.Evaluate(z - 24, ErfImpKn) /Polynomial.Evaluate(z - 24, ErfImpKd);
+                r = Polynomial.Evaluate(z - 24, ErfImpKn) / Polynomial.Evaluate(z - 24, ErfImpKd);
                 b = 0.5638477802F;
             }
             else if (z < 60)
             {
                 // Worst case absolute error found: 5.896543869e-24
-                r = Polynomial.Evaluate(z - 38, ErfImpLn) /Polynomial.Evaluate(z - 38, ErfImpLd);
+                r = Polynomial.Evaluate(z - 38, ErfImpLn) / Polynomial.Evaluate(z - 38, ErfImpLd);
                 b = 0.5640528202F;
             }
             else if (z < 85)
             {
                 // Worst case absolute error found: 3.080612264e-21
-                r = Polynomial.Evaluate(z - 60, ErfImpMn) /Polynomial.Evaluate(z - 60, ErfImpMd);
+                r = Polynomial.Evaluate(z - 60, ErfImpMn) / Polynomial.Evaluate(z - 60, ErfImpMd);
                 b = 0.5641309023F;
             }
             else
             {
                 // Worst case absolute error found: 8.094633491e-22
-                r = Polynomial.Evaluate(z - 85, ErfImpNn) /Polynomial.Evaluate(z - 85, ErfImpNd);
+                r = Polynomial.Evaluate(z - 85, ErfImpNn) / Polynomial.Evaluate(z - 85, ErfImpNd);
                 b = 0.5641584396F;
             }
 
-            var g = Math.Exp(-z*z)/z;
-            result = g*b + g*r;
+            var g = Math.Exp(-z * z) / z;
+            result = g * b + g * r;
         }
         else
         {

@@ -84,10 +84,10 @@ internal static partial class SpecialFunctions
             }
 
             return Constants.LnPi
-                   - Math.Log(Math.Sin(Math.PI*z))
+                   - Math.Log(Math.Sin(Math.PI * z))
                    - Math.Log(s)
                    - Constants.LogTwoSqrtEOverPi
-                   - (0.5 - z)*Math.Log((0.5 - z + GammaR)/Math.E);
+                   - (0.5 - z) * Math.Log((0.5 - z + GammaR) / Math.E);
         }
         else
         {
