@@ -6,7 +6,7 @@ namespace RunningStatistics;
 
 internal static class Utils
 {
-    internal static double BesselCorrection(long n)
+    public static double BesselCorrection(long n)
     {
         return (double) n / (n - 1);
     }
@@ -14,19 +14,47 @@ internal static class Utils
     /// <summary>
     /// Weighted interpolation of two values.
     /// </summary>
-    internal static double Smooth(double a, double b, double w)
+    public static double Smooth(double a, double b, double w)
     {
         return a + w * (b - a);
+    }
+    
+    public static double Mean(IEnumerable<double> values, IEnumerable<double> probabilities)
+    {
+        return values.Zip(probabilities, (vs, ps) => (vs, ps)).Sum(x => x.vs * x.ps);
     }
 
     /// <summary>
     /// Compute the (biased) variance of a collection of values.
     /// </summary>
-    internal static double Variance(IList<double> xs)
+    public static double Variance(IEnumerable<double> xs, double mean)
     {
-        var mean = xs.Average();
         var meanSquare = xs.Average(s => s * s);
-
         return Math.Abs(meanSquare - mean * mean);
+    }
+    
+    public static double Variance(IEnumerable<double> values, IEnumerable<double> probabilities, double mean)
+    {
+        return values.Zip(probabilities, (vs, ps) => (vs, ps)).Sum(x => x.ps * Math.Pow(x.vs - mean, 2.0));
+    }
+
+    public static double Skewness(IEnumerable<double> values, IEnumerable<double> probabilities, 
+        double mean, double variance)
+    {
+        var std = Math.Sqrt(variance);
+        return values.Zip(probabilities, (vs, ps) => (vs, ps)).Sum(x => x.ps * Math.Pow((x.vs - mean) / std, 3));
+    }
+
+    public static double Kurtosis(IEnumerable<double> values, IEnumerable<double> probabilities,
+        double mean, double variance)
+    {
+        var std = Math.Sqrt(variance);
+        return values.Zip(probabilities, (vs, ps) => (vs, ps)).Sum(x => x.ps * Math.Pow((x.vs - mean) / std, 4));
+    }
+
+    public static double ExcessKurtosis(IEnumerable<double> values, IEnumerable<double> probabilities,
+        double mean, double variance)
+    {
+        return Kurtosis(values, probabilities, mean, variance) - 3;
     }
 }
