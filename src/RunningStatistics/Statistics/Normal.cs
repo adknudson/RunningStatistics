@@ -9,8 +9,7 @@ public sealed class Normal : AbstractRunningStatistic<double, Normal>
     private readonly Mean _mean;
     private readonly Variance _variance;
 
-
-
+    
     public Normal()
     {
         _mean = new Mean();
@@ -23,8 +22,7 @@ public sealed class Normal : AbstractRunningStatistic<double, Normal>
         _variance = other._variance.Clone();
     }
 
-
-
+    
     public double Mean => _mean.Value;
     
     /// <summary>
@@ -33,7 +31,6 @@ public sealed class Normal : AbstractRunningStatistic<double, Normal>
     public double Variance => _variance.Value;
     
     public double StandardDeviation => Math.Sqrt(_variance.Value);
-    
     
     
     protected override long GetNobs() => _mean.Nobs;

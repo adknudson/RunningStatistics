@@ -60,7 +60,6 @@ public sealed class Histogram : AbstractRunningStatistic<double, Histogram>, IEn
     /// </example>
     public bool EndsClosed { get; }
 
-
     
     /// <summary>
     /// Initialize the bins according to the edges and end-bin behavior.

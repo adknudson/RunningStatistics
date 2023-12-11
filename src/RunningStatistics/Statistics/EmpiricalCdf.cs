@@ -15,7 +15,6 @@ public sealed class EmpiricalCdf : AbstractRunningStatistic<double, EmpiricalCdf
     
     private readonly Extrema _extrema;
     private readonly double[] _buffer, _values;
-
     
 
     public EmpiricalCdf(int numBins = 200)
