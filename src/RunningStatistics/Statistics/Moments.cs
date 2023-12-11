@@ -9,18 +9,7 @@ public sealed class Moments : AbstractRunningStatistic<double, Moments>
 {
     private double _mean, _variance, _skewness, _kurtosis;
 
-    
 
-    public Moments()
-    {
-        _mean = 0;
-        _variance = 0;
-        _skewness = 0;
-        _kurtosis = 0;
-    }
-
-    
-    
     /// <summary>
     /// The first central moment is the measure of central location.
     /// </summary>
@@ -73,7 +62,6 @@ public sealed class Moments : AbstractRunningStatistic<double, Moments>
     public bool IsPlatykurtic => ExcessKurtosis < 0;
     
     
-
     public override void Fit(double value)
     {
         Nobs++;
@@ -109,6 +97,7 @@ public sealed class Moments : AbstractRunningStatistic<double, Moments>
             _kurtosis = _kurtosis
         };
     }
+    
     public override void Merge(Moments moments)
     {
         Nobs += moments.Nobs;
