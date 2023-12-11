@@ -13,7 +13,7 @@ public static partial class Extensions
     /// <summary>
     /// Generic sum for any type that supports addition with an additive identity
     /// </summary>
-    internal static T MyGenericSum<T>(this IEnumerable<T> source) 
+    internal static T GenericSum<T>(this IEnumerable<T> source) 
         where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
     {
         return source.Aggregate(T.AdditiveIdentity, (current, value) => current + value);
@@ -22,29 +22,29 @@ public static partial class Extensions
     /// <summary>
     /// Generic map-sum for any type that supports addition with an additive identity
     /// </summary>
-    internal static TReturn MyGenericSum<TSource, TReturn>(this IEnumerable<TSource> source, Func<TSource, TReturn> selector) 
+    internal static TReturn GenericSum<TSource, TReturn>(this IEnumerable<TSource> source, Func<TSource, TReturn> selector) 
         where TReturn : IAdditionOperators<TReturn, TReturn, TReturn>, IAdditiveIdentity<TReturn, TReturn>
     {
-        return source.Select(selector).MyGenericSum();
+        return source.Select(selector).GenericSum();
     }
 
     /// <summary>
     /// Generic mean for any type that supports addition and can be divided by an <see cref="int"/>
     /// </summary>
-    internal static T MyGenericAverage<T>(this IEnumerable<T> source)
+    internal static T GenericAverage<T>(this IEnumerable<T> source)
         where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IDivisionOperators<T, int, T>
     {
         var ls = source.ToList();
-        return ls.MyGenericSum() / ls.Count;
+        return ls.GenericSum() / ls.Count;
     }
 
     /// <summary>
     /// Generic map-average for any type that supports addition and can be divided by an <see cref="int"/>
     /// </summary>
-    internal static TReturn MyGenericAverage<TSource, TReturn>(this IEnumerable<TSource> source, Func<TSource, TReturn> selector)
+    internal static TReturn GenericAverage<TSource, TReturn>(this IEnumerable<TSource> source, Func<TSource, TReturn> selector)
         where TReturn : IAdditionOperators<TReturn, TReturn, TReturn>, IAdditiveIdentity<TReturn, TReturn>, IDivisionOperators<TReturn, int, TReturn>
     {
-        return source.Select(selector).MyGenericAverage();
+        return source.Select(selector).GenericAverage();
     }
     
 #endif
