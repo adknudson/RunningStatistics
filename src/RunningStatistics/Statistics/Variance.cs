@@ -7,7 +7,6 @@ public sealed class Variance : AbstractRunningStatistic<double, Variance>
 {
     private double _mean, _variance;
 
-
     
     /// <summary>
     /// Returns the bias-corrected variance.
@@ -22,14 +21,13 @@ public sealed class Variance : AbstractRunningStatistic<double, Variance>
     }
 
     
-    
     public override void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();
         Nobs += ys.Count;
 
         var mean = ys.Average();
-        var variance = Utils.Variance(ys);
+        var variance = Utils.Variance(ys, mean);
         var g = (double) ys.Count / Nobs;
         var delta = _mean - mean;
 
