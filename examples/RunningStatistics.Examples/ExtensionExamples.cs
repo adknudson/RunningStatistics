@@ -12,6 +12,12 @@ public static class ExtensionExamples
         var mCountMap = new CountMap<decimal>();
         var xCountMap = new CountMap<MyNum>();
 
+        var iMin = iCountMap.MinKey();
+        var xMin = xCountMap.MinKey();
+
+        var iMax = iCountMap.MaxKey();
+        var xMax = xCountMap.MaxKey();
+        
         var iS = iCountMap.Sum();
         var lS = lCountMap.Sum();
         var dS = dCountMap.Sum();
@@ -24,9 +30,20 @@ public static class ExtensionExamples
         var mM = mCountMap.Mean();
         var xM = xCountMap.Mean();
 
+        var iV = iCountMap.Variance();
+        var lV = lCountMap.Variance();
         var dV = dCountMap.Variance();
+        
+        var iSk = iCountMap.Skewness();
+        var lSk = lCountMap.Skewness();
         var dSk = dCountMap.Skewness();
+        
+        var iK = iCountMap.Kurtosis();
+        var lK = lCountMap.Kurtosis();
         var dK = dCountMap.Kurtosis();
+        
+        var iE = iCountMap.ExcessKurtosis();
+        var lE = lCountMap.ExcessKurtosis();
         var dE = dCountMap.ExcessKurtosis();
     }
 
