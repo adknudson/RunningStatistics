@@ -61,7 +61,7 @@ internal static partial class SpecialFunctions
         
     public static double UnsafeBetaRegularized(double a, double b, double x)
     {
-        var bt = x == 0.0 || x == 1.0
+        var bt = x == 0 || x == 1
             ? 0.0
             : Math.Exp(GammaLn(a + b) - GammaLn(a) - GammaLn(b) + a*Math.Log(x) + b*Math.Log(1.0 - x));
 

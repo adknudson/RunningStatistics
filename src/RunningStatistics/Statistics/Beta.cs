@@ -9,8 +9,7 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
 {
     private long _a, _b;
 
-
-
+    
     public Beta()
     {
         _a = 0;
@@ -22,8 +21,7 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
         _a = numSuccesses;
         _b = numFailures;
     }
-
-
+    
 
     public long NumSuccesses => _a;
 
@@ -145,14 +143,14 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
     
     private double PdfLn(double x)
     {
-        if (x < 0.0 || x > 1.0)
+        if (x < 0 || x > 1)
         {
             return double.NegativeInfinity;
         }
 
         if (_a == 0 && _b == 0)
         {
-            return x == 0.0 || x == 1.0 ? double.PositiveInfinity : double.NegativeInfinity;
+            return x == 0 || x == 1 ? double.PositiveInfinity : double.NegativeInfinity;
         }
 
         if (_a == 0)
