@@ -34,7 +34,6 @@
 
 using System;
 
-// ReSharper disable once CheckNamespace
 namespace RunningStatistics;
 
 internal static partial class SpecialFunctions

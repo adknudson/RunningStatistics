@@ -38,13 +38,12 @@
 
 using System;
 
-// ReSharper disable once CheckNamespace
 namespace RunningStatistics;
 
 /// <summary>
 /// This partial implementation of the SpecialFunctions class contains all methods related to the error function.
 /// </summary>
-internal partial class SpecialFunctions
+internal static partial class SpecialFunctions
 {
     /// <summary>
     /// **************************************
