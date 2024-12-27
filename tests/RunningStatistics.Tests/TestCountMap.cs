@@ -31,7 +31,7 @@ public class TestCountMap
     }
 
     [Fact]
-    public void MergingTwoCountmapsMergesKeys()
+    public void MergingTwoCountMapsMergesKeys()
     {
         CountMap<string> a = new(); 
         CountMap<string> b = new();

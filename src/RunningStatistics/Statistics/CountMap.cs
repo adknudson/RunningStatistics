@@ -22,6 +22,18 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
 
     public CountMap(IDictionary<TObs, long> dictionary)
     {
+        foreach (var kvp in dictionary)
+        {
+            var key = kvp.Key;
+            var count = kvp.Value;
+            
+            if (count < 0)
+            {
+                throw new Exception(
+                    $"The give key \'{key}\' has a negative count. All counts in the dictionary must be non-negative.");
+            }
+        }
+        
         _dict = dictionary;
         Nobs = dictionary.Values.Sum();
     }
@@ -50,16 +62,15 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
     /// </summary>
     public void Fit(TObs value, long count)
     {
-        switch (count.CompareTo(0))
+        if (count < 0)
         {
-            case -1:
-                throw new ArgumentOutOfRangeException(nameof(count), "Must be non-negative.");
-            case 0:
-                return;
-            case 1:
-                UncheckedFit(value, count);
-                break;
+            throw new ArgumentOutOfRangeException(
+                nameof(count), count, "The count must be non-negative");
         }
+        
+        if (count == 0) return;
+        
+        UncheckedFit(value, count);
     }
     
     /// <summary>
@@ -92,9 +103,9 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
 
     public override void Merge(CountMap<TObs> countMap)
     {
-        foreach (var kvp in countMap._dict)
+        foreach (var kvp in countMap)
         {
-            Fit(kvp.Key, kvp.Value);
+            UncheckedFit(kvp.Key, kvp.Value);
         }
     }
 
@@ -111,14 +122,14 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
 
     public override CountMap<TObs> Clone()
     {
-        var countmap = new CountMap<TObs>();
+        var countMap = new CountMap<TObs>();
         
         foreach (var kvp in _dict)
         {
-            countmap.UncheckedFit(kvp.Key, kvp.Value);
+            countMap.UncheckedFit(kvp.Key, kvp.Value);
         }
 
-        return countmap;
+        return countMap;
     }
 
     public bool ContainsKey(TObs key) => _dict.ContainsKey(key);
@@ -155,6 +166,11 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
 
     public TObs Mode()
     {
+        if (Nobs == 0)
+        {
+            throw new Exception("Nobs = 0. The mode does not exist.");
+        }
+        
         var currentMode = this.First();
 
         foreach (var obs in this)
@@ -170,26 +186,39 @@ public sealed class CountMap<TObs> : AbstractRunningStatistic<TObs, CountMap<TOb
     
     public TObs Median()
     {
-        var sortedData = this.OrderBy(kvp => kvp.Key).ToList();
-        var sum = 0.0;
+        if (Nobs == 0)
+        {
+            throw new Exception("Nobs = 0. The median does not exist.");
+        }
         
-        if (sortedData.Count % 2 != 0) // if N is odd
-        {
-            foreach (var kvp in sortedData)
-            {
-                sum += (double) kvp.Value / Nobs;
-                if (sum > 0.5) return kvp.Key;
-            }
-        }
-        else // if N is even
-        {
-            foreach (var kvp in sortedData)
-            {
-                sum += (double)kvp.Value / Nobs;
-                if (sum >= 0.5) return kvp.Key;
-            }
-        }
+        return NumUniqueObs % 2 == 0 ? MedianEvenCount() : MedianOddCount();
+    }
 
-        throw new Exception("Median not found");
+    private TObs MedianEvenCount()
+    {
+        var cdf = 0.0;
+        
+        foreach (var kvp in _dict.OrderBy(kvp => kvp.Key)) 
+        {
+            cdf += (double)kvp.Value / Nobs;
+            if (cdf >= 0.5) return kvp.Key;
+        }
+        
+        // This should be unreachable...
+        throw new Exception("Not able to find the median of the count map.");
+    }
+    
+    private TObs MedianOddCount()
+    {
+        var cdf = 0.0;
+        
+        foreach (var kvp in _dict.OrderBy(kvp => kvp.Key)) 
+        {
+            cdf += (double)kvp.Value / Nobs;
+            if (cdf > 0.5) return kvp.Key;
+        }
+        
+        // This should be unreachable...
+        throw new Exception("Not able to find the median of the count map.");
     }
 }
