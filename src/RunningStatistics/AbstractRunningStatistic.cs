@@ -5,13 +5,11 @@ namespace RunningStatistics;
 /// <summary>
 /// The common interface for all statistics that can fit observations of type <see cref="TObs"/>
 /// </summary>
-public abstract class AbstractRunningStatistic<TObs, TSelf> where TSelf : AbstractRunningStatistic<TObs, TSelf>
+public abstract class AbstractRunningStatistic<TObs, TSelf> : IRunningStatistic<TObs, TSelf>
+    where TSelf : IRunningStatistic<TObs, TSelf>
 {
     private long _nobs;
-
-    /// <summary>
-    /// The number of observations that have been fitted.
-    /// </summary>
+    
     public long Nobs
     {
         get => GetNobs();
