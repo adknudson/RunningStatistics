@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 // ReSharper disable CompareOfFloatsByEqualityOperator
 // ReSharper disable ConvertToAutoPropertyWithPrivateSetter
 
 namespace RunningStatistics;
 
-public class Beta : AbstractRunningStatistic<bool, Beta>
+public sealed class Beta : IRunningStatistic<bool, Beta>
 {
     private long _a, _b;
 
@@ -33,8 +35,10 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
         _a = numSuccesses;
         _b = numFailures;
     }
-    
 
+
+    public long Nobs => NumSuccesses + NumFailures;
+    
     public long NumSuccesses => _a;
 
     public long NumFailures => _b;
@@ -47,9 +51,6 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
     
     public double Variance => (double) _a * _b / (Nobs * Nobs * (Nobs + 1));
 
-    
-    
-    protected override long GetNobs() => _a + _b;
     
     public void Fit(long numSuccesses = 0, long numFailures = 0)
     {
@@ -68,7 +69,7 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
         UncheckedFit(numSuccesses, numFailures);
     }
 
-    public override void Fit(bool success)
+    public void Fit(bool success)
     {
         if (success)
         {
@@ -80,23 +81,30 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
         }
     }
 
+    public void Fit(IEnumerable<bool> values)
+    {
+        var bs = values.ToList();
+        var k = bs.Count(b => b);
+        UncheckedFit(k, bs.Count - k);
+    }
+
     private void UncheckedFit(long numSuccesses, long numFailures)
     {
         _a += numSuccesses;
         _b += numFailures;
     }
 
-    public override void Reset()
+    public void Reset()
     {
         _a = 0;
         _b = 0;
     }
 
-    public override Beta CloneEmpty() => new();
+    public Beta CloneEmpty() => new();
 
-    public override Beta Clone() => new(_a, _b);
+    public Beta Clone() => new(_a, _b);
 
-    public override void Merge(Beta other)
+    public void Merge(Beta other)
     {
         _a += other._a;
         _b += other._b;
