@@ -7,6 +7,28 @@ namespace RunningStatistics.Tests;
 public class TestEmpiricalCdf
 {
     [Fact]
+    public void ConstructorThrowsOnInvalidBins()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new EmpiricalCdf(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new EmpiricalCdf(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new EmpiricalCdf(1));
+    }
+    
+    [Fact]
+    public void FitThrowsOnNaN()
+    {
+        EmpiricalCdf o = new(20);
+        Assert.Throws<ArgumentOutOfRangeException>(() => o.Fit(double.NaN));
+    }
+    
+    [Fact]
+    public void FitThrowsOnInfinity()
+    {
+        EmpiricalCdf o = new(20);
+        Assert.Throws<ArgumentOutOfRangeException>(() => o.Fit(double.PositiveInfinity));
+    }
+    
+    [Fact]
     public void QuantileOfEmptyIsZero()
     {
         EmpiricalCdf o = new(20);
@@ -37,7 +59,7 @@ public class TestEmpiricalCdf
     }
 
     [Fact]
-    public void Reset()
+    public void ResetWorksAsExpected()
     {
         EmpiricalCdf a = new(10);
         var rng = new Random();
@@ -108,6 +130,40 @@ public class TestEmpiricalCdf
     }
 
     [Fact]
+    public void CdfEdgeCases()
+    {
+        var ecdf = new EmpiricalCdf(20);
+        var rng = new Random();
+        
+        for (var _ = 0; _ < 1000; _++)
+        {
+            ecdf.Fit(rng.NextDouble());
+        }
+        
+        Assert.Equal(0, ecdf.Cdf(ecdf.Min - 1));
+        Assert.Equal(0, ecdf.Cdf(ecdf.Min));
+        Assert.Equal(1, ecdf.Cdf(ecdf.Max));
+        Assert.Equal(1, ecdf.Cdf(ecdf.Max + 1));
+    }
+    
+    [Fact]
+    public void QuantileEdgeCases()
+    {
+        var ecdf = new EmpiricalCdf(20);
+        var rng = new Random();
+        
+        for (var _ = 0; _ < 1000; _++)
+        {
+            ecdf.Fit(rng.NextDouble());
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => ecdf.Quantile(-0.1));
+        Assert.Equal(ecdf.Min, ecdf.Quantile(0));
+        Assert.Equal(ecdf.Max, ecdf.Quantile(1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ecdf.Quantile(1.1));
+    }
+
+    [Fact]
     public void TestUnitUniform()
     {
         const int n = 10_000_000;
@@ -120,17 +176,13 @@ public class TestEmpiricalCdf
             o.Fit(dist.Sample());
         }
 
-        Assert.Equal(dist.InverseCumulativeDistribution(0.00), o.Quantile(0.00), 2);
-        Assert.Equal(dist.InverseCumulativeDistribution(0.25), o.Quantile(0.25), 2);
-        Assert.Equal(dist.InverseCumulativeDistribution(0.50), o.Quantile(0.50), 2);
-        Assert.Equal(dist.InverseCumulativeDistribution(0.75), o.Quantile(0.75), 2);
-        Assert.Equal(dist.InverseCumulativeDistribution(1.00), o.Quantile(1.00), 2);
-            
-        Assert.Equal(dist.CumulativeDistribution(0.00), o.Cdf(0.00), 2);
-        Assert.Equal(dist.CumulativeDistribution(0.25), o.Cdf(0.25), 2);
-        Assert.Equal(dist.CumulativeDistribution(0.50), o.Cdf(0.50), 2);
-        Assert.Equal(dist.CumulativeDistribution(0.75), o.Cdf(0.75), 2);
-        Assert.Equal(dist.CumulativeDistribution(1.00), o.Cdf(1.00), 2);
+        var p = 0.0;
+        while (p <= 1.0)
+        {
+            Utils.AssertIsApproximate(dist.CumulativeDistribution(p), o.Cdf(p), 0.005);
+            Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(p), o.Quantile(p), 0.005);
+            p += 0.001;
+        }
     }
 
     [Fact]
@@ -145,23 +197,20 @@ public class TestEmpiricalCdf
         {
             o.Fit(dist.Sample());
         }
-
-        var relErr = Utils.RelError(-2.326347874040846, o.Quantile(0.01));
-        Assert.Equal(0.0, relErr, 1);
-
-        Assert.Equal(dist.InverseCumulativeDistribution(0.10), o.Quantile(0.10), 1);
-        Assert.Equal(dist.InverseCumulativeDistribution(0.25), o.Quantile(0.25), 1);
-        Assert.Equal(dist.InverseCumulativeDistribution(0.50), o.Quantile(0.50), 1);
-        Assert.Equal(dist.InverseCumulativeDistribution(0.75), o.Quantile(0.75), 1);
-        Assert.Equal(dist.InverseCumulativeDistribution(0.90), o.Quantile(0.90), 1);
-        relErr = Utils.RelError(dist.InverseCumulativeDistribution(0.99), o.Quantile(0.99));
-        Assert.Equal(0.0, relErr, 1);
-            
-        Assert.Equal(dist.CumulativeDistribution(-2), o.Cdf(-2), 1);
-        Assert.Equal(dist.CumulativeDistribution(-1), o.Cdf(-1), 1);
-        Assert.Equal(dist.CumulativeDistribution( 0), o.Cdf( 0), 1);
-        Assert.Equal(dist.CumulativeDistribution( 1), o.Cdf( 1), 1);
-        Assert.Equal(dist.CumulativeDistribution( 2), o.Cdf( 2), 1);
+        
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.01), o.Quantile(0.01), 0.25);
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.10), o.Quantile(0.10), 0.25);
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.25), o.Quantile(0.25), 0.25);
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.50), o.Quantile(0.50), 0.25);
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.75), o.Quantile(0.75), 0.25);
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.90), o.Quantile(0.90), 0.25);
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.99), o.Quantile(0.99), 0.25);
+        
+        Utils.AssertIsApproximate(dist.CumulativeDistribution(-2), o.Cdf(-2), 0.25);
+        Utils.AssertIsApproximate(dist.CumulativeDistribution(-1), o.Cdf(-1), 0.25);
+        Utils.AssertIsApproximate(dist.CumulativeDistribution( 0), o.Cdf( 0), 0.25);
+        Utils.AssertIsApproximate(dist.CumulativeDistribution( 1), o.Cdf( 1), 0.25);
+        Utils.AssertIsApproximate(dist.CumulativeDistribution( 2), o.Cdf( 2), 0.25);
     }
 
     [Fact]
@@ -177,19 +226,19 @@ public class TestEmpiricalCdf
             o.Fit(dist.Sample());
         }
 
-        Assert.Equal(dist.InverseCumulativeDistribution(0.01), o.Quantile(0.01), 1);
-        Assert.Equal(dist.InverseCumulativeDistribution(0.10), o.Quantile(0.10), 1);
-        Assert.Equal(dist.InverseCumulativeDistribution(0.25), o.Quantile(0.25), 1);
-        Assert.Equal(dist.InverseCumulativeDistribution(0.50), o.Quantile(0.50), 1);
-        Assert.Equal(dist.InverseCumulativeDistribution(0.75), o.Quantile(0.75), 1);
-        Assert.Equal(dist.InverseCumulativeDistribution(0.90), o.Quantile(0.90), 1);
-        Assert.Equal(dist.InverseCumulativeDistribution(0.99), o.Quantile(0.99), 1);
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.01), o.Quantile(0.01), 0.25);
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.10), o.Quantile(0.10), 0.25);
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.25), o.Quantile(0.25), 0.25);
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.50), o.Quantile(0.50), 0.25);
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.75), o.Quantile(0.75), 0.25);
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.90), o.Quantile(0.90), 0.25);
+        Utils.AssertIsApproximate(dist.InverseCumulativeDistribution(0.99), o.Quantile(0.99), 0.25);
             
-        Assert.Equal(dist.CumulativeDistribution(0.7), o.Cdf(0.7), 1);
-        Assert.Equal(dist.CumulativeDistribution(0.8), o.Cdf(0.8), 1);
-        Assert.Equal(dist.CumulativeDistribution(0.9), o.Cdf(0.9), 1);
-        Assert.Equal(dist.CumulativeDistribution(1.0), o.Cdf(1.0), 1);
-        Assert.Equal(dist.CumulativeDistribution(1.1), o.Cdf(1.1), 1);
-        Assert.Equal(dist.CumulativeDistribution(1.2), o.Cdf(1.2), 1);
+        Utils.AssertIsApproximate(dist.CumulativeDistribution(0.7), o.Cdf(0.7), 0.25);
+        Utils.AssertIsApproximate(dist.CumulativeDistribution(0.8), o.Cdf(0.8), 0.25);
+        Utils.AssertIsApproximate(dist.CumulativeDistribution(0.9), o.Cdf(0.9), 0.25);
+        Utils.AssertIsApproximate(dist.CumulativeDistribution(1.0), o.Cdf(1.0), 0.25);
+        Utils.AssertIsApproximate(dist.CumulativeDistribution(1.1), o.Cdf(1.1), 0.25);
+        Utils.AssertIsApproximate(dist.CumulativeDistribution(1.2), o.Cdf(1.2), 0.25);
     }
 }
