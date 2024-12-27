@@ -32,54 +32,41 @@ Online (single pass) algorithms for statistical measures based on the Julia pack
 
 ## Common Interface
 
-All running statistics inherit from the following abstract class:
+All running statistics implement the following interfaces:
 
 ```csharp
-public abstract class AbstractRunningStatistic<TObs, TSelf> where TSelf : AbstractRunningStatistic<TObs, TSelf>
+public interface IRunningStatistic<TObs>
 {
-    private long _nobs;
+    public long Nobs { get; }
+    
+    public void Fit(TObs value);
 
-    public long Nobs
-    {
-        get => GetNobs();
-        protected set => _nobs = value;
-    }
+    public void Fit(IEnumerable<TObs> values);
 
-    protected virtual long GetNobs() => _nobs;
-
-    public abstract void Fit(TObs value);
-
-    public virtual void Fit(IEnumerable<TObs> values)
-    {
-        foreach (var value in values)
-        {
-            Fit(value);
-        }
-    }
-
-    public abstract void Reset();
-
-    public abstract TSelf CloneEmpty();
-
-    public abstract TSelf Clone();
-
-    public abstract void Merge(TSelf other);
-
-    public static TSelf Merge(TSelf sourceStatistic, params TSelf[] stats)
-    {
-        var newStat = sourceStatistic.Clone();
-        
-        foreach (var stat in stats)
-        {
-            newStat.Merge(stat);
-        }
-
-        return newStat;
-    }
+    public void Reset();
+    
+    public IRunningStatistic<TObs> CloneEmpty();
+    
+    public IRunningStatistic<TObs> Clone();
+    
+    public void Merge(IRunningStatistic<TObs> other);
 }
 
+public interface IRunningStatistic<TObs, TSelf> : IRunningStatistic<TObs> 
+    where TSelf : IRunningStatistic<TObs, TSelf>
+{
+    public TSelf CloneEmpty();
+
+    public TSelf Clone();
+    
+    public void Merge(TSelf other);
+}
 ```
 
+The interface is split into a base interface `IRunningStatistic<TObs>` and a derived interface 
+`IRunningStatistic<TObs, TSelf>`. The base interface contains the generic methods, while the 
+derived interface contains more type information. The base interface allows for collections of 
+statistics that can be fit to the same data.
 
 ## Examples
 
@@ -105,49 +92,73 @@ mean1.Merge(mean2);
 var q1 = ecdf.Quantile(0.25);
 ```
 
-## Combining Statistics
+## Collections of Statistics
 
-Different statistics are intended to be used on their own. If a collection of statistics is appropriate, then we recommend that you write your own class that inherits from `AbstractRunningStatistic<TObs, YourClass>` and use the desired statistics as private members. Example:
+Different statistics are intended to be used on their own. If a collection of statistics is 
+appropriate, then we recommend that you write your own class that implements the `IRunningStatistic<TObs, YourClass>` 
+interface and use the desired statistics as private members. Example:
 
 ```csharp
-public class MyClass : AbstractRunningStatistic<double, MyClass>
+public class StatsCollection : IRunningStatistic<double, StatsCollection>
 {
-    private EmpiricalCdf Ecdf { get; init; } = new();
-    
     private CountMap<double> CountMap { get; init; } = new();
+    private EmpiricalCdf Ecdf { get; init; } = new();
 
-
-    protected override long GetNobs() => _ecdf.Nobs; 
-
-    public override void Fit(double value)
+    public long Nobs => Ecdf.Nobs;
+    
+    public void Fit(double value)
     {
-        Ecdf.Fit(value);
         CountMap.Fit(value);
+        Ecdf.Fit(value);
     }
 
-    public override void Reset()
+    public void Fit(IEnumerable<double> values)
     {
-        Ecdf.Reset();
-        CountMap.Reset();
-    }
-
-    public override MyClass CloneEmpty() => return new();
-
-    public override MyClass Clone()
-    {
-        return new MyClass
+        foreach (var value in values)
         {
-            Ecdf = Ecdf.Clone(),
-            CountMap = CountMap.Clone()
+            Fit(value);
+        }
+    }
+
+    public void Reset()
+    {
+        CountMap.Reset();
+        Ecdf.Reset();
+    }
+    
+    IRunningStatistic<double> IRunningStatistic<double>.CloneEmpty() => CloneEmpty();
+
+    IRunningStatistic<double> IRunningStatistic<double>.Clone() => Clone();
+
+    public StatsCollection CloneEmpty()
+    {
+        return new StatsCollection();
+    }
+
+    public StatsCollection Clone()
+    {
+        return new StatsCollection
+        {
+            CountMap = CountMap.Clone(),
+            Ecdf = Ecdf.Clone()
         };
     }
-
-    public override void Merge(MyClass other)
+    
+    public void Merge(IRunningStatistic<double> other)
     {
-        Ecdf.Merge(other.Ecdf);
+        if (other is StatsCollection stats)
+        {
+            Merge(stats);
+        }
+    }
+    
+    public void Merge(StatsCollection other)
+    {
         CountMap.Merge(other.CountMap);
+        Ecdf.Merge(other.Ecdf);
     }
 }
 ```
 
-Notice that in this class, the number of observations is retrieved from `_ecdf.Nobs` by overriding `GetNobs`, and therefore `Nobs` never needs to be updated in the `Fit` method.
+Notice that in this class, the number of observations is retrieved from `Ecdf.Nobs`, and therefore 
+`Nobs` never needs to be updated in the `Fit` method.
