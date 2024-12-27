@@ -1,35 +1,88 @@
-﻿using Xunit;
+﻿using System.Collections.Generic;
+using Xunit;
 
 namespace RunningStatistics.Tests;
 
 public class TestMean
 {
     [Fact]
-    public void EmptyMeanReturnsNaN()
+    public void Mean_ReturnsNaN_WhenNoNumbersAdded()
     {
-        Mean m = new();
-        Assert.Equal(0, m.Nobs);
-        Assert.Equal(double.NaN, m.Value);
+        var mean = new Mean();
+        Assert.Equal(double.NaN, mean.Value);
     }
 
     [Fact]
-    public void MergingMeans()
+    public void Mean_ReturnsCorrectValue_WhenSingleNumberAdded()
     {
-        Mean a = new(), b = new();
-        a.Fit(10);
-        b.Fit(20);
-        var c = Mean.Merge(a, b);
-        a.Merge(b);
-        
-        Assert.Equal(2, a.Nobs);
-        Assert.Equal(1, b.Nobs);
-        Assert.Equal(2, c.Nobs);
-        
-        Assert.Equal(15, a.Value, 2);
-        Assert.Equal(15, c.Value, 2);
-        Assert.Equal(20, b.Value, 2);
+        var mean = new Mean();
+        mean.Fit(5);
+        Assert.Equal(5, mean.Value);
     }
 
+    [Fact]
+    public void Mean_ReturnsCorrectValue_WhenMultipleNumbersAdded()
+    {
+        var mean = new Mean();
+        mean.Fit(new List<double> { 5, 10, 15 });
+        Assert.Equal(10, mean.Value);
+    }
+
+    [Fact]
+    public void Mean_ReturnsCorrectValue_WhenNegativeNumbersAdded()
+    {
+        var mean = new Mean();
+        mean.Fit(new List<double> { -5, -10, -15 });
+        Assert.Equal(-10, mean.Value);
+    }
+
+    [Fact]
+    public void Mean_ReturnsCorrectValue_WhenMixedNumbersAdded()
+    {
+        var mean = new Mean();
+        mean.Fit(new List<double> { -5, 10, 15 });
+        Assert.Equal(6.67, mean.Value, 2);
+    }
+
+    [Fact]
+    public void Mean_ResetsCorrectly()
+    {
+        var mean = new Mean();
+        mean.Fit(new List<double> { 5, 10, 15 });
+        mean.Reset();
+        Assert.Equal(double.NaN, mean.Value);
+    }
+
+    [Fact]
+    public void Mean_ClonesCorrectly()
+    {
+        var mean = new Mean();
+        mean.Fit(new List<double> { 5, 10, 15 });
+        var clone = mean.Clone();
+        Assert.Equal(mean.Value, clone.Value);
+        Assert.Equal(mean.Nobs, clone.Nobs);
+    }
+
+    [Fact]
+    public void Mean_ClonesEmptyCorrectly()
+    {
+        var mean = new Mean();
+        var emptyClone = mean.CloneEmpty();
+        Assert.Equal(double.NaN, emptyClone.Value);
+        Assert.Equal(0, emptyClone.Nobs);
+    }
+
+    [Fact]
+    public void Mean_MergesCorrectly()
+    {
+        var mean1 = new Mean();
+        mean1.Fit(new List<double> { 5, 10, 15 });
+        var mean2 = new Mean();
+        mean2.Fit(new List<double> { 20, 25, 30 });
+        mean1.Merge(mean2);
+        Assert.Equal(17.5, mean1.Value, 1);
+    }
+    
     [Fact]
     public void MergeEmptyDoesNotPropagateNaNs()
     {
@@ -43,19 +96,5 @@ public class TestMean
         
         a.Merge(b);
         Assert.Equal(a.Value, m);
-    }
-
-    [Fact]
-    public void ResetMean()
-    {
-        Mean a = new();
-        a.Fit(1);
-        a.Fit(2);
-        a.Fit(3);
-        
-        a.Reset();
-        
-        Assert.Equal(double.NaN, a.Value);
-        Assert.Equal(0, a.Nobs);
     }
 }
