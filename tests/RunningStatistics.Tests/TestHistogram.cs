@@ -8,7 +8,29 @@ public class TestHistogram
 {
     // |-inf, 0|, |0, 10|, |10, 100|
     private readonly double[] _edges = [double.NegativeInfinity, 0, 10, 100];
+    
+    [Fact]
+    public void FitValueOutOfBoundsIncreasesOutOfBoundsCount()
+    {
+        Histogram h = new(_edges, false, false);
+        h.Fit(200);
+        Assert.Equal(1, h.OutOfBoundsCounts.Upper);
+    }
 
+    [Fact]
+    public void ResetClearsAllCounts()
+    {
+        Histogram h = new(_edges, false, false);
+        h.Fit(5);
+        h.Fit(15);
+        h.Reset();
+        Assert.Equal(0, h.Nobs);
+        foreach (var bin in h)
+        {
+            Assert.Equal(0, bin.Nobs);
+        }
+    }
+    
     [Fact]
     public void EmptyHistIsZero()
     {
@@ -161,20 +183,5 @@ public class TestHistogram
 
         c.Fit(0.99, 10);
         Assert.Equal(a.OutOfBoundsCounts.Upper + b.OutOfBoundsCounts.Upper + 10, c.OutOfBoundsCounts.Upper);
-    }
-
-    [Fact]
-    public void Reset()
-    {
-        // [-inf, 0), [0, 10), [10, 100]
-        Histogram h = new(_edges);
-
-        h.Fit(-1);
-        h.Fit(1);
-        h.Fit(20);
-        h.Fit(1000);
-            
-        h.Reset();
-        Assert.Equal(0, h.Nobs);
     }
 }
