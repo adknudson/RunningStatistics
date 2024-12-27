@@ -2,13 +2,17 @@ using System.Collections.Generic;
 
 namespace RunningStatistics;
 
-public interface IRunningStatistic<in TObs>
+/// <summary>
+/// The common interface for all statistics that can fit observations of type <see cref="TObs"/>
+/// </summary>
+/// <typeparam name="TObs">The type of observation being fit</typeparam>
+public interface IRunningStatistic<TObs>
 {
     /// <summary>
     /// The number of observations that have been fitted.
     /// </summary>
     public long Nobs { get; }
-
+    
     /// <summary>
     /// Fit a single observation. 
     /// </summary>
@@ -23,20 +27,46 @@ public interface IRunningStatistic<in TObs>
     /// Reset the running statistic to its initial state.
     /// </summary>
     public void Reset();
+    
+    /// <summary>
+    /// Create a copy of the running statistic with the same internal parameters but with zero observations.
+    /// </summary>
+    /// <returns>An empty copy with type <see cref="IRunningStatistic{TObs}"/></returns>
+    public IRunningStatistic<TObs> CloneEmpty();
+    
+    /// <summary>
+    /// Create a deep copy of the running statistic.
+    /// </summary>
+    /// <returns>A copy with type <see cref="IRunningStatistic{TObs}"/></returns>
+    public IRunningStatistic<TObs> Clone();
+
+    /// <summary>
+    /// Merge the values from another running statistic. Ideally this should perform a runtime check
+    /// to ensure that the types are compatible.
+    /// </summary>
+    public void Merge(IRunningStatistic<TObs> other);
 }
 
-public interface IRunningStatistic<in TObs, TSelf> : IRunningStatistic<TObs> 
+
+/// <summary>
+/// A stronger version of the running statistic interface that allows for more specific type information.
+/// </summary>
+/// <typeparam name="TObs">The type of observation being fit</typeparam>
+/// <typeparam name="TSelf">The concrete type of the running statistic</typeparam>
+public interface IRunningStatistic<TObs, TSelf> : IRunningStatistic<TObs> 
     where TSelf : IRunningStatistic<TObs, TSelf>
 {
     /// <summary>
     /// Create a newly initialized copy of the running statistic.
     /// </summary>
-    public TSelf CloneEmpty();
+    /// <returns>An empty copy with the same concrete type.</returns>
+    public new TSelf CloneEmpty();
 
     /// <summary>
     /// Create a deep copy of the running statistic.
     /// </summary>
-    public TSelf Clone();
+    /// <returns>A copy with the same concrete type.</returns>
+    public new TSelf Clone();
     
     /// <summary>
     /// Merge the values from another running statistic.
