@@ -14,7 +14,7 @@
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
 		<LangVersion>default</LangVersion>
 		<Nullable>enable</Nullable>
-		<TargetFrameworks>net7.0;netstandard2.0</TargetFrameworks>
+		<TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
 	</PropertyGroup>
 	
 </Project>
