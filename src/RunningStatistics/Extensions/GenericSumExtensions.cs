@@ -1,16 +1,11 @@
-﻿using System.Numerics;
+﻿#if NET7_0_OR_GREATER
+
+using System.Numerics;
 
 namespace RunningStatistics;
 
-public static partial class Extensions
+public static class GenericSumExtensions
 {
-    public static double Mean(this Sum sum)
-    {
-        return sum.Value / sum.Nobs;
-    }
-    
-#if NET7_0_OR_GREATER
-    
     /// <summary>
     /// Calculate the mean of the sum of <see cref="int"/>s.
     /// </summary>
@@ -51,7 +46,6 @@ public static partial class Extensions
     {
         return sum.Value / sum.Nobs;
     }
-
-#endif
-    
 }
+    
+#endif

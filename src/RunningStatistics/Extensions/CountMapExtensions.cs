@@ -4,71 +4,18 @@ using System.Numerics;
 
 namespace RunningStatistics;
 
-public static partial class Extensions
+public static class CountMapExtensions
 {
-    public static int MinKey(this CountMap<int> countMap)
-    {
-        return countMap.Keys.Min();
-    }
-    
-    public static long MinKey(this CountMap<long> countMap)
-    {
-        return countMap.Keys.Min();
-    }
-    
-    public static double MinKey(this CountMap<double> countMap)
-    {
-        return countMap.Keys.Min();
-    }
-    
-    public static decimal MinKey(this CountMap<decimal> countMap)
-    {
-        return countMap.Keys.Min();
-    }
-    
     public static T MinKey<T>(this CountMap<T> countMap) where T : notnull
     {
-        var m = countMap.Keys.Min();
-        
-        if (m is null)
-        {
-            throw new NullReferenceException();
-        }
-
-        return m;
-    }
-    
-    
-    public static int MaxKey(this CountMap<int> countMap)
-    {
-        return countMap.Keys.Max();
-    }
-    
-    public static long MaxKey(this CountMap<long> countMap)
-    {
-        return countMap.Keys.Max();
-    }
-    
-    public static double MaxKey(this CountMap<double> countMap)
-    {
-        return countMap.Keys.Max();
-    }
-    
-    public static decimal MaxKey(this CountMap<decimal> countMap)
-    {
-        return countMap.Keys.Max();
+        var minKey = countMap.Keys.Min();
+        return minKey ?? throw new NullReferenceException();
     }
     
     public static T MaxKey<T>(this CountMap<T> countMap) where T : notnull
     {
         var m = countMap.Keys.Max();
-        
-        if (m is null)
-        {
-            throw new NullReferenceException();
-        }
-
-        return m;
+        return m ?? throw new NullReferenceException();
     }
     
     
@@ -296,24 +243,43 @@ public static partial class Extensions
 #if NET7_0_OR_GREATER
     
     /// <summary>
-    /// Calculate the sum of the countmap of any generic <see cref="T"/> that supports multiplication by a <see cref="long"/>.
+    /// Calculate the sum of the count map of any generic type that supports multiplication by a <see cref="long"/>.
     /// </summary>
-    /// <param name="countMap"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public static T Sum<T>(this CountMap<T> countMap) where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>,
+    public static T Sum<T>(this CountMap<T> countMap) 
+        where T : 
+        IAdditionOperators<T, T, T>,
+        IAdditiveIdentity<T, T>,
         IMultiplyOperators<T, long, T>
     {
-        return countMap.GenericSum(kvp => kvp.Key * kvp.Value);
+        var s = T.AdditiveIdentity;
+
+        foreach (var (x, k) in countMap)
+        {
+            s += x * k;
+        }
+
+        return s;
     }
     
     /// <summary>
-    /// Calculate the mean of the countmap of any generic <see cref="T"/> that supports multiplication and division by a <see cref="long"/>.
+    /// Calculate the mean of the count map of any generic type that supports multiplication and division by a <see cref="long"/>.
     /// </summary>
-    public static T Mean<T>(this CountMap<T> countMap) where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, 
-        IMultiplyOperators<T, long, T>, IDivisionOperators<T, long, T>
+    public static T Mean<T>(this CountMap<T> countMap) 
+        where T : 
+        IAdditionOperators<T, T, T>, 
+        IAdditiveIdentity<T, T>, 
+        IMultiplyOperators<T, long, T>, 
+        IDivisionOperators<T, long, T>
     {
-        return countMap.GenericSum(kvp => kvp.Key * kvp.Value / countMap.Nobs);
+        var m = T.AdditiveIdentity;
+        var n = countMap.Nobs;
+
+        foreach (var (x, k) in countMap)
+        {
+            m += x * k / n;
+        }
+
+        return m;
     }
 
 #endif

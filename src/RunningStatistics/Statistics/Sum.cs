@@ -33,6 +33,11 @@ public sealed class Sum : AbstractRunningStatistic<double, Sum>
         Value += sum.Value;
     }
 
+    public double Mean()
+    {
+        return Value / Nobs;
+    }
+
     public override string ToString() => $"{typeof(Sum)} Nobs={Nobs} | Σ={Value}";
 
     public static explicit operator double(Sum sum) => sum.Value;
