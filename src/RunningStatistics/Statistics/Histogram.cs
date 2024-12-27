@@ -13,7 +13,6 @@ public sealed class Histogram : AbstractRunningStatistic<double, Histogram>, IEn
     private HistogramOutOfBounds _outOfBounds;
     private readonly IList<double> _edges;
     private bool _binsAreInitialized;
-
     
     
     public Histogram(IEnumerable<double> edges, bool leftClosed = true, bool endsClosed = true)
@@ -24,8 +23,7 @@ public sealed class Histogram : AbstractRunningStatistic<double, Histogram>, IEn
         
         InitializeBins();
     }
-
-
+    
 
     public (long Lower, long Upper) OutOfBoundsCounts => _outOfBounds.Counts;
     

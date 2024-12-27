@@ -10,7 +10,8 @@ public class HistogramStepRange : IEnumerable<double>
     {
         if (length < 2)
         {
-            throw new ArgumentException("Length must be greater than or equal to 2.", nameof(length));
+            throw new ArgumentOutOfRangeException(
+                nameof(length), length, "Length must be greater than or equal to 2");
         }
 
         if (start > stop)
@@ -24,7 +25,6 @@ public class HistogramStepRange : IEnumerable<double>
     }
     
     
-    
     public double Start { get; set; }
     
     public double Stop { get; set; }
@@ -35,7 +35,6 @@ public class HistogramStepRange : IEnumerable<double>
 
     public double Range => Stop - Start;
 
-    
     
     public IEnumerator<double> GetEnumerator()
     {
