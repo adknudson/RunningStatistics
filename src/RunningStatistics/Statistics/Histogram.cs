@@ -110,7 +110,12 @@ public sealed class Histogram : AbstractRunningStatistic<double, Histogram>, IEn
     /// <param name="count">The number of times the value is observed.</param>
     public void Fit(double value, long count)
     {
-        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Must be non-negative.");
+        if (count < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(count), count, "Count must be non-negative.");
+        }
+        
         UncheckedFit(value, count);
     }
     
