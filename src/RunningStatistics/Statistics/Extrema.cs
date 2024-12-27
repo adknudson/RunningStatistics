@@ -1,4 +1,5 @@
 ﻿using System;
+// ReSharper disable CompareOfFloatsByEqualityOperator
 
 namespace RunningStatistics;
 
@@ -30,6 +31,11 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
 
     public override void Fit(double value)
     {
+        if (double.IsNaN(value))
+        {
+            throw new ArgumentException("Value must not be NaN.", nameof(value));
+        }
+        
         UncheckedFit(value, 1);
     }
 
@@ -40,6 +46,11 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
             throw new ArgumentOutOfRangeException(
                 nameof(count), count, "Count must be non-negative.");
         }
+
+        if (double.IsNaN(value))
+        {
+            throw new ArgumentException("Value must not be NaN.", nameof(value));
+        }
         
         UncheckedFit(value, count);
     }
@@ -49,31 +60,30 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
     /// </summary>
     private void UncheckedFit(double value, long count)
     {
-        if (_nobs == 0)
+        _nobs += count;
+
+        if (_nobs == count)
         {
             Min = Max = value;
         }
-
-        _nobs += count;
         
         if (value < Min)
         {
             Min = value;
-            MinCount = count;
-        }
-
-        if (value > Max)
+            MinCount = 0;
+        } 
+        else if (value > Max)
         {
             Max = value;
-            MaxCount = count;
+            MaxCount = 0;
         }
 
-        if (Math.Abs(value - Min) <= Tolerance)
+        if (value == Min)
         {
             MinCount += count;
         }
-
-        if (Math.Abs(value - Max) <= Tolerance)
+        
+        if (value == Max)
         {
             MaxCount += count;
         }
