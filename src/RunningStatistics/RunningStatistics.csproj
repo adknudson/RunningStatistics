@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageVersion>1.3.0</PackageVersion>
+		<PackageVersion>1.2.0</PackageVersion>
 		<Authors>Alex Knudson</Authors>
 		<Title>Running Statistics</Title>
 		<Description>A library of single pass algorithms for statistical measures.</Description>
@@ -14,7 +14,7 @@
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
 		<LangVersion>default</LangVersion>
 		<Nullable>enable</Nullable>
-		<TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net8.0;netstandard2.0</TargetFrameworks>
 	</PropertyGroup>
 	
 </Project>
