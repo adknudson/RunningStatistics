@@ -6,6 +6,17 @@ namespace RunningStatistics.Tests;
 public class TestBeta
 {
     [Fact]
+    public void ParametersMustBeNonNegative()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Beta(-1, 10));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Beta(10, -1));
+
+        var beta = new Beta();
+        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(-1, 10));
+        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(10, -1));
+    }
+    
+    [Fact]
     public void EmptyBetaReturnsNaN()
     {
         Beta beta = new();
