@@ -7,7 +7,7 @@ namespace RunningStatistics.Tests;
 public class TestHistogram
 {
     // |-inf, 0|, |0, 10|, |10, 100|
-    private readonly double[] _edges = { double.NegativeInfinity, 0, 10, 100 };
+    private readonly double[] _edges = [double.NegativeInfinity, 0, 10, 100];
 
     [Fact]
     public void EmptyHistIsZero()
@@ -28,7 +28,7 @@ public class TestHistogram
     {
         const int n = 2000;
         var rng = new Random();
-        double[] smallEdges = { 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
+        double[] smallEdges = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
 
         Histogram a = new(smallEdges), b = new(smallEdges), c = new(smallEdges);
 
@@ -144,8 +144,8 @@ public class TestHistogram
     public void StaticMergeDoesNotAffectOriginals()
     {
         // (0, 0.1], (0.1, 0.5], (0.5, 0.9]
-        Histogram a = new(new []{0, 0.1, 0.5, 0.9}, leftClosed: false, endsClosed: false);
-        Histogram b = new(new []{0, 0.1, 0.5, 0.9}, leftClosed: false, endsClosed: false);
+        Histogram a = new([0, 0.1, 0.5, 0.9], leftClosed: false, endsClosed: false);
+        Histogram b = new([0, 0.1, 0.5, 0.9], leftClosed: false, endsClosed: false);
             
         var rng = new Random();
             
