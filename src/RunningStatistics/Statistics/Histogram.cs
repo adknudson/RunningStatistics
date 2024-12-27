@@ -11,8 +11,9 @@ namespace RunningStatistics;
 public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumerable<HistogramBin>
 {
     private HistogramOutOfBounds _outOfBounds;
-    private readonly IList<double> _edges;
+    private readonly List<double> _edges;
     private bool _binsAreInitialized;
+    private long _nobs;
     
     
     public Histogram(IEnumerable<double> edges, bool leftClosed = true, bool endsClosed = true)
@@ -74,13 +75,13 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
                 Bins.Add(new HistogramBin(_edges[i - 1], _edges[i], true, false));
             }
             
-            var lastTwoEdges = _edges.Reverse().Take(2).Reverse().ToList();
+            var lastTwoEdges = Edges.Reverse().Take(2).Reverse().ToList();
             Bins.Add(new HistogramBin(lastTwoEdges[0], lastTwoEdges[1], true, EndsClosed));
         }
         else
         {
             // add all but first normally
-            var firstTwoEdges = _edges.Take(2).ToList();
+            var firstTwoEdges = Edges.Take(2).ToList();
             Bins.Add(new HistogramBin(firstTwoEdges[0], firstTwoEdges[1], EndsClosed, true));
             
             for (var i = 2; i < _edges.Count; i++)
@@ -91,10 +92,9 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
 
         _binsAreInitialized = true;
     }
-    
-    /// <summary>
-    /// Fit a list of value-count pairs.
-    /// </summary>
+
+    protected override long GetNobs() => _nobs;
+
     public void Fit(IEnumerable<KeyValuePair<double, long>> keyValuePairs)
     {
         foreach (var kvp in keyValuePairs)
@@ -102,12 +102,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
             Fit(kvp.Key, kvp.Value);
         }
     }
-
-    /// <summary>
-    /// Fit a value with a specified number of observations.
-    /// </summary>
-    /// <param name="value">The value being fitted.</param>
-    /// <param name="count">The number of times the value is observed.</param>
+    
     public void Fit(double value, long count)
     {
         if (count < 0)
@@ -119,17 +114,11 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
         UncheckedFit(value, count);
     }
     
-    public override void Fit(double value)
-    {
-        UncheckedFit(value, 1);
-    }
-
-    /// <summary>
-    /// Fit the value without checking if the count is non-negative.
-    /// </summary>
+    public override void Fit(double value) => UncheckedFit(value, 1);
+    
     private void UncheckedFit(double value, long count)
     {
-        Nobs += count;
+        _nobs += count;
         
         var firstBin = Bins.First();
         var lastBin = Bins.Last();
@@ -178,7 +167,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
 
     public override void Reset()
     {
-        Nobs = 0;
+        _nobs = 0;
         foreach (var bin in Bins)
         {
             bin.Reset();
@@ -191,7 +180,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     public override Histogram Clone()
     {
         var hist = CloneEmpty();
-        hist.Nobs = _outOfBounds.Nobs;
+        hist._nobs = _outOfBounds.Nobs;
         hist._outOfBounds = _outOfBounds.Clone();
         
         foreach (var bin in this)
@@ -208,7 +197,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
         
         if (BinsAreMatching(histogram.Bins))
         {
-            Nobs += histogram.Nobs;
+            _nobs += histogram.Nobs;
 
             for (var j = 0; j < NumBins; j++)
             {

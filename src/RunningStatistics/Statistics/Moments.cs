@@ -8,6 +8,7 @@ namespace RunningStatistics;
 public sealed class Moments : RunningStatisticBase<double, Moments>
 {
     private double _mean, _variance, _skewness, _kurtosis;
+    private long _nobs;
 
 
     /// <summary>
@@ -60,11 +61,13 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     public bool IsLeptokurtic => ExcessKurtosis > 0;
 
     public bool IsPlatykurtic => ExcessKurtosis < 0;
-    
-    
+
+
+    protected override long GetNobs() => _nobs;
+
     public override void Fit(double value)
     {
-        Nobs++;
+        _nobs++;
 
         var g = 1.0 / Nobs;
         var y2 = value * value;
@@ -77,7 +80,7 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
 
     public override void Reset()
     {
-        Nobs = 0;
+        _nobs = 0;
         _mean = 0;
         _variance = 0;
         _skewness = 0;
@@ -90,7 +93,7 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     {
         return new Moments
         {
-            Nobs = Nobs,
+            _nobs = Nobs,
             _mean = _mean,
             _variance = _variance,
             _skewness = _skewness,
@@ -100,7 +103,7 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     
     public override void Merge(Moments moments)
     {
-        Nobs += moments.Nobs;
+        _nobs += moments.Nobs;
 
         if (Nobs == 0) return;
 

@@ -12,6 +12,8 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
     /// </summary>
     private const double Tolerance = 1.4901161193847656e-8;
 
+    private long _nobs;
+
 
     public double Min { get; private set; } = double.PositiveInfinity;
 
@@ -23,7 +25,9 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
 
     public double Range => Max - Min;
 
-    
+
+    protected override long GetNobs() => _nobs;
+
     public override void Fit(double value)
     {
         UncheckedFit(value, 1);
@@ -31,7 +35,12 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
 
     public void Fit(double value, long count)
     {
-        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Must be non-negative.");
+        if (count < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(count), count, "Count must be non-negative.");
+        }
+        
         UncheckedFit(value, count);
     }
 
@@ -40,9 +49,12 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
     /// </summary>
     private void UncheckedFit(double value, long count)
     {
-        if (Nobs == 0) Min = Max = value;
+        if (_nobs == 0)
+        {
+            Min = Max = value;
+        }
 
-        Nobs += count;
+        _nobs += count;
         
         if (value < Min)
         {
@@ -55,9 +67,16 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
             Max = value;
             MaxCount = count;
         }
-        
-        if (Math.Abs(value - Min) <= Tolerance) MinCount += count;
-        if (Math.Abs(value - Max) <= Tolerance) MaxCount += count;
+
+        if (Math.Abs(value - Min) <= Tolerance)
+        {
+            MinCount += count;
+        }
+
+        if (Math.Abs(value - Max) <= Tolerance)
+        {
+            MaxCount += count;
+        }
     }
     
     public override void Reset()
@@ -66,7 +85,7 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
         Max = double.NegativeInfinity;
         MinCount = 0;
         MaxCount = 0;
-        Nobs = 0;
+        _nobs = 0;
     }
 
     public override Extrema CloneEmpty() => new();
@@ -79,13 +98,13 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
             Max = Max,
             MinCount = MinCount,
             MaxCount = MaxCount,
-            Nobs = Nobs
+            _nobs = Nobs
         };
     }
 
     public override void Merge(Extrema extrema)
     {
-        Nobs += extrema.Nobs;
+        _nobs += extrema.Nobs;
 
         if (Math.Abs(Min - extrema.Min) <= Tolerance)
         {

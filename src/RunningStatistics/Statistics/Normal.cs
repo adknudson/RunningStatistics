@@ -30,6 +30,9 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
     /// </summary>
     public double Variance => _variance.Value;
     
+    /// <summary>
+    /// The sample standard deviation.
+    /// </summary>
     public double StandardDeviation => Math.Sqrt(_variance.Value);
     
     
@@ -77,6 +80,12 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
 
     public double Quantile(double p)
     {
+        if (p is < 0 or > 1)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(p), p, "The quantile must be between 0 and 1.");
+        }
+        
         return Mean - StandardDeviation * Constants.Sqrt2 * SpecialFunctions.ErfcInv(2.0 * p);
     }
 

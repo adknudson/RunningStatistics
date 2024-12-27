@@ -35,8 +35,8 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
         _a = numSuccesses;
         _b = numFailures;
     }
-
     
+
     public long NumSuccesses => _a;
 
     public long NumFailures => _b;
@@ -50,10 +50,7 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
     public double Variance => (double) _a * _b / (Nobs * Nobs * (Nobs + 1));
 
 
-    protected override long GetNobs()
-    {
-        return _a + _b;
-    }
+    protected override long GetNobs() => _a + _b;
 
     public void Fit(long numSuccesses = 0, long numFailures = 0)
     {

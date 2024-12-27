@@ -11,18 +11,23 @@ namespace RunningStatistics;
 public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>> 
     where TObs : IAdditionOperators<TObs, TObs, TObs>, IAdditiveIdentity<TObs, TObs>
 {
+    private long _nobs;
+    
+    
     public TObs Value { get; private set; } = TObs.AdditiveIdentity;
 
-    
+
+    protected override long GetNobs() => _nobs;
+
     public override void Fit(TObs value)
     {
-        Nobs++;
+        _nobs++;
         Value += value;
     }
-
+    
     public override void Reset()
     {
-        Nobs = 0;
+        _nobs = 0;
         Value = TObs.AdditiveIdentity;
     }
 
@@ -32,19 +37,19 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
     {
         return new Sum<TObs>
         {
-            Nobs = Nobs,
+            _nobs = Nobs,
             Value = Value
         };
     }
     public override void Merge(Sum<TObs> sum)
     {
-        Nobs += sum.Nobs;
+        _nobs += sum.Nobs;
         Value += sum.Value;
     }
 
-    public override string ToString() => $"{typeof(Sum<TObs>)} Nobs={Nobs} | Σ={Value}";
-
     public static explicit operator TObs(Sum<TObs> sum) => sum.Value;
+
+    public override string ToString() => $"{typeof(Sum<TObs>)} Nobs={Nobs} | Σ={Value}";
 }
 
 #endif

@@ -6,6 +6,7 @@ namespace RunningStatistics;
 public sealed class Variance : RunningStatisticBase<double, Variance>
 {
     private double _mean, _variance;
+    private long _nobs;
 
     
     /// <summary>
@@ -20,11 +21,13 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
         }
     }
 
-    
+
+    protected override long GetNobs() => _nobs;
+
     public override void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();
-        Nobs += ys.Count;
+        _nobs += ys.Count;
 
         var mean = ys.Average();
         var variance = Utils.Variance(ys, mean);
@@ -37,7 +40,7 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
 
     public override void Fit(double value)
     {
-        Nobs += 1;
+        _nobs += 1;
         var mu = _mean;
         var g = 1.0 / Nobs;
         _mean = Utils.Smooth(_mean, value, g);
@@ -46,7 +49,7 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
 
     public override void Reset()
     {
-        Nobs = 0;
+        _nobs = 0;
         _mean = 0;
         _variance = 0;
     }
@@ -57,7 +60,7 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     {
         return new Variance
         {
-            Nobs = Nobs,
+            _nobs = Nobs,
             _mean = _mean,
             _variance = _variance
         };
@@ -65,7 +68,7 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     
     public override void Merge(Variance variance)
     {
-        Nobs += variance.Nobs;
+        _nobs += variance.Nobs;
 
         if (Nobs <= 0) return;
 
@@ -76,7 +79,7 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
         _mean = Utils.Smooth(_mean, variance._mean, g);
     }
     
-    public override string ToString() => $"{typeof(Variance)} Nobs={Nobs} | σ²={Value}";
-
     public static explicit operator double(Variance variance) => variance.Value;
+
+    public override string ToString() => $"{typeof(Variance)} Nobs={Nobs} | σ²={Value}";
 }

@@ -50,19 +50,9 @@ public sealed class ProportionMap<TObs> : RunningStatisticBase<TObs, ProportionM
 
     public override void Reset() => _countMap.Reset();
     
-    public override ProportionMap<TObs> CloneEmpty() => new();
+    public override ProportionMap<TObs> CloneEmpty() => new(_countMap.CloneEmpty());
 
-    public override ProportionMap<TObs> Clone()
-    {
-        var propMap = new ProportionMap<TObs>();
-
-        foreach (var kvp in _countMap)
-        {
-            propMap.Fit(kvp.Key, kvp.Value);
-        }
-
-        return propMap;
-    }
+    public override ProportionMap<TObs> Clone() => new(_countMap.Clone());
 
     public override void Merge(ProportionMap<TObs> other) => _countMap.Merge(other._countMap);
     
@@ -89,8 +79,6 @@ public sealed class ProportionMap<TObs> : RunningStatisticBase<TObs, ProportionM
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    
-    public override string ToString() => $"{typeof(ProportionMap<TObs>)} Nobs={Nobs} | {NumUniqueObs} unique values";
 
     /// <summary>
     /// Returns a new dictionary with the current Observation-Proportion pairs.
@@ -107,4 +95,6 @@ public sealed class ProportionMap<TObs> : RunningStatisticBase<TObs, ProportionM
     /// </summary>
     /// <returns></returns>
     public CountMap<TObs> ToCountMap() => _countMap.Clone();
+    
+    public override string ToString() => $"{typeof(ProportionMap<TObs>)} Nobs={Nobs} | {NumUniqueObs} unique values";
 }

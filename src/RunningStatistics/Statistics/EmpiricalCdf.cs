@@ -19,6 +19,12 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
 
     public EmpiricalCdf(int numBins = 200)
     {
+        if (numBins < 1)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(numBins), numBins, "The number of bins must be greater than zero.");
+        }
+        
         NumBins = numBins;
         _values = new double[NumBins];
         _buffer = new double[NumBins];
@@ -33,7 +39,6 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         _extrema = other._extrema.Clone();
     }
 
-
     
     public double Median => Quantile(0.5);
     
@@ -44,7 +49,6 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     private int NumBins { get; }
 
 
-    
     protected override long GetNobs() => _extrema.Nobs;
 
     public override void Fit(double value)
@@ -104,7 +108,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     {
         if (p is < 0 or > 1)
         {
-            throw new ArgumentOutOfRangeException($"p must be in range [0, 1]. Got {p}.");
+            throw new ArgumentOutOfRangeException(nameof(p), p, "p must be in range [0, 1].");
         }
 
         var i = (int) Math.Floor((NumBins - 1) * p);

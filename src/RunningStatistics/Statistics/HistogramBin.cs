@@ -2,7 +2,7 @@
 
 namespace RunningStatistics;
 
-public sealed class HistogramBin
+public sealed class HistogramBin : IEquatable<HistogramBin>
 {
     internal HistogramBin(double lower, double upper, bool closedLeft, bool closedRight)
     {
@@ -24,7 +24,6 @@ public sealed class HistogramBin
     }
 
     
-
     public long Nobs { get; private set; }
 
     public string BinName { get; }
@@ -72,7 +71,7 @@ public sealed class HistogramBin
         return $"{typeof(HistogramBin)} Nobs={Nobs} | Bin={BinName}";
     }
 
-    public bool Equals(HistogramBin other)
+    public bool Equals(HistogramBin? other)
     {
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
@@ -80,5 +79,32 @@ public sealed class HistogramBin
                && Upper.Equals(other.Upper)
                && ClosedLeft == other.ClosedLeft
                && ClosedRight == other.ClosedRight;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return ReferenceEquals(this, obj) || obj is HistogramBin other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        unchecked
+        {
+            var hashCode = Lower.GetHashCode();
+            hashCode = (hashCode * 397) ^ Upper.GetHashCode();
+            hashCode = (hashCode * 397) ^ ClosedLeft.GetHashCode();
+            hashCode = (hashCode * 397) ^ ClosedRight.GetHashCode();
+            return hashCode;
+        }
+    }
+
+    public static bool operator ==(HistogramBin? left, HistogramBin? right)
+    {
+        return Equals(left, right);
+    }
+
+    public static bool operator !=(HistogramBin? left, HistogramBin? right)
+    {
+        return !Equals(left, right);
     }
 }

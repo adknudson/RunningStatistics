@@ -13,6 +13,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     where TObs : notnull
 {
     private readonly IDictionary<TObs, long> _dict;
+    private long _nobs;
     
     
     public CountMap()
@@ -35,9 +36,8 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
         }
         
         _dict = dictionary;
-        Nobs = dictionary.Values.Sum();
+        _nobs = dictionary.Values.Sum();
     }
-
 
     
     public long this[TObs key] => _dict.TryGetValue(key, out var value) ? value : 0;
@@ -51,15 +51,11 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// </summary>
     public int NumUniqueObs => _dict.Count;
 
-    
-    public override void Fit(TObs value)
-    {
-        UncheckedFit(value, 1);
-    }
 
-    /// <summary>
-    /// Fit multiple counts of the same observation.
-    /// </summary>
+    protected override long GetNobs() => _nobs;
+
+    public override void Fit(TObs value) => UncheckedFit(value, 1);
+    
     public void Fit(TObs value, long count)
     {
         if (count < 0)
@@ -73,9 +69,6 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
         UncheckedFit(value, count);
     }
     
-    /// <summary>
-    /// Fit a list of value-count pairs.
-    /// </summary>
     public void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs)
     {
         foreach (var kvp in keyValuePairs)
@@ -83,13 +76,10 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
             Fit(kvp.Key, kvp.Value);
         }
     }
-
-    /// <summary>
-    /// Fit the value without checking if the count is non-negative.
-    /// </summary>
+    
     private void UncheckedFit(TObs value, long count)
     {
-        Nobs += count;
+        _nobs += count;
 
         if (_dict.ContainsKey(value))
         {
@@ -112,13 +102,10 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     public override void Reset()
     {
         _dict.Clear();
-        Nobs = 0;
+        _nobs = 0;
     }
 
-    public override CountMap<TObs> CloneEmpty()
-    {
-        return new CountMap<TObs>();
-    }
+    public override CountMap<TObs> CloneEmpty() => new();
 
     public override CountMap<TObs> Clone()
     {

@@ -3,23 +3,17 @@
 namespace RunningStatistics;
 
 /// <summary>
-/// The common interface for all statistics that can fit observations of type <see cref="TObs"/>
+/// The base class for all running statistics. This class provides a default implementation for the
+/// generic clone and merge methods. 
 /// </summary>
 public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs, TSelf>
     where TSelf : IRunningStatistic<TObs, TSelf>
 {
-    private long _nobs;
+    public long Nobs => GetNobs();
 
-    
-    public long Nobs
-    {
-        get => GetNobs();
-        protected set => _nobs = value;
-    }
-    
-    
-    protected virtual long GetNobs() => _nobs;
 
+    protected abstract long GetNobs();
+    
     public abstract void Fit(TObs value);
     
     public virtual void Fit(IEnumerable<TObs> values)
