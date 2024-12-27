@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public sealed class Beta : IRunningStatistic<bool, Beta>
+public sealed class Beta : AbstractRunningStatistic<bool, Beta>
 {
     private long _a, _b;
 
@@ -36,8 +36,6 @@ public sealed class Beta : IRunningStatistic<bool, Beta>
         _b = numFailures;
     }
 
-
-    public long Nobs => NumSuccesses + NumFailures;
     
     public long NumSuccesses => _a;
 
@@ -51,7 +49,12 @@ public sealed class Beta : IRunningStatistic<bool, Beta>
     
     public double Variance => (double) _a * _b / (Nobs * Nobs * (Nobs + 1));
 
-    
+
+    protected override long GetNobs()
+    {
+        return _a + _b;
+    }
+
     public void Fit(long numSuccesses = 0, long numFailures = 0)
     {
         if (numSuccesses < 0)
@@ -69,7 +72,7 @@ public sealed class Beta : IRunningStatistic<bool, Beta>
         UncheckedFit(numSuccesses, numFailures);
     }
 
-    public void Fit(bool success)
+    public override void Fit(bool success)
     {
         if (success)
         {
@@ -81,7 +84,7 @@ public sealed class Beta : IRunningStatistic<bool, Beta>
         }
     }
 
-    public void Fit(IEnumerable<bool> values)
+    public override void Fit(IEnumerable<bool> values)
     {
         var bs = values.ToList();
         var k = bs.Count(b => b);
@@ -94,17 +97,17 @@ public sealed class Beta : IRunningStatistic<bool, Beta>
         _b += numFailures;
     }
 
-    public void Reset()
+    public override void Reset()
     {
         _a = 0;
         _b = 0;
     }
 
-    public Beta CloneEmpty() => new();
+    public override Beta CloneEmpty() => new();
 
-    public Beta Clone() => new(_a, _b);
+    public override Beta Clone() => new(_a, _b);
 
-    public void Merge(Beta other)
+    public override void Merge(Beta other)
     {
         _a += other._a;
         _b += other._b;

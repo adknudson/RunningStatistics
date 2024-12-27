@@ -1,10 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace RunningStatistics;
 
 /// <summary>
 /// The common interface for all statistics that can fit observations of type <see cref="TObs"/>
 /// </summary>
+[Obsolete("Please begin using the IRunningStatistic<TObs, TSelf> interface. " +
+          "This abstract class will be removed in the next major release.")]
 public abstract class AbstractRunningStatistic<TObs, TSelf> : IRunningStatistic<TObs, TSelf>
     where TSelf : IRunningStatistic<TObs, TSelf>
 {
