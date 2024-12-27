@@ -12,31 +12,17 @@ namespace RunningStatistics;
 public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>, IReadOnlyDictionary<TObs, long> 
     where TObs : notnull
 {
-    private readonly IDictionary<TObs, long> _dict;
+    private readonly Dictionary<TObs, long> _dict = new();
     private long _nobs;
     
     
     public CountMap()
     {
-        _dict = new Dictionary<TObs, long>();
     }
 
     public CountMap(IDictionary<TObs, long> dictionary)
     {
-        foreach (var kvp in dictionary)
-        {
-            var key = kvp.Key;
-            var count = kvp.Value;
-            
-            if (count < 0)
-            {
-                throw new Exception(
-                    $"The give key \'{key}\' has a negative count. All counts in the dictionary must be non-negative.");
-            }
-        }
-        
-        _dict = dictionary;
-        _nobs = dictionary.Values.Sum();
+        Fit(dictionary);
     }
 
     

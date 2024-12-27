@@ -61,6 +61,9 @@ public static class CountMapExtensions
     }
 
 
+    /// <summary>
+    /// The biased variance of the count map.
+    /// </summary>
     public static double Variance(this CountMap<int> countMap, double mean)
     {
         return countMap.Sum(x => x.Value * Math.Pow(x.Key - mean, 2) / countMap.Nobs);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace RunningStatistics.Tests;
@@ -6,129 +7,229 @@ namespace RunningStatistics.Tests;
 public class TestCountMap
 {
     [Fact]
-    public void AccessingNonExistentKeyReturnsZero()
+    public void Initialize_WithDictionary_SetsCountsCorrectly()
     {
-        CountMap<string> countMap = new();
-        Assert.Equal(0, countMap["nothing"]);
+        var initialData = new Dictionary<int, long>
+        {
+            { 1, 2 },
+            { 2, 3 },
+            { 3, 1 }
+        };
+
+        var countMap = new CountMap<int>(initialData);
+
+        Assert.Equal(2, countMap[1]);
+        Assert.Equal(3, countMap[2]);
+        Assert.Equal(1, countMap[3]);
+    }
+    
+    [Fact]
+    public void Initialize_WithDictionaryContainingNegativeCount_ThrowsArgumentOutOfRangeException()
+    {
+        var initialData = new Dictionary<int, long>
+        {
+            { 1, -2 },
+            { 2, 3 },
+            { 3, 1 }
+        };
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CountMap<int>(initialData));
+    }
+    
+    [Fact]
+    public void Initialize_WithDictionaryContainingZeroCount_DoesNotAddObservation()
+    {
+        var initialData = new Dictionary<int, long>
+        {
+            { 1, 0 },
+            { 2, 3 },
+            { 3, 1 }
+        };
+
+        var countMap = new CountMap<int>(initialData);
+
+        Assert.False(countMap.ContainsKey(1));
+        Assert.Equal(3, countMap[2]);
+        Assert.Equal(1, countMap[3]);
+        Assert.Equal(2, countMap.NumUniqueObs);
+    }
+    
+    [Fact]
+    public void AddObservation_IncreasesCount()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1);
+        Assert.Equal(1, countMap[1]);
     }
 
     [Fact]
-    public void AccessingNonExistentKeyDoesNotAddKey()
+    public void AddObservation_MultipleTimes_IncreasesCountCorrectly()
     {
-        CountMap<string> countMap = new();
-        Assert.Equal(0, countMap["everything"]);
-        Assert.False(countMap.ContainsKey("everything"));
+        var countMap = new CountMap<int>();
+        countMap.Fit(1);
+        countMap.Fit(1);
+        Assert.Equal(2, countMap[1]);
     }
 
     [Fact]
-    public void FittingZeroDoesNotAddKey()
+    public void GetCount_ForNonExistingObservation_ReturnsZero()
     {
-        CountMap<int> countMap = new();
-        countMap.Fit(10, 0);
-        Assert.False(countMap.ContainsKey(10));
-        Assert.Equal(0, countMap.Nobs);
+        var countMap = new CountMap<int>();
+        Assert.Equal(0, countMap[2]);
+    }
+
+    [Fact]
+    public void AddObservation_DifferentObservations_TracksEachCorrectly()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1);
+        countMap.Fit(2);
+        Assert.Equal(1, countMap[1]);
+        Assert.Equal(1, countMap[2]);
+    }
+
+    [Fact]
+    public void AddObservation_Zero_IncreasesCount()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(0);
+        Assert.Equal(1, countMap[0]);
+    }
+
+    [Fact]
+    public void AddObservation_NegativeObservation_IncreasesCount()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(-1);
+        Assert.Equal(1, countMap[-1]);
+    }
+    
+    [Fact]
+    public void Fit_WithCountGreaterThanOne_IncreasesCountCorrectly()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 3);
+        Assert.Equal(3, countMap[1]);
+    }
+
+    [Fact]
+    public void Fit_WithCountZero_DoesNotChangeCount()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 0);
+        Assert.Equal(0, countMap[1]);
+    }
+    
+    [Fact]
+    public void Fit_WithCountZero_DoesNotAddObservation()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 0);
         Assert.Equal(0, countMap.NumUniqueObs);
     }
 
     [Fact]
-    public void MergingTwoCountMapsMergesKeys()
+    public void Fit_WithNegativeCount_ThrowsArgumentOutOfRangeException()
     {
-        CountMap<string> a = new(); 
-        CountMap<string> b = new();
-
-        a.Fit("something", 1);
-        a.Fit("everything", 2);
-            
-        b.Fit("nothing", 3);
-        b.Fit("everything", 4);
-
-        a.Merge(b);
-
-        Assert.True(a.ContainsKey("something"));
-        Assert.True(a.ContainsKey("nothing"));
-        Assert.True(a.ContainsKey("everything"));
-            
-        Assert.Equal(1, a["something"]);
-        Assert.Equal(3, a["nothing"]);
-        Assert.Equal(6, a["everything"]);
-            
-        Assert.Equal(10, a.Nobs);
-        Assert.Equal(7, b.Nobs);
+        var countMap = new CountMap<int>();
+        Assert.Throws<ArgumentOutOfRangeException>(() => countMap.Fit(1, -1));
     }
 
     [Fact]
-    public void ResettingRemovesAllKeys()
+    public void Merge_TwoCountMaps_CombinesCountsCorrectly()
     {
-        CountMap<string> a = new();
+        var countMap1 = new CountMap<int>();
+        countMap1.Fit(1, 2);
+        countMap1.Fit(2, 3);
 
-        a.Fit("something", 1);
-        a.Fit("everything", 2);
-            
-        Assert.NotEmpty(a);
-        a.Reset();
-        Assert.Empty(a);
-        Assert.Equal(0, a.Nobs);
+        var countMap2 = new CountMap<int>();
+        countMap2.Fit(1, 1);
+        countMap2.Fit(3, 4);
+
+        countMap1.Merge(countMap2);
+
+        Assert.Equal(3, countMap1[1]);
+        Assert.Equal(3, countMap1[2]);
+        Assert.Equal(4, countMap1[3]);
     }
 
     [Fact]
-    public void CloneIsIndependentOfOriginal()
+    public void Reset_ClearsAllObservationsAndCounts()
     {
-        CountMap<int> original = new();
-        original.Fit(123);
-            
-        var clone = original.Clone();
-        Assert.True(clone.ContainsKey(123));
-            
-        original.Fit(456);
-        Assert.False(clone.ContainsKey(456));
-            
-        clone.Fit(789);
-        Assert.False(original.ContainsKey(789));
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
 
-        Assert.Equal(2, original.Nobs);
-        Assert.Equal(2, clone.Nobs);
+        countMap.Reset();
+
+        Assert.Equal(0, countMap[1]);
+        Assert.Equal(0, countMap[2]);
+        Assert.Equal(0, countMap.NumUniqueObs);
+    }
+    
+    [Fact]
+    public void Clone_CreatesExactCopy()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+
+        var clone = countMap.Clone();
+
+        Assert.Equal(countMap[1], clone[1]);
+        Assert.Equal(countMap[2], clone[2]);
+        Assert.Equal(countMap.NumUniqueObs, clone.NumUniqueObs);
+        Assert.Equal(countMap.Nobs, clone.Nobs);
     }
 
     [Fact]
-    public void StaticMergeDoesNotAffectOriginals()
+    public void Clone_ModifyingCloneDoesNotAffectOriginal()
     {
-        CountMap<int> a = new();
-        a.Fit(new [] {1, 1, 2, 3, 5, 8});
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
 
-        CountMap<int> b = new();
-        b.Fit(new []{4, 5, 8, 11});
+        var clone = countMap.Clone();
+        clone.Fit(1, 1);
+        clone.Fit(3, 4);
 
-        var c = CountMap<int>.Merge(a, b);
-        Assert.Equal(a.Nobs + b.Nobs, c.Nobs);
-            
-        c.Fit(1);
+        // Original should remain unchanged
+        Assert.Equal(2, countMap[1]);
+        Assert.Equal(3, countMap[2]);
+        Assert.Equal(0, countMap[3]);
+        Assert.Equal(2, countMap.NumUniqueObs);
 
-        Assert.Equal(2, a[1]);
-        Assert.Equal(1, a[8]);
-            
-        Assert.Equal(1, b[4]);
-        Assert.Equal(1, b[5]);
-            
-        Assert.Equal(3, c[1]);
-        Assert.Equal(2, c[5]);
-        Assert.Equal(2, c[8]);
+        // Clone should reflect changes
+        Assert.Equal(3, clone[1]);
+        Assert.Equal(3, clone[2]);
+        Assert.Equal(4, clone[3]);
+        Assert.Equal(3, clone.NumUniqueObs);
     }
 
     [Fact]
-    public void ComputingTheModeWorks()
+    public void Mode_ReturnsObservationWithHighestCount()
     {
-        CountMap<int> countMap = new();
-        var rng = new Random();
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
 
-        for (var i = 0; i < 100; i++)
-        {
-            countMap.Fit(rng.Next(100), rng.Next(1, 11));
-        }
+        Assert.Equal(2, countMap.Mode());
+    }
 
-        const int mode = 76;
-            
-        countMap.Fit(mode, 1000);
-            
-        Assert.Equal(mode, countMap.Mode());
+    [Fact]
+    public void Median_ReturnsCorrectMedianObservation()
+    {
+        // odd number of observations
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 1);
+        countMap.Fit(2, 1);
+        countMap.Fit(3, 1);
+
+        Assert.Equal(2, countMap.Median());
+        
+        // even number of observations returns first observation where PDF >= 0.5
+        countMap.Fit(4, 1);
+        Assert.Equal(2, countMap.Median());
     }
 }
