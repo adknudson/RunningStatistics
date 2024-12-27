@@ -199,6 +199,11 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
     
     public double Cdf(double x)
     {
+        if (_a == 0 && _b == 0)
+        {
+            throw new ArgumentException("Undefined for both a = 0 and b = 0"); 
+        }
+        
         if (x < 0)
         {
             return 0;
@@ -210,12 +215,7 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
         }
             
         // x is now in [0, 1)
-
-        if (_a == 0 && _b == 0)
-        {
-            return 0.5;
-        }
-
+        
         if (_a == 0)
         {
             return 1;
