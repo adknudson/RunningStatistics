@@ -22,6 +22,11 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     public double Variance => Nobs == 0 ? double.NaN : Utils.BesselCorrection(Nobs) * (_variance - _mean * _mean);
     
     /// <summary>
+    /// The sample standard deviation.
+    /// </summary>
+    public double StdDev => Nobs == 0 ? double.NaN : Math.Sqrt(Variance);
+    
+    /// <summary>
     /// The third central moment is the measure of the lopsidedness of the distribution
     /// </summary>
     public double Skewness
@@ -67,6 +72,11 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
 
     public override void Fit(double value)
     {
+        if (double.IsNaN(value) || double.IsInfinity(value))
+        {
+            throw new ArgumentException("Value must be a finite number", nameof(value));
+        }
+        
         _nobs++;
 
         var g = 1.0 / Nobs;

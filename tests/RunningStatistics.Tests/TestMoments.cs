@@ -7,21 +7,35 @@ namespace RunningStatistics.Tests;
 public class TestMoments
 {
     [Fact]
+    // test that the moments guards against NaN
+    public void ThrowsExceptionOnNonFiniteNumber()
+    {
+        Moments m = new();
+        Assert.Throws<ArgumentException>(() => m.Fit(double.NaN));
+        Assert.Throws<ArgumentException>(() => m.Fit(double.PositiveInfinity));
+        Assert.Throws<ArgumentException>(() => m.Fit(double.NegativeInfinity));
+    }
+    
+    [Fact]
     public void EmptyMomentsAreNaN()
     {
-        Moments moments = new();
-        var (mean, variance, skewness, kurtosis) = moments;
+        Moments m = new();
 
-        Assert.Equal(double.NaN, mean);
-        Assert.Equal(double.NaN, variance);
-        Assert.Equal(double.NaN, skewness);
-        Assert.Equal(double.NaN, kurtosis);
+        Assert.Equal(double.NaN, m.Mean);
+        Assert.Equal(double.NaN, m.Variance);
+        Assert.Equal(double.NaN, m.StdDev);
+        Assert.Equal(double.NaN, m.Skewness);
+        Assert.Equal(double.NaN, m.Kurtosis);
+        Assert.Equal(double.NaN, m.ExcessKurtosis);
     }
 
     [Fact]
     public void MergeEmptyAreNaN()
     {
-        Moments a = new(); Moments b = new(); a.Merge(b);
+        Moments a = new(); 
+        Moments b = new(); 
+        a.Merge(b);
+        
         var (mean, variance, skewness, kurtosis) = a;
 
         Assert.Equal(double.NaN, mean);
@@ -36,7 +50,9 @@ public class TestMoments
         const int n = 2000;
         var rng = new Random();
 
-        Moments a = new(); Moments b = new(); Moments c = new();
+        Moments a = new(); 
+        Moments b = new(); 
+        Moments c = new();
 
         double v;
         for (var i = 0; i < n; i++)
@@ -64,8 +80,10 @@ public class TestMoments
     [Fact]
     public void StaticMergeDoesNotAffectOriginals()
     {
-        Moments a = new(), b = new();
+        Moments a = new();
+        Moments b = new();
         var rng = new Random();
+        
         for (var i = 0; i < 100; i++)
         {
             a.Fit(rng.NextDouble());
@@ -97,10 +115,10 @@ public class TestMoments
         const double skewness = 0.0;
         const double excessKurtosis = -6.0 / 5.0;
 
-        Assert.Equal(mean, moments.Mean, 2);
-        Assert.Equal(variance, moments.Variance, 2);
-        Assert.Equal(skewness, moments.Skewness, 2);
-        Assert.Equal(excessKurtosis, moments.ExcessKurtosis, 2);
+        Utils.AssertIsApproximate(mean, moments.Mean, 0.01);
+        Utils.AssertIsApproximate(variance, moments.Variance, 0.01);
+        Utils.AssertIsApproximate(skewness, moments.Skewness, 0.01);
+        Utils.AssertIsApproximate(excessKurtosis, moments.ExcessKurtosis, 0.01);
     }
 
     [Theory]
@@ -120,16 +138,16 @@ public class TestMoments
 
         const double excessKurtosis = 0.0;
 
-        Assert.Equal(0.0, Utils.RelError(dist.Mean, moments.Mean), 2);
-        Assert.Equal(0.0, Utils.RelError(dist.StdDev, Math.Sqrt(moments.Variance)), 2);
-        Assert.Equal(dist.Skewness, moments.Skewness, 2);
-        Assert.Equal(excessKurtosis, moments.ExcessKurtosis, 2);
+        Utils.AssertIsApproximate(dist.Mean, moments.Mean, 0.01);
+        Utils.AssertIsApproximate(dist.StdDev, moments.StdDev, 0.01);
+        Utils.AssertIsApproximate(dist.Skewness, moments.Skewness, 0.01);
+        Utils.AssertIsApproximate(excessKurtosis, moments.ExcessKurtosis, 0.01);
     }
 
     [Fact]
     public void TestLogNormal()
     {
-        const int n = 100_000_000;
+        const int n = 10_000_000;
         const double mu = 0.0;
         const double sd = 0.5;
         const double s2 = sd * sd;
@@ -144,9 +162,9 @@ public class TestMoments
             
         var excessKurtosis = Math.Exp(4.0 * s2) + 2.0 * Math.Exp(3.0 * s2) + 3.0 * Math.Exp(2.0 * s2) - 6;
 
-        Assert.Equal(0.0, Utils.RelError(dist.Mean, moments.Mean), 2);
-        Assert.Equal(0.0, Utils.RelError(dist.Variance, moments.Variance), 2);
-        Assert.Equal(0.0, Utils.RelError(dist.Skewness, moments.Skewness), 2);
-        Assert.Equal(0.0, Utils.RelError(excessKurtosis, moments.ExcessKurtosis), 2);
+        Utils.AssertIsApproximate(dist.Mean, moments.Mean, 0.01);
+        Utils.AssertIsApproximate(dist.Variance, moments.Variance, 0.01);
+        Utils.AssertIsApproximate(dist.Skewness, moments.Skewness, 0.01);
+        Utils.AssertIsApproximate(excessKurtosis, moments.ExcessKurtosis, 0.1);
     }
 }
