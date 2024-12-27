@@ -26,7 +26,7 @@ public sealed class ProportionMap<TObs> : AbstractRunningStatistic<TObs, Proport
     }
 
     
-    public double this[TObs key] => TryGetValue(key, out var value) ? value : default;
+    public double this[TObs key] => TryGetValue(key, out var value) ? value : 0;
 
     int IReadOnlyCollection<KeyValuePair<TObs, double>>.Count => _countMap.NumUniqueObs;
 
@@ -76,7 +76,7 @@ public sealed class ProportionMap<TObs> : AbstractRunningStatistic<TObs, Proport
             return true;
         }
 
-        value = default;
+        value = 0;
         return false;
     }
     
