@@ -4,8 +4,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunningStatistics", "src\Ru
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunningStatistics.Tests", "tests\RunningStatistics.Tests\RunningStatistics.Tests.csproj", "{22CBFE0B-6054-4325-BBFF-4108791D355A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunningStatistics.Benchmarks", "tests\RunningStatistics.Benchmarks\RunningStatistics.Benchmarks.csproj", "{D47E2583-10AE-4359-BF5A-F0EF124AB583}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunningStatistics.Examples", "examples\RunningStatistics.Examples\RunningStatistics.Examples.csproj", "{46547661-CCC0-4101-805E-845B2821F868}"
 EndProject
 Global
@@ -22,10 +20,6 @@ Global
 		{22CBFE0B-6054-4325-BBFF-4108791D355A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{22CBFE0B-6054-4325-BBFF-4108791D355A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{22CBFE0B-6054-4325-BBFF-4108791D355A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D47E2583-10AE-4359-BF5A-F0EF124AB583}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D47E2583-10AE-4359-BF5A-F0EF124AB583}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D47E2583-10AE-4359-BF5A-F0EF124AB583}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D47E2583-10AE-4359-BF5A-F0EF124AB583}.Release|Any CPU.Build.0 = Release|Any CPU
 		{46547661-CCC0-4101-805E-845B2821F868}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{46547661-CCC0-4101-805E-845B2821F868}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{46547661-CCC0-4101-805E-845B2821F868}.Release|Any CPU.ActiveCfg = Release|Any CPU
