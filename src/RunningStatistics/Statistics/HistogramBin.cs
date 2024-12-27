@@ -1,14 +1,21 @@
 ﻿using System;
+// ReSharper disable CompareOfFloatsByEqualityOperator
 
 namespace RunningStatistics;
 
 public sealed class HistogramBin : IEquatable<HistogramBin>
 {
-    internal HistogramBin(double lower, double upper, bool closedLeft, bool closedRight)
+    public HistogramBin(double lower, double upper, bool closedLeft, bool closedRight)
     {
         if (lower >= upper)
         {
-            throw new ArgumentException("Lower bound must be strictly less than upper bound");
+            throw new ArgumentException(
+                $"Lower bound must be strictly less than upper bound. Lower: {lower}, Upper: {upper}");
+        }
+        
+        if (double.IsInfinity(lower) && double.IsInfinity(upper))
+        {
+            throw new ArgumentException("Both bounds cannot be infinite");
         }
 
         Lower = lower;
@@ -36,47 +43,56 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
 
     public bool ClosedRight { get; }
 
-    // TODO: Check behavior when ends are +/-Inf
-    internal double Midpoint => (Lower + Upper) / 2;
+    // Midpoint is allowed to be +/- infinity
+    public double Midpoint
+    {
+        get
+        {
+            if (double.IsInfinity(Lower)) return Lower;
+            if (double.IsInfinity(Upper)) return Upper;
+            return Lower + (Upper - Lower) / 2;
+        }
+    }
 
 
-    internal bool Contains(double value)
+    public bool Contains(double value)
     {
         if (value < Lower || value > Upper) return false;
         if (Lower < value && value < Upper) return true;
         
-        if (value.Equals(Lower)) return ClosedLeft;
-        if (value.Equals(Upper)) return ClosedRight;
+        if (value == Lower) return ClosedLeft;
+        if (value == Upper) return ClosedRight;
 
         return false;
     }
 
-    internal void Reset()
+    public void Reset()
     {
         Nobs = 0;
     }
 
-    internal void Merge(HistogramBin other)
+    public void Merge(HistogramBin other)
     {
         Nobs += other.Nobs;
     }
 
-    internal void Increment(long count)
+    public void Increment(long count)
     {
+        if (count < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(count), count, "Count must be non-negative");
+        }
+        
         Nobs += count;
-    }
-
-    public override string ToString()
-    {
-        return $"{typeof(HistogramBin)} Nobs={Nobs} | Bin={BinName}";
     }
 
     public bool Equals(HistogramBin? other)
     {
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
-        return Lower.Equals(other.Lower)
-               && Upper.Equals(other.Upper)
+        return Lower == other.Lower
+               && Upper == other.Upper
                && ClosedLeft == other.ClosedLeft
                && ClosedRight == other.ClosedRight;
     }
@@ -98,13 +114,12 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
         }
     }
 
-    public static bool operator ==(HistogramBin? left, HistogramBin? right)
-    {
-        return Equals(left, right);
-    }
+    public static bool operator ==(HistogramBin? left, HistogramBin? right) => Equals(left, right);
 
-    public static bool operator !=(HistogramBin? left, HistogramBin? right)
+    public static bool operator !=(HistogramBin? left, HistogramBin? right) => !Equals(left, right);
+
+    public override string ToString()
     {
-        return !Equals(left, right);
+        return $"{typeof(HistogramBin)} Nobs={Nobs} | Bin={BinName}";
     }
 }
