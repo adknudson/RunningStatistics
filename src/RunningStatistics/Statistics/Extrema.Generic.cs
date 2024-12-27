@@ -7,31 +7,10 @@ namespace RunningStatistics;
 
 
 public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
-    where TObs : 
-    INumberBase<TObs>,
-    IMinMaxValue<TObs>, 
-    IComparisonOperators<TObs, TObs, bool>
+    where TObs : IMinMaxValue<TObs>, IComparisonOperators<TObs, TObs, bool>
 {
-    private readonly TObs _tolerance;
     private long _nobs;
-
-
-    public Extrema()
-    {
-        _tolerance = TObs.Zero;
-    }
     
-    public Extrema(TObs tolerance)
-    {
-        if (tolerance < TObs.Zero)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(tolerance), tolerance, "The tolerance must be non-negative.");
-        }
-        
-        _tolerance = tolerance;
-    }
-
 
     public TObs Min { get; private set; } = TObs.MaxValue;
 
@@ -40,9 +19,7 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     public long MinCount { get; private set; }
 
     public long MaxCount { get; private set; }
-
-    public TObs Range => Max - Min;
-
+    
 
     protected override long GetNobs() => _nobs;
 
@@ -64,31 +41,32 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     /// </summary>
     private void UncheckedFit(TObs value, long count)
     {
-        if (_nobs == 0)
+        _nobs += count;
+
+        if (_nobs == count)
         {
             Min = Max = value;
         }
-
-        _nobs += count;
         
         if (value < Min)
         {
             Min = value;
-            MinCount = count;
-        }
-
-        if (value > Max)
+            MinCount = 0;
+        } 
+        else if (value > Max)
         {
             Max = value;
-            MaxCount = count;
+            MaxCount = 0;
         }
+        
+        // value is in the range [Min, Max]
 
-        if (AbsDiff(value, Min) <= _tolerance)
+        if (value == Min)
         {
             MinCount += count;
         }
-
-        if (AbsDiff(value, Max) <= _tolerance)
+        
+        if (value == Max)
         {
             MaxCount += count;
         }
@@ -103,11 +81,11 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
         _nobs = 0;
     }
 
-    public override Extrema<TObs> CloneEmpty() => new(_tolerance);
+    public override Extrema<TObs> CloneEmpty() => new();
 
     public override Extrema<TObs> Clone()
     {
-        return new Extrema<TObs>(_tolerance)
+        return new Extrema<TObs>
         {
             Min = Min,
             Max = Max,
@@ -119,9 +97,7 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
 
     public override void Merge(Extrema<TObs> extrema)
     {
-        _nobs += extrema.Nobs;
-
-        if (AbsDiff(Min, extrema.Min) <= _tolerance)
+        if (Min == extrema.Min)
         {
             MinCount += extrema.MinCount;
         }
@@ -130,8 +106,8 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
             Min = extrema.Min;
             MinCount = extrema.MinCount;
         }
-
-        if (AbsDiff(Max, extrema.Max) <= _tolerance)
+        
+        if (Max == extrema.Max)
         {
             MaxCount += extrema.MaxCount;
         }
@@ -140,14 +116,8 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
             Max = extrema.Max;
             MaxCount = extrema.MaxCount;
         }
-    }
-
-    /// <summary>
-    /// Return the absolute difference between two values.
-    /// </summary>
-    private static TObs AbsDiff(TObs value1, TObs value2)
-    {
-        return value2 > value1 ? value2 - value1 : value1 - value2;
+        
+        _nobs += extrema.Nobs;
     }
 }
 
