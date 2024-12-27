@@ -18,6 +18,18 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
 
     public Beta(long numSuccesses, long numFailures)
     {
+        if (numSuccesses < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(numSuccesses), numSuccesses, "Number of successes must be non-negative");
+        }
+
+        if (numFailures < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(numFailures), numFailures, "Number of failures must be non-negative");
+        }
+        
         _a = numSuccesses;
         _b = numFailures;
     }
