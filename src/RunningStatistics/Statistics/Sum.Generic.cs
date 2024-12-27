@@ -8,7 +8,7 @@ namespace RunningStatistics;
 /// Keep track of the univariate sum.
 /// </summary>
 /// <typeparam name="TObs">Any generic number type.</typeparam>
-public sealed class Sum<TObs> : AbstractRunningStatistic<TObs, Sum<TObs>> 
+public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>> 
     where TObs : IAdditionOperators<TObs, TObs, TObs>, IAdditiveIdentity<TObs, TObs>
 {
     public TObs Value { get; private set; } = TObs.AdditiveIdentity;

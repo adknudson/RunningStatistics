@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public sealed class Beta : AbstractRunningStatistic<bool, Beta>
+public sealed class Beta : RunningStatisticBase<bool, Beta>
 {
     private long _a, _b;
 

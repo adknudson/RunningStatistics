@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-public sealed class ProportionMap<TObs> : AbstractRunningStatistic<TObs, ProportionMap<TObs>>, IReadOnlyDictionary<TObs, double> 
+public sealed class ProportionMap<TObs> : RunningStatisticBase<TObs, ProportionMap<TObs>>, IReadOnlyDictionary<TObs, double> 
     where TObs: notnull
 {
     private readonly CountMap<TObs> _countMap;

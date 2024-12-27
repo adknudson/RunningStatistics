@@ -6,7 +6,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Approximate order statistics (CDF) with batches of a given size.
 /// </summary>
-public sealed class EmpiricalCdf : AbstractRunningStatistic<double, EmpiricalCdf>
+public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
 {
     /// <summary>
     /// Square root of double machine precision

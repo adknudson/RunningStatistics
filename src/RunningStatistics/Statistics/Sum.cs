@@ -1,6 +1,6 @@
 ﻿namespace RunningStatistics;
 
-public sealed class Sum : AbstractRunningStatistic<double, Sum>
+public sealed class Sum : RunningStatisticBase<double, Sum>
 {
     public double Value { get; private set; }
     

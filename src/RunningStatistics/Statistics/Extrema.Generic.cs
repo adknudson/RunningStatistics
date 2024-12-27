@@ -6,7 +6,7 @@ using System.Numerics;
 namespace RunningStatistics;
 
 
-public sealed class Extrema<TObs> : AbstractRunningStatistic<TObs, Extrema<TObs>>
+public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     where TObs : 
     INumberBase<TObs>,
     IMinMaxValue<TObs>, 
