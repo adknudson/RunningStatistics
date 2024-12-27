@@ -8,11 +8,6 @@ namespace RunningStatistics;
 /// </summary>
 public sealed class Extrema : RunningStatisticBase<double, Extrema>
 {
-    /// <summary>
-    /// Square root of double machine precision
-    /// </summary>
-    private const double Tolerance = 1.4901161193847656e-8;
-
     private long _nobs;
 
 
@@ -114,9 +109,7 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
 
     public override void Merge(Extrema extrema)
     {
-        _nobs += extrema.Nobs;
-
-        if (Math.Abs(Min - extrema.Min) <= Tolerance)
+        if (Min == extrema.Min)
         {
             MinCount += extrema.MinCount;
         }
@@ -125,8 +118,8 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
             Min = extrema.Min;
             MinCount = extrema.MinCount;
         }
-
-        if (Math.Abs(Max - extrema.Max) <= Tolerance)
+        
+        if (Max == extrema.Max)
         {
             MaxCount += extrema.MaxCount;
         }
@@ -135,6 +128,8 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
             Max = extrema.Max;
             MaxCount = extrema.MaxCount;
         }
+        
+        _nobs += extrema.Nobs;
     }
     
     public override string ToString() => $"{typeof(Extrema)} Nobs={Nobs} | Min={Min:F2}, Max={Max:F2}, MinCount={MinCount}, MaxCount={MaxCount}";
