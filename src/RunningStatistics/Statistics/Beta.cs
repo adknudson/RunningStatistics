@@ -55,12 +55,14 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
     {
         if (numSuccesses < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(numSuccesses), "Number of successes must be non-negative");
+            throw new ArgumentOutOfRangeException(
+                nameof(numSuccesses), numSuccesses, "Number of successes must be non-negative");
         }
 
         if (numFailures < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(numFailures), "Number of failures must be non-negative");
+            throw new ArgumentOutOfRangeException(
+                nameof(numFailures), numFailures, "Number of failures must be non-negative");
         }
 
         UncheckedFit(numSuccesses, numFailures);
@@ -112,7 +114,7 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
     
     public double Pdf(double x)
     {
-        if (x < 0.0 || x > 1.0)
+        if (x is < 0 or > 1)
         {
             return 0.0;
         }
@@ -121,7 +123,7 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
         
         if (_a == 0 && _b == 0)
         {
-            if (x == 0.0 || x == 1.0)
+            if (x is 0 or 1)
             {
                 return double.PositiveInfinity;
             }
@@ -131,20 +133,20 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
 
         if (_a == 0)
         {
-            return x == 0.0 ? double.PositiveInfinity : 0.0;
+            return x == 0 ? double.PositiveInfinity : 0;
         }
 
         if (_b == 0)
         {
-            return x == 1.0 ? double.PositiveInfinity : 0.0;
+            return x == 1 ? double.PositiveInfinity : 0;
         }
 
         if (_a == 1 && _b == 1)
         {
-            return 1.0;
+            return 1;
         }
 
-        if (_a > 80.0 || _b > 80.0)
+        if (_a > 80 || _b > 80)
         {
             return Math.Exp(PdfLn(x));
         }
@@ -155,29 +157,29 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
     
     private double PdfLn(double x)
     {
-        if (x < 0 || x > 1)
+        if (x is < 0 or > 1)
         {
             return double.NegativeInfinity;
         }
 
         if (_a == 0 && _b == 0)
         {
-            return x == 0 || x == 1 ? double.PositiveInfinity : double.NegativeInfinity;
+            return x is 0 or 1 ? double.PositiveInfinity : double.NegativeInfinity;
         }
 
         if (_a == 0)
         {
-            return x == 0.0 ? double.PositiveInfinity : double.NegativeInfinity;
+            return x == 0 ? double.PositiveInfinity : double.NegativeInfinity;
         }
 
         if (_b == 0)
         {
-            return x == 1.0 ? double.PositiveInfinity : double.NegativeInfinity;
+            return x == 1 ? double.PositiveInfinity : double.NegativeInfinity;
         }
 
         if (_a == 1 && _b == 1)
         {
-            return 0.0;
+            return 0;
         }
 
         var aa = SpecialFunctions.GammaLn(_a + _b) - SpecialFunctions.GammaLn(_a) - SpecialFunctions.GammaLn(_b);
@@ -189,14 +191,14 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
     
     public double Cdf(double x)
     {
-        if (x < 0.0)
+        if (x < 0)
         {
-            return 0.0;
+            return 0;
         }
 
-        if (x >= 1.0)
+        if (x >= 1)
         {
-            return 1.0;
+            return 1;
         }
             
         // x is now in [0, 1)
@@ -208,12 +210,12 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
 
         if (_a == 0)
         {
-            return 1.0;
+            return 1;
         }
 
         if (_b == 0)
         {
-            return 0.0;
+            return 0;
         }
 
         if (_a == 1 && _b == 1)
@@ -226,11 +228,16 @@ public class Beta : AbstractRunningStatistic<bool, Beta>
 
     public double Quantile(double p)
     {
-        if (p is < 0.0 or > 1.0)
+        if (p is < 0 or > 1)
         {
-            throw new ArgumentOutOfRangeException(nameof(p), "Invalid parametrization for the distribution.");
-        } 
-        
-        return RootFinding.FindRoot(x => SpecialFunctions.UnsafeBetaRegularized(_a, _b, x) - p, 0.0, 1.0, accuracy: 1e-12);
+            throw new ArgumentOutOfRangeException(
+                nameof(p), p, "Quantile value must be in the interval [0, 1]");
+        }
+
+        return RootFinding.FindRoot(
+            x => SpecialFunctions.UnsafeBetaRegularized(_a, _b, x) - p,
+            0.0,
+            1.0,
+            accuracy: 1e-12);
     }
 }
