@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace RunningStatistics.Tests;
@@ -96,5 +97,14 @@ public class TestMean
         
         a.Merge(b);
         Assert.Equal(a.Value, m);
+    }
+
+    [Fact]
+    public void Merge_ThrowsOnNonFiniteObservation()
+    {
+        var a = new Mean();
+        Assert.Throws<ArgumentException>(() => a.Fit(double.NaN));
+        Assert.Throws<ArgumentException>(() => a.Fit(double.PositiveInfinity));
+        Assert.Throws<ArgumentException>(() => a.Fit(double.NegativeInfinity));
     }
 }
