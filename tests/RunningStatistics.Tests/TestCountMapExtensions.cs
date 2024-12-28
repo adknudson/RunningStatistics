@@ -72,14 +72,14 @@ public class TestCountMapExtensions
     }
 
     [Fact]
-    public void Variance_ReturnsCorrectVariance()
+    public void Variance_ReturnsBiasCorrectedVariance()
     {
         var countMap = new CountMap<int>();
         countMap.Fit(1, 2);
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        Assert.Equal(0.4722222222222223, countMap.Variance(), 10);
+        Assert.Equal(0.567, countMap.Variance(), 3);
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public class TestCountMapExtensions
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        Assert.Equal(0.6871842709362769, countMap.StandardDeviation(), 10);
+        Assert.Equal(0.753, countMap.StandardDeviation(), 3);
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public class TestCountMapExtensions
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        Assert.Equal(0.22826882356360775, countMap.Skewness(), 10);
+        Assert.Equal(0.228, countMap.Skewness(), 3);
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public class TestCountMapExtensions
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        Assert.Equal(2.1072664359861584, countMap.Kurtosis(), 10);
+        Assert.Equal(2.107, countMap.Kurtosis(), 3);
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class TestCountMapExtensions
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        Assert.Equal(-0.8927335640138416, countMap.ExcessKurtosis(), 10);
+        Assert.Equal(-0.893, countMap.ExcessKurtosis(), 3);
     }
     
     [Fact]

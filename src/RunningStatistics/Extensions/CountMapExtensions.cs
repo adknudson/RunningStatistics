@@ -81,7 +81,7 @@ public static class CountMapExtensions
 #endif
 
     /// <summary>
-    /// The mean of a CountMap of integers.
+    /// Compute the mean of a CountMap of integers.
     /// </summary>
     public static double Mean(this CountMap<int> countMap)
     {
@@ -89,7 +89,7 @@ public static class CountMapExtensions
     }
 
     /// <summary>
-    /// The mean of a CountMap of longs.
+    /// Compute the mean of a CountMap of longs.
     /// </summary>
     public static double Mean(this CountMap<long> countMap)
     {
@@ -97,7 +97,7 @@ public static class CountMapExtensions
     }
 
     /// <summary>
-    /// The mean of a CountMap of doubles.
+    /// Compute the mean of a CountMap of doubles.
     /// </summary>
     public static double Mean(this CountMap<double> countMap)
     {
@@ -105,7 +105,7 @@ public static class CountMapExtensions
     }
 
     /// <summary>
-    /// The mean of a CountMap of decimals.
+    /// Compute the mean of a CountMap of decimals.
     /// </summary>
     public static decimal Mean(this CountMap<decimal> countMap)
     {
@@ -115,7 +115,7 @@ public static class CountMapExtensions
 #if NET7_0_OR_GREATER
     
     /// <summary>
-    /// The mean of a CountMap of any generic type that supports addition, multiplication by a <see cref="long"/>,
+    /// Compute the mean of a CountMap of any generic type that supports addition, multiplication by a <see cref="long"/>,
     /// and division by a <see cref="long"/>.
     /// </summary>
     public static T Mean<T>(this CountMap<T> countMap) 
@@ -139,106 +139,106 @@ public static class CountMapExtensions
 #endif
     
     /// <summary>
-    /// The bias-corrected variance of a CountMap of integers.
+    /// Compute the sample variance of a CountMap of integers.
     /// </summary>
-    public static double Variance(this CountMap<int> countMap)
+    public static double Variance(this CountMap<int> countMap, bool corrected = true)
     {
-        return countMap.Variance(countMap.Mean());
+        return countMap.Variance(countMap.Mean(), corrected);
     }
     
     /// <summary>
-    /// The bias-corrected variance of a CountMap of longs.
+    /// Compute the sample variance of a CountMap of longs.
     /// </summary>
-    public static double Variance(this CountMap<long> countMap)
+    public static double Variance(this CountMap<long> countMap, bool corrected = true)
     {
-        return countMap.Variance(countMap.Mean());
+        return countMap.Variance(countMap.Mean(), corrected);
     }
     
     /// <summary>
-    /// The bias-corrected variance of a CountMap of doubles.
+    /// Compute the sample variance of a CountMap of doubles.
     /// </summary>
-    public static double Variance(this CountMap<double> countMap)
+    public static double Variance(this CountMap<double> countMap, bool corrected = true)
     {
-        return countMap.Variance(countMap.Mean());
+        return countMap.Variance(countMap.Mean(), corrected);
     }
     
     /// <summary>
-    /// The bias-corrected variance of a CountMap of integers.
+    /// Compute the sample variance of a CountMap of integers.
     /// </summary>
-    public static double Variance(this CountMap<int> countMap, double mean)
+    public static double Variance(this CountMap<int> countMap, double mean, bool corrected = true)
     {
         var v = countMap.Sum(x => x.Value * Math.Pow(x.Key - mean, 2) / countMap.Nobs);
-        return v * Utils.Bessel(countMap.Nobs);
+        return corrected ? v * Utils.Bessel(countMap.Nobs) : v;
     }
 
     /// <summary>
-    /// The bias-corrected variance of a CountMap of longs.
+    /// Compute the sample variance of a CountMap of longs.
     /// </summary>
-    public static double Variance(this CountMap<long> countMap, double mean)
+    public static double Variance(this CountMap<long> countMap, double mean, bool corrected = true)
     {
         var v = countMap.Sum(x => x.Value * Math.Pow(x.Key - mean, 2) / countMap.Nobs);
-        return v * Utils.Bessel(countMap.Nobs);
+        return corrected ? v * Utils.Bessel(countMap.Nobs) : v;
     }
 
     /// <summary>
-    /// The bias-corrected variance of a CountMap of doubles.
+    /// Compute the sample variance of a CountMap of doubles.
     /// </summary>
-    public static double Variance(this CountMap<double> countMap, double mean)
+    public static double Variance(this CountMap<double> countMap, double mean, bool corrected = true)
     {
         var v = countMap.Sum(x => x.Value * Math.Pow(x.Key - mean, 2) / countMap.Nobs);
-        return v * Utils.Bessel(countMap.Nobs);
+        return corrected ? v * Utils.Bessel(countMap.Nobs) : v;
     }
     
     /// <summary>
-    /// The sample standard deviation of a CountMap of integers.
+    /// Compute the sample standard deviation of a CountMap of integers.
     /// </summary>
-    public static double StandardDeviation(this CountMap<int> countMap)
+    public static double StandardDeviation(this CountMap<int> countMap, bool corrected = true)
     {
-        return Math.Sqrt(countMap.Variance());
+        return Math.Sqrt(countMap.Variance(corrected));
     }
     
     /// <summary>
-    /// The sample standard deviation of a CountMap of longs.
+    /// Compute the sample standard deviation of a CountMap of longs.
     /// </summary>
-    public static double StandardDeviation(this CountMap<long> countMap)
+    public static double StandardDeviation(this CountMap<long> countMap, bool corrected = true)
     {
-        return Math.Sqrt(countMap.Variance());
+        return Math.Sqrt(countMap.Variance(corrected));
     }
     
     /// <summary>
-    /// The sample standard deviation of a CountMap of doubles.
+    /// Compute the sample standard deviation of a CountMap of doubles.
     /// </summary>
-    public static double StandardDeviation(this CountMap<double> countMap)
+    public static double StandardDeviation(this CountMap<double> countMap, bool corrected = true)
     {
-        return Math.Sqrt(countMap.Variance());
+        return Math.Sqrt(countMap.Variance(corrected));
     }
 
     /// <summary>
-    /// The sample standard deviation of a CountMap of integers.
+    /// Compute the sample standard deviation of a CountMap of integers.
     /// </summary>
-    public static double StandardDeviation(this CountMap<int> countMap, double mean)
+    public static double StandardDeviation(this CountMap<int> countMap, double mean, bool corrected = true)
     {
-        return Math.Sqrt(countMap.Variance(mean));
+        return Math.Sqrt(countMap.Variance(mean, corrected));
     }
 
     /// <summary>
-    /// The sample standard deviation of a CountMap of longs.
+    /// Compute the sample standard deviation of a CountMap of longs.
     /// </summary>
-    public static double StandardDeviation(this CountMap<long> countMap, double mean)
+    public static double StandardDeviation(this CountMap<long> countMap, double mean, bool corrected = true)
     {
-        return Math.Sqrt(countMap.Variance(mean));
+        return Math.Sqrt(countMap.Variance(mean, corrected));
     }
     
     /// <summary>
-    /// The sample standard deviation of a CountMap of doubles.
+    /// Compute the sample standard deviation of a CountMap of doubles.
     /// </summary>
-    public static double StandardDeviation(this CountMap<double> countMap, double mean)
+    public static double StandardDeviation(this CountMap<double> countMap, double mean, bool corrected = true)
     {
-        return Math.Sqrt(countMap.Variance(mean));
+        return Math.Sqrt(countMap.Variance(mean, corrected));
     }
     
     /// <summary>
-    /// The skewness of a CountMap of integers.
+    /// Compute the standardized skewness of a CountMap of integers.
     /// </summary>
     public static double Skewness(this CountMap<int> countMap, double mean, double variance)
     {
@@ -247,7 +247,7 @@ public static class CountMapExtensions
     }
     
     /// <summary>
-    /// The skewness of a CountMap of longs.
+    /// Compute the standardized skewness of a CountMap of longs.
     /// </summary>
     public static double Skewness(this CountMap<long> countMap, double mean, double variance)
     {
@@ -256,7 +256,7 @@ public static class CountMapExtensions
     }
 
     /// <summary>
-    /// The skewness of a CountMap of doubles.
+    /// Compute the standardized skewness of a CountMap of doubles.
     /// </summary>
     public static double Skewness(this CountMap<double> countMap, double mean, double variance)
     {
@@ -265,37 +265,37 @@ public static class CountMapExtensions
     }
     
     /// <summary>
-    /// The skewness of a CountMap of integers.
+    /// Compute the standardized skewness of a CountMap of integers.
     /// </summary>
     public static double Skewness(this CountMap<int> countMap)
     {
         var mean = countMap.Mean();
-        var variance = countMap.Variance(mean);
+        var variance = countMap.Variance(mean, false);
         return countMap.Skewness(mean, variance);
     }
     
     /// <summary>
-    /// The skewness of a CountMap of longs.
+    /// Compute the standardized skewness of a CountMap of longs.
     /// </summary>
     public static double Skewness(this CountMap<long> countMap)
     {
         var mean = countMap.Mean();
-        var variance = countMap.Variance(mean);
+        var variance = countMap.Variance(mean, false);
         return countMap.Skewness(mean, variance);
     }
     
     /// <summary>
-    /// The skewness of a CountMap of doubles.
+    /// Compute the standardized skewness of a CountMap of doubles.
     /// </summary>
     public static double Skewness(this CountMap<double> countMap)
     {
         var mean = countMap.Mean();
-        var variance = countMap.Variance(mean);
+        var variance = countMap.Variance(mean, false);
         return countMap.Skewness(mean, variance);
     }
     
     /// <summary>
-    /// The kurtosis of a CountMap of integers.
+    /// Compute the kurtosis of a CountMap of integers.
     /// </summary>
     public static double Kurtosis(this CountMap<int> countMap, double mean, double variance)
     {
@@ -304,7 +304,7 @@ public static class CountMapExtensions
     }
 
     /// <summary>
-    /// The kurtosis of a CountMap of longs.
+    /// Compute the kurtosis of a CountMap of longs.
     /// </summary>
     public static double Kurtosis(this CountMap<long> countMap, double mean, double variance)
     {
@@ -313,7 +313,7 @@ public static class CountMapExtensions
     }
 
     /// <summary>
-    /// The kurtosis of a CountMap of doubles.
+    /// Compute the kurtosis of a CountMap of doubles.
     /// </summary>
     public static double Kurtosis(this CountMap<double> countMap, double mean, double variance)
     {
@@ -322,37 +322,37 @@ public static class CountMapExtensions
     }
     
     /// <summary>
-    /// The kurtosis of a CountMap of integers.
+    /// Compute the kurtosis of a CountMap of integers.
     /// </summary>
     public static double Kurtosis(this CountMap<int> countMap)
     {
         var mean = countMap.Mean();
-        var variance = countMap.Variance(mean);
+        var variance = countMap.Variance(mean, false);
         return countMap.Kurtosis(mean, variance);
     }
 
     /// <summary>
-    /// The kurtosis of a CountMap of longs.
+    /// Compute the kurtosis of a CountMap of longs.
     /// </summary>
     public static double Kurtosis(this CountMap<long> countMap)
     {
         var mean = countMap.Mean();
-        var variance = countMap.Variance(mean);
+        var variance = countMap.Variance(mean, false);
         return countMap.Kurtosis(mean, variance);
     }
     
     /// <summary>
-    /// The kurtosis of a CountMap of doubles.
+    /// Compute the kurtosis of a CountMap of doubles.
     /// </summary>
     public static double Kurtosis(this CountMap<double> countMap)
     {
         var mean = countMap.Mean();
-        var variance = countMap.Variance(mean);
+        var variance = countMap.Variance(mean, false);
         return countMap.Kurtosis(mean, variance);
     }
 
     /// <summary>
-    /// The excess kurtosis of a CountMap of integers.
+    /// Compute the excess kurtosis of a CountMap of integers.
     /// </summary>
     public static double ExcessKurtosis(this CountMap<int> countMap, double mean, double variance)
     {
@@ -360,7 +360,7 @@ public static class CountMapExtensions
     }
 
     /// <summary>
-    /// The excess kurtosis of a CountMap of longs.
+    /// Compute the excess kurtosis of a CountMap of longs.
     /// </summary>
     public static double ExcessKurtosis(this CountMap<long> countMap, double mean, double variance)
     {
@@ -368,7 +368,7 @@ public static class CountMapExtensions
     }
 
     /// <summary>
-    /// The excess kurtosis of a CountMap of doubles.
+    /// Compute the excess kurtosis of a CountMap of doubles.
     /// </summary>
     public static double ExcessKurtosis(this CountMap<double> countMap, double mean, double variance)
     {
@@ -376,32 +376,32 @@ public static class CountMapExtensions
     }
     
     /// <summary>
-    /// The excess kurtosis of a CountMap of integers.
+    /// Compute the excess kurtosis of a CountMap of integers.
     /// </summary>
     public static double ExcessKurtosis(this CountMap<int> countMap)
     {
         var mean = countMap.Mean();
-        var variance = countMap.Variance(mean);
+        var variance = countMap.Variance(mean, false);
         return countMap.ExcessKurtosis(mean, variance);
     }
     
     /// <summary>
-    /// The excess kurtosis of a CountMap of longs.
+    /// Compute the excess kurtosis of a CountMap of longs.
     /// </summary>
     public static double ExcessKurtosis(this CountMap<long> countMap)
     {
         var mean = countMap.Mean();
-        var variance = countMap.Variance(mean);
+        var variance = countMap.Variance(mean, false);
         return countMap.ExcessKurtosis(mean, variance);
     }
 
     /// <summary>
-    /// The excess kurtosis of a CountMap of doubles.
+    /// Compute the excess kurtosis of a CountMap of doubles.
     /// </summary>
     public static double ExcessKurtosis(this CountMap<double> countMap)
     {
         var mean = countMap.Mean();
-        var variance = countMap.Variance(mean);
+        var variance = countMap.Variance(mean, false);
         return countMap.ExcessKurtosis(mean, variance);
     }
 }
