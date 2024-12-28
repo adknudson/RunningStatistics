@@ -10,8 +10,8 @@ public class TestBeta
     public void ConstructorInitializesParametersCorrectly()
     {
         Beta beta = new(5, 10);
-        Assert.Equal(5, beta.NumSuccesses);
-        Assert.Equal(10, beta.NumFailures);
+        Assert.Equal(5, beta.Successes);
+        Assert.Equal(10, beta.Failures);
     }
     
     [Fact]
@@ -19,8 +19,8 @@ public class TestBeta
     {
         Beta beta = new();
         beta.Fit(5, 10);
-        Assert.Equal(5, beta.NumSuccesses);
-        Assert.Equal(10, beta.NumFailures);
+        Assert.Equal(5, beta.Successes);
+        Assert.Equal(10, beta.Failures);
     }
     
     [Fact]
@@ -40,8 +40,8 @@ public class TestBeta
         Beta beta = new();
         var values = new List<bool> { true, false, true, true, false };
         beta.Fit(values);
-        Assert.Equal(3, beta.NumSuccesses);
-        Assert.Equal(2, beta.NumFailures);
+        Assert.Equal(3, beta.Successes);
+        Assert.Equal(2, beta.Failures);
     }
     
     [Fact]
@@ -73,8 +73,8 @@ public class TestBeta
         Beta b = new(10, 5);
         a.Merge(b);
         
-        Assert.Equal(15, a.NumSuccesses);
-        Assert.Equal(15, a.NumFailures);
+        Assert.Equal(15, a.Successes);
+        Assert.Equal(15, a.Failures);
     }
 
     [Fact]
