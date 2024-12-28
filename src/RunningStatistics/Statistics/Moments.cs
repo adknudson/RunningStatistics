@@ -17,10 +17,27 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     public double Mean => Nobs == 0 ? double.NaN : _mean;
 
     /// <summary>
-    /// The second central moment is the measure of the spread of the distribution. This returns the bias-corrected variance.
+    /// The second central moment is the measure of the spread of the distribution. This returns the
+    /// bias-corrected variance.
     /// </summary>
-    public double Variance => Nobs == 0 ? double.NaN : Utils.BesselCorrection(Nobs) * (_variance - _mean * _mean);
-    
+    public double Variance
+    {
+        get
+        {
+            if (Nobs == 0)
+            {
+                return double.NaN;
+            }
+
+            if (Nobs == 1)
+            {
+                return double.IsInfinity(_mean) ? double.NaN : 0.0;
+            }
+            
+            return (_variance - _mean * _mean) * Utils.Bessel(Nobs);
+        }
+    }
+
     /// <summary>
     /// The sample standard deviation.
     /// </summary>
