@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -16,10 +17,24 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     {
         get
         {
-            if (Nobs > 1) return _variance * Utils.BesselCorrection(Nobs);
-            return double.IsInfinity(_mean) ? double.NaN : 1.0;
+            if (Nobs == 0)
+            {
+                return double.NaN;
+            }
+            
+            if (Nobs == 1)
+            { 
+                return double.IsInfinity(_mean) ? double.NaN : 0.0;
+            }
+
+            return _variance * Utils.BesselCorrection(Nobs);
         }
     }
+    
+    /// <summary>
+    /// The sample standard deviation.
+    /// </summary>
+    public double StandardDeviation => Math.Sqrt(Value);
 
 
     protected override long GetNobs() => _nobs;

@@ -1,27 +1,36 @@
-﻿using System;
-using Xunit;
+﻿using Xunit;
 
 namespace RunningStatistics.Tests;
 
 public class TestVariance
 {
     [Fact]
-    public void EmptyVarianceReturnsOne()
+    public void EmptyVarianceReturnsNan()
     {
         Variance v = new();
         Assert.Equal(0, v.Nobs);
-        Assert.Equal(1, v.Value);
+        Assert.Equal(double.NaN, v.Value);
+        Assert.Equal(double.NaN, v.StandardDeviation);
     }
 
     [Fact]
-    public void SingleObservation()
+    public void SingleFiniteObservation()
     {
         Variance v = new();
         v.Fit(10);
-        Assert.Equal(1, v.Value, 2);
-        v.Reset();
+        Assert.Equal(1, v.Nobs);
+        Assert.Equal(0, v.Value);
+        Assert.Equal(0, v.StandardDeviation);
+    }
+    
+    [Fact]
+    public void SingleInfiniteObservation()
+    {
+        Variance v = new();
         v.Fit(double.PositiveInfinity);
+        Assert.Equal(1, v.Nobs);
         Assert.Equal(double.NaN, v.Value);
+        Assert.Equal(double.NaN, v.StandardDeviation);
     }
 
     [Fact]
@@ -50,7 +59,7 @@ public class TestVariance
         
         a.Reset();
         
-        Assert.Equal(1, a.Value);
         Assert.Equal(0, a.Nobs);
+        Assert.Equal(double.NaN, a.Value);
     }
 }
