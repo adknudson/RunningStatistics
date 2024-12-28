@@ -27,7 +27,7 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
                 return double.IsInfinity(_mean) ? double.NaN : 0.0;
             }
 
-            return _variance * Utils.BesselCorrection(Nobs);
+            return _variance * Utils.Bessel(Nobs);
         }
     }
     
