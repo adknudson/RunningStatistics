@@ -11,6 +11,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
 {
     private readonly Extrema _extrema;
     private readonly double[] _buffer, _values;
+    private readonly double[] _cdf;
     
 
     public EmpiricalCdf(int numBins = 200)
@@ -25,6 +26,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         _values = new double[NumBins];
         _buffer = new double[NumBins];
         _extrema = new Extrema();
+        _cdf = new double[NumBins + 2];
     }
 
     private EmpiricalCdf(EmpiricalCdf other)
@@ -33,6 +35,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         _values = other._values.ToArray();
         _buffer = other._buffer.ToArray();
         _extrema = other._extrema.Clone();
+        _cdf = other._cdf.ToArray();
     }
 
     
@@ -49,11 +52,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
 
     public override void Fit(double value)
     {
-        if (double.IsNaN(value) || double.IsInfinity(value))
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(value), value, "Value must be a finite number.");
-        }
+        Require.Finite(value);
         
         var i = Nobs % NumBins;
         var bufferCount = i + 1;
@@ -108,11 +107,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     /// </summary>
     public double Quantile(double p)
     {
-        if (p is < 0 or > 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(p), p, "p must be in range [0, 1].");
-        }
+        Require.ValidProbability(p);
 
         if (p == 0)
         {
@@ -162,22 +157,21 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         }
         
         // put all the values in a single array
-        var v = new double[NumBins + 2];
-        v[0] = Min;
-        v[v.Length - 1] = Max;
-        Array.Copy(_values, 0, v, 1, NumBins);
+        _cdf[0] = Min;
+        _cdf[_cdf.Length - 1] = Max;
+        Array.Copy(_values, 0, _cdf, 1, NumBins);
         
         // find the index of the first value greater than x
         // ___v[i]___x___v[i+1]___
-        var i = Array.FindIndex(v, d => d > x);
+        var i = Array.FindIndex(_cdf, v => v > x);
         
         // x is now between v[i-1] and v[i]
         
         // get the fractional amount between v[i-1] and v[i]
-        var r = (x - v[i - 1]) / (v[i] - v[i - 1]);
+        var r = (x - _cdf[i - 1]) / (_cdf[i] - _cdf[i - 1]);
         
         // return the interpolation between v[i-1] and v[i]
-        return Utils.Smooth(i - 1, i, r) / v.Length;
+        return Utils.Smooth(i - 1, i, r) / _cdf.Length;
     }
     
     public override string ToString() => $"{typeof(EmpiricalCdf)} Nobs={Nobs} | NumBins={NumBins}";
