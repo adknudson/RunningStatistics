@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+// ReSharper disable CompareOfFloatsByEqualityOperator
 
 namespace RunningStatistics;
 
@@ -8,11 +9,6 @@ namespace RunningStatistics;
 /// </summary>
 public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
 {
-    /// <summary>
-    /// Square root of double machine precision
-    /// </summary>
-    private const double Tolerance = 1.4901161193847656e-8;
-    
     private readonly Extrema _extrema;
     private readonly double[] _buffer, _values;
     
@@ -123,7 +119,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
             return Min;
         }
 
-        if (Math.Abs(p - 1) < Tolerance)
+        if (p == 1)
         {
             return Max;
         }
