@@ -19,8 +19,6 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
 
     public long MaxCount { get; private set; }
 
-    public double Range => Max - Min;
-
 
     protected override long GetNobs() => _nobs;
 
@@ -49,10 +47,7 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
         
         UncheckedFit(value, count);
     }
-
-    /// <summary>
-    /// Fit the value without checking if the count is non-negative.
-    /// </summary>
+    
     private void UncheckedFit(double value, long count)
     {
         _nobs += count;
