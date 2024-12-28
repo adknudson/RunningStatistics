@@ -9,7 +9,7 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
     private readonly Mean _mean;
     private readonly Variance _variance;
 
-    
+
     public Normal()
     {
         _mean = new Mean();
@@ -21,7 +21,7 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
         _mean = other._mean.Clone();
         _variance = other._variance.Clone();
     }
-
+    
     
     public double Mean => _mean.Value;
     
