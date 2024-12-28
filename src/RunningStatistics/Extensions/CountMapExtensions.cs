@@ -95,32 +95,32 @@ public static class CountMapExtensions
     }
 
 
-    public static double StdDev(this CountMap<int> countMap)
+    public static double StandardDeviation(this CountMap<int> countMap)
     {
         return Math.Sqrt(countMap.Variance());
     }
     
-    public static double StdDev(this CountMap<long> countMap)
+    public static double StandardDeviation(this CountMap<long> countMap)
     {
         return Math.Sqrt(countMap.Variance());
     }
     
-    public static double StdDev(this CountMap<double> countMap)
+    public static double StandardDeviation(this CountMap<double> countMap)
     {
         return Math.Sqrt(countMap.Variance());
     }
     
-    public static double StdDev(this CountMap<int> countMap, double mean)
+    public static double StandardDeviation(this CountMap<int> countMap, double mean)
     {
         return Math.Sqrt(countMap.Variance(mean));
     }
     
-    public static double StdDev(this CountMap<long> countMap, double mean)
+    public static double StandardDeviation(this CountMap<long> countMap, double mean)
     {
         return Math.Sqrt(countMap.Variance(mean));
     }
     
-    public static double StdDev(this CountMap<double> countMap, double mean)
+    public static double StandardDeviation(this CountMap<double> countMap, double mean)
     {
         return Math.Sqrt(countMap.Variance(mean));
     }

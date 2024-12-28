@@ -24,7 +24,7 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     /// <summary>
     /// The sample standard deviation.
     /// </summary>
-    public double StdDev => Nobs == 0 ? double.NaN : Math.Sqrt(Variance);
+    public double StandardDeviation => Math.Sqrt(Variance);
     
     /// <summary>
     /// The third central moment is the measure of the lopsidedness of the distribution

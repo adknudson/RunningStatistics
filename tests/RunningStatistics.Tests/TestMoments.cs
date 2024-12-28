@@ -23,7 +23,7 @@ public class TestMoments
 
         Assert.Equal(double.NaN, m.Mean);
         Assert.Equal(double.NaN, m.Variance);
-        Assert.Equal(double.NaN, m.StdDev);
+        Assert.Equal(double.NaN, m.StandardDeviation);
         Assert.Equal(double.NaN, m.Skewness);
         Assert.Equal(double.NaN, m.Kurtosis);
         Assert.Equal(double.NaN, m.ExcessKurtosis);
@@ -139,7 +139,7 @@ public class TestMoments
         const double excessKurtosis = 0.0;
 
         Utils.AssertIsApproximate(dist.Mean, moments.Mean, 0.01);
-        Utils.AssertIsApproximate(dist.StdDev, moments.StdDev, 0.01);
+        Utils.AssertIsApproximate(dist.StdDev, moments.StandardDeviation, 0.01);
         Utils.AssertIsApproximate(dist.Skewness, moments.Skewness, 0.01);
         Utils.AssertIsApproximate(excessKurtosis, moments.ExcessKurtosis, 0.01);
     }

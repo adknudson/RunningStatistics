@@ -90,7 +90,7 @@ public class TestCountMapExtensions
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        Assert.Equal(0.6871842709362769, countMap.StdDev(), 10);
+        Assert.Equal(0.6871842709362769, countMap.StandardDeviation(), 10);
     }
 
     [Fact]

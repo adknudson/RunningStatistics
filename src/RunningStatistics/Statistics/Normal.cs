@@ -33,7 +33,7 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
     /// <summary>
     /// The sample standard deviation.
     /// </summary>
-    public double StandardDeviation => Math.Sqrt(_variance.Value);
+    public double StandardDeviation => Math.Sqrt(Variance);
     
     
     protected override long GetNobs() => _mean.Nobs;
