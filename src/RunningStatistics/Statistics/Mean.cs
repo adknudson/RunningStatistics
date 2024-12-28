@@ -1,61 +1,92 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RunningStatistics.UnsafeStatistics;
 
 namespace RunningStatistics;
 
 /// <summary>
-/// Tracks the univariate mean, stored as a <see cref="double"/>.
+/// Tracks the univariate mean.
 /// </summary>
-public sealed class Mean : RunningStatisticBase<double, Mean>
+public sealed class Mean : IRunningStatistic<double, Mean>
 {
-    private double _value;
-    private long _nobs;
+    private readonly UnsafeMean _mean;
+
+
+    public Mean()
+    {
+        _mean = new UnsafeMean();
+    }
+
+    private Mean(Mean other)
+    {
+        _mean = other._mean.Clone();
+    }
+
+
+    public long Nobs => _mean.Nobs;
+
+    public double Value => Nobs == 0 ? double.NaN : _mean.Value;
     
     
-    public double Value => Nobs == 0 ? double.NaN : _value;
+    public void Fit(double value)
+    {
+        Require.Finite(value);
+        _mean.Fit(value);
+    }
 
+    public void Fit(double value, long count)
+    {
+        Require.Finite(value);
+        Require.NonNegative(count);
+        _mean.Fit(value, count);
+    }
 
-    protected override long GetNobs() => _nobs;
-
-    public override void Fit(IEnumerable<double> values)
+    public void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();
-        _nobs += ys.Count;
-        _value = Utils.Smooth(_value, ys.Average(), (double)ys.Count / Nobs);
+        ys.ForEach(Require.Finite);
+        _mean.Fit(ys);
     }
 
-    public override void Fit(double value)
+    public void Reset()
     {
-        if (double.IsNaN(value) || double.IsInfinity(value))
+        _mean.Reset();
+    }
+
+    public Mean CloneEmpty()
+    {
+        return new Mean();
+    }
+
+    public Mean Clone()
+    {
+        return new Mean(this);
+    }
+
+    public void Merge(Mean other)
+    {
+        _mean.Merge(other._mean);
+    }
+
+    IRunningStatistic<double> IRunningStatistic<double>.CloneEmpty()
+    {
+        return CloneEmpty();
+    }
+
+    IRunningStatistic<double> IRunningStatistic<double>.Clone()
+    {
+        return Clone();
+    }
+
+    public void Merge(IRunningStatistic<double> other)
+    {
+        if (other is not Mean mean)
         {
-            throw new ArgumentException("Value must be a finite number", nameof(value));
+            throw new ArgumentException("The other stat must be of type 'Mean'", nameof(other));
         }
-        
-        _nobs++;
-        _value = Utils.Smooth(_value, value, 1.0 / Nobs);
-    }
 
-    public override void Reset()
-    {
-        _nobs = 0;
-        _value = 0;
-    }
-
-    public override Mean CloneEmpty() => new();
-
-    public override Mean Clone()
-    {
-        return new Mean
-        {
-            _nobs = Nobs,
-            _value = Value
-        };
-    }
-    public override void Merge(Mean mean)
-    {
-        _nobs += mean.Nobs;
-        _value = Nobs == 0 ? 0 : Utils.Smooth(_value, mean._value, (double)mean.Nobs / Nobs);
+        Merge(mean);
     }
     
     public static explicit operator double(Mean mean) => mean.Value;
