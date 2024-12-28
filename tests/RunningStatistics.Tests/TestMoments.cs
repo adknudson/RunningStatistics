@@ -7,16 +7,6 @@ namespace RunningStatistics.Tests;
 public class TestMoments
 {
     [Fact]
-    // test that the moments guards against NaN
-    public void ThrowsExceptionOnNonFiniteNumber()
-    {
-        Moments m = new();
-        Assert.Throws<ArgumentException>(() => m.Fit(double.NaN));
-        Assert.Throws<ArgumentException>(() => m.Fit(double.PositiveInfinity));
-        Assert.Throws<ArgumentException>(() => m.Fit(double.NegativeInfinity));
-    }
-    
-    [Fact]
     public void EmptyMomentsAreNaN()
     {
         Moments m = new();
@@ -27,6 +17,44 @@ public class TestMoments
         Assert.Equal(double.NaN, m.Skewness);
         Assert.Equal(double.NaN, m.Kurtosis);
         Assert.Equal(double.NaN, m.ExcessKurtosis);
+    }
+
+    [Fact]
+    public void SingleFiniteObservation()
+    {
+        Moments m = new();
+        m.Fit(1);
+        
+        Assert.Equal(1, m.Mean);
+        Assert.Equal(0, m.Variance);
+        Assert.Equal(0, m.StandardDeviation);
+        Assert.Equal(double.NaN, m.Skewness);
+        Assert.Equal(double.NaN, m.Kurtosis);
+        Assert.Equal(double.NaN, m.ExcessKurtosis);
+    }
+    
+    [Fact]
+    public void TwoFiniteObservations()
+    {
+        Moments m = new();
+        m.Fit(1);
+        m.Fit(2);
+        
+        Assert.Equal(1.5, m.Mean);
+        Assert.Equal(0.5, m.Variance);
+        Assert.Equal(0.707, m.StandardDeviation, 3);
+        Assert.Equal(0, m.Skewness);
+        Assert.Equal(1, m.Kurtosis);
+        Assert.Equal(-2, m.ExcessKurtosis);
+    }
+    
+    [Fact]
+    public void ThrowsExceptionOnNonFiniteNumber()
+    {
+        Moments m = new();
+        Assert.Throws<ArgumentException>(() => m.Fit(double.NaN));
+        Assert.Throws<ArgumentException>(() => m.Fit(double.PositiveInfinity));
+        Assert.Throws<ArgumentException>(() => m.Fit(double.NegativeInfinity));
     }
 
     [Fact]
