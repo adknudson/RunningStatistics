@@ -19,7 +19,7 @@ public sealed class UnsafeMean : IRunningStatistic<double, UnsafeMean>
         Fit(value, 1);
     }
 
-    public void Fit(double value, int count)
+    public void Fit(double value, long count)
     {
         Nobs += count;
         Value = Utils.Smooth(Value, value, (double)count / Nobs);
