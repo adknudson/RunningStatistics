@@ -37,9 +37,9 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
     }
     
 
-    public long NumSuccesses => _a;
+    public long Successes => _a;
 
-    public long NumFailures => _b;
+    public long Failures => _b;
     
     public double Mean => Nobs > 0 ? (double)_a / Nobs : double.NaN;
 
@@ -52,7 +52,7 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
 
     protected override long GetNobs() => _a + _b;
 
-    public void Fit(long numSuccesses = 0, long numFailures = 0)
+    public void Fit(long numSuccesses, long numFailures)
     {
         if (numSuccesses < 0)
         {
