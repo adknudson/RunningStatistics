@@ -5,19 +5,19 @@ Online (single pass) algorithms for statistical measures based on the Julia pack
 
 ## List of Statistics
 
-| Statistic          | Description                                                                 |
-|:-------------------|:----------------------------------------------------------------------------|
-| Mean               | The univariate mean                                                         |
-| Sum                | The overall sum of `double` observations                                    |
-| Sum\<T\>           | The overall sum of any `INumber<T>` (requires .NET7 or higher)              |
-| Variance           | The univariate variance                                                     |
-| Extrema            | The min and max observations and their counts                               |
-| Extrema\<T\>       | The min and max observations of any `INumber<T>` (requires .NET7 or higher) |
-| Moments            | Mean, Variance, Skewness, and (excess) Kurtosis                             |
-| EmpiricalCdf       | Approximate order statistics (quantiles)                                    |
-| CountMap\<T\>      | Counts for each unique value                                                |
-| ProportionMap\<T\> | Proportions for each unique value                                           |
-| Histogram          | A histogram with specified bin edges                                        |
+| Statistic          | Description                                                                                                                     |
+|:-------------------|:--------------------------------------------------------------------------------------------------------------------------------|
+| Mean               | The univariate mean                                                                                                             |
+| Sum                | The overall sum of `double` observations                                                                                        |
+| Sum\<T\>           | The overall sum of any type that implements `IAdditionOperators` and `IAdditiveIdentity` (requires .NET7 or higher)             |
+| Variance           | The univariate variance                                                                                                         |
+| Extrema            | The min and max observations and their counts                                                                                   |
+| Extrema\<T\>       | The min and max observations of any type that implements `IMinMaxValue` and `IComparisonOperators` (requires .NET7 or higher)   |
+| Moments            | Mean, Variance, Skewness, and (excess) Kurtosis                                                                                 |
+| EmpiricalCdf       | Approximate order statistics (quantiles)                                                                                        |
+| CountMap\<T\>      | Counts for each unique value                                                                                                    |
+| ProportionMap\<T\> | Proportions for each unique value                                                                                               |
+| Histogram          | A histogram with specified bin edges                                                                                            |
 
 
 
