@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using RunningStatistics.UnsafeStatistics;
 
@@ -81,11 +80,7 @@ public sealed class Mean : IRunningStatistic<double, Mean>
 
     public void Merge(IRunningStatistic<double> other)
     {
-        if (other is not Mean mean)
-        {
-            throw new ArgumentException("The other stat must be of type 'Mean'", nameof(other));
-        }
-
+        var mean = Require.Type<Mean>(other);
         Merge(mean);
     }
     
