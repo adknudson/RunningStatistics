@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageVersion>1.2.0</PackageVersion>
+		<PackageVersion>2.0.0</PackageVersion>
 		<Authors>Alex Knudson</Authors>
 		<Title>Running Statistics</Title>
 		<Description>A library of single pass algorithms for statistical measures.</Description>
@@ -15,6 +15,15 @@
 		<LangVersion>default</LangVersion>
 		<Nullable>enable</Nullable>
 		<TargetFrameworks>net6.0;net8.0;netstandard2.0</TargetFrameworks>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageReleaseNotes>Added IRunningStatistic interface</PackageReleaseNotes>
 	</PropertyGroup>
+	
+	<ItemGroup>
+		<None Include="..\..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 	
 </Project>
