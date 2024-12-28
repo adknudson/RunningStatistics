@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -21,11 +22,16 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
     {
         var ys = values.ToList();
         _nobs += ys.Count;
-        _value = Utils.Smooth(_value, ys.Average(), (double) ys.Count / Nobs);
+        _value = Utils.Smooth(_value, ys.Average(), (double)ys.Count / Nobs);
     }
 
     public override void Fit(double value)
     {
+        if (double.IsNaN(value) || double.IsInfinity(value))
+        {
+            throw new ArgumentException("Value must be a finite number", nameof(value));
+        }
+        
         _nobs++;
         _value = Utils.Smooth(_value, value, 1.0 / Nobs);
     }
@@ -49,7 +55,7 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
     public override void Merge(Mean mean)
     {
         _nobs += mean.Nobs;
-        _value = Nobs == 0 ? 0 : Utils.Smooth(_value, mean._value, (double) mean.Nobs / Nobs);
+        _value = Nobs == 0 ? 0 : Utils.Smooth(_value, mean._value, (double)mean.Nobs / Nobs);
     }
     
     public static explicit operator double(Mean mean) => mean.Value;
