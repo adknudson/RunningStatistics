@@ -36,7 +36,7 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
     
     public void UnsafeMerge(IRunningStatistic<TObs> other)
     {
-        var typedOther = Require.Type<TSelf>(other);
+        Require.Type<TSelf>(other, out var typedOther);
         Merge(typedOther);
     }
     
