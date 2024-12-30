@@ -1,13 +1,10 @@
-﻿#if NET7_0_OR_GREATER
-
-using System;
+﻿using System;
 using System.Numerics;
 
 namespace RunningStatistics;
 
-
 public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
-    where TObs : IMinMaxValue<TObs>, IComparisonOperators<TObs, TObs, bool>
+    where TObs : IMinMaxValue<TObs>, IComparable<TObs>
 {
     private long _nobs;
     
@@ -48,12 +45,12 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
             Min = Max = value;
         }
         
-        if (value < Min)
+        if (value.CompareTo(Min) < 0)
         {
             Min = value;
             MinCount = 0;
         } 
-        else if (value > Max)
+        else if (value.CompareTo(Max) > 0)
         {
             Max = value;
             MaxCount = 0;
@@ -61,12 +58,12 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
         
         // value is in the range [Min, Max]
 
-        if (value == Min)
+        if (value.Equals(Min))
         {
             MinCount += count;
         }
         
-        if (value == Max)
+        if (value.Equals(Max))
         {
             MaxCount += count;
         }
@@ -97,21 +94,21 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
 
     public override void Merge(Extrema<TObs> extrema)
     {
-        if (Min == extrema.Min)
+        if (Min.Equals(extrema.Min))
         {
             MinCount += extrema.MinCount;
         }
-        else if (extrema.Min < Min)
+        else if (extrema.Min.CompareTo(Min) < 0)
         {
             Min = extrema.Min;
             MinCount = extrema.MinCount;
         }
         
-        if (Max == extrema.Max)
+        if (Max.Equals(extrema.Max))
         {
             MaxCount += extrema.MaxCount;
         }
-        else if (extrema.Max > Max)
+        else if (extrema.Max.CompareTo(Max) > 0)
         {
             Max = extrema.Max;
             MaxCount = extrema.MaxCount;
@@ -119,6 +116,9 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
         
         _nobs += extrema.Nobs;
     }
-}
 
-#endif
+    protected override string GetStatsString()
+    {
+        return $"Min={Min} (n={MinCount:N0}), Max={Max} (n={MaxCount:N0})";
+    }
+}
