@@ -63,13 +63,11 @@ public class TestMoments
         Moments a = new(); 
         Moments b = new(); 
         a.Merge(b);
-        
-        var (mean, variance, skewness, kurtosis) = a;
 
-        Assert.Equal(double.NaN, mean);
-        Assert.Equal(double.NaN, variance);
-        Assert.Equal(double.NaN, skewness);
-        Assert.Equal(double.NaN, kurtosis);
+        Assert.Equal(double.NaN, a.Mean);
+        Assert.Equal(double.NaN, a.Variance);
+        Assert.Equal(double.NaN, a.Skewness);
+        Assert.Equal(double.NaN, a.Kurtosis);
     }
 
     [Fact]

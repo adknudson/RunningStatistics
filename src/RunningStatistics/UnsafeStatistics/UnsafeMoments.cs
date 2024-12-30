@@ -50,7 +50,7 @@ public class UnsafeMoments : RunningStatisticBase<double, UnsafeMoments>
     }
     
     /// <summary>
-    /// The amount of kurtosis relative to a Gaussian distribution.
+    /// The amount of kurtosis relative to a Gaussian distribution. I.e., <c>kurtosis - 3</c>
     /// </summary>
     public double ExcessKurtosis => Kurtosis - 3;
     
