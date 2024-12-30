@@ -2,12 +2,9 @@
 using System.Collections.Generic;
 using RunningStatistics.UnsafeStatistics;
 
-// ReSharper disable CompareOfFloatsByEqualityOperator
-// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
-
 namespace RunningStatistics;
 
-public sealed class Beta : IRunningStatistic<bool, Beta>
+public sealed class Beta : RunningStatisticBase<bool, Beta>
 {
     private readonly UnsafeBeta _beta = new();
 
@@ -23,8 +20,6 @@ public sealed class Beta : IRunningStatistic<bool, Beta>
         _beta.Fit(successes, failures);
     }
 
-
-    public long Nobs => _beta.Nobs;
     
     public long Successes => _beta.Successes;
 
@@ -39,7 +34,12 @@ public sealed class Beta : IRunningStatistic<bool, Beta>
     public double Variance => _beta.Variance;
 
 
-    public void Fit(bool success)
+    protected override long GetNobs()
+    {
+        return _beta.Nobs;
+    }
+
+    public override void Fit(bool success)
     {
         _beta.Fit(success);
     }
@@ -51,37 +51,21 @@ public sealed class Beta : IRunningStatistic<bool, Beta>
         _beta.Fit(successes, failures);
     }
 
-    public void Fit(IEnumerable<bool> values)
+    public override void Fit(IEnumerable<bool> values)
     {
         _beta.Fit(values);
     }
 
-    public void Reset()
+    public override void Reset()
     {
         _beta.Reset();
     }
 
-    IRunningStatistic<bool> IRunningStatistic<bool>.CloneEmpty()
-    {
-        return CloneEmpty();
-    }
+    public override Beta CloneEmpty() => new();
 
-    IRunningStatistic<bool> IRunningStatistic<bool>.Clone()
-    {
-        return Clone();
-    }
+    public override Beta Clone() => new(Successes, Failures);
 
-    public void Merge(IRunningStatistic<bool> other)
-    {
-        var beta = Require.Type<Beta>(other);
-        Merge(beta);
-    }
-
-    public Beta CloneEmpty() => new();
-
-    public Beta Clone() => new(Successes, Failures);
-
-    public void Merge(Beta other)
+    public override void Merge(Beta other)
     {
         _beta.Merge(other._beta);
     }

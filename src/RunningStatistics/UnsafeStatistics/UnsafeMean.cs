@@ -7,78 +7,69 @@ namespace RunningStatistics.UnsafeStatistics;
 /// Track the univariate mean. Same as <see cref="Mean"/>, but does no checks to ensure that the observation is a valid
 /// value (i.e. finite).
 /// </summary>
-public sealed class UnsafeMean : IRunningStatistic<double, UnsafeMean>
+public sealed class UnsafeMean : RunningStatisticBase<double, UnsafeMean>
 {
-    public long Nobs { get; private set; }
+    private long _nobs;
     
+
     public double Value { get; private set; }
-    
-    
-    public void Fit(double value)
+
+
+    protected override long GetNobs()
+    {
+        return _nobs;
+    }
+
+    public override void Fit(double value)
     {
         Fit(value, 1);
     }
 
     public void Fit(double value, long count)
     {
-        Nobs += count;
+        _nobs += count;
         Value = Utils.Smooth(Value, value, (double)count / Nobs);
     }
 
-    public void Fit(IEnumerable<double> values)
+    public override void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();
-        Nobs += ys.Count;
+        _nobs += ys.Count;
         Value = Utils.Smooth(Value, ys.Average(), (double)ys.Count / Nobs);
     }
 
     public void Fit(IList<double> values)
     {
-        Nobs += values.Count;
+        _nobs += values.Count;
         Value = Utils.Smooth(Value, values.Average(), (double)values.Count / Nobs);
     }
     
-    public void Reset()
+    public override void Reset()
     {
-        Nobs = 0;
+        _nobs = 0;
         Value = 0;
     }
 
-    public UnsafeMean CloneEmpty()
+    public override UnsafeMean CloneEmpty()
     {
         return new UnsafeMean();
     }
 
-    public UnsafeMean Clone()
+    public override UnsafeMean Clone()
     {
         return new UnsafeMean
         {
-            Nobs = Nobs,
+            _nobs = Nobs,
             Value = Value
         };
     }
 
-    public void Merge(UnsafeMean other)
+    public override void Merge(UnsafeMean other)
     {
-        Nobs += other.Nobs;
+        _nobs += other.Nobs;
         Value = Nobs == 0 ? 0 : Utils.Smooth(Value, other.Value, (double)other.Nobs / Nobs);
     }
-
-    IRunningStatistic<double> IRunningStatistic<double>.CloneEmpty()
-    {
-        return CloneEmpty();
-    }
-
-    IRunningStatistic<double> IRunningStatistic<double>.Clone()
-    {
-        return Clone();
-    }
-
-    public void Merge(IRunningStatistic<double> other)
-    {
-        Merge((UnsafeMean)other);
-    }
-
+    
     public static explicit operator double(UnsafeMean mean) => mean.Value;
     
     public override string ToString() => $"{typeof(UnsafeMean)} Nobs={Nobs} | μ={Value}";

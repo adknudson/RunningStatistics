@@ -7,7 +7,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Tracks the univariate mean.
 /// </summary>
-public sealed class Mean : IRunningStatistic<double, Mean>
+public sealed class Mean : RunningStatisticBase<double, Mean>
 {
     private readonly UnsafeMean _mean;
 
@@ -23,12 +23,15 @@ public sealed class Mean : IRunningStatistic<double, Mean>
     }
 
 
-    public long Nobs => _mean.Nobs;
-
     public double Value => Nobs == 0 ? double.NaN : _mean.Value;
-    
-    
-    public void Fit(double value)
+
+
+    protected override long GetNobs()
+    {
+        return _mean.Nobs;
+    }
+
+    public override void Fit(double value)
     {
         Require.Finite(value);
         _mean.Fit(value);
@@ -41,47 +44,31 @@ public sealed class Mean : IRunningStatistic<double, Mean>
         _mean.Fit(value, count);
     }
 
-    public void Fit(IEnumerable<double> values)
+    public override void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();
         ys.ForEach(Require.Finite);
         _mean.Fit(ys);
     }
 
-    public void Reset()
+    public override void Reset()
     {
         _mean.Reset();
     }
 
-    public Mean CloneEmpty()
+    public override Mean CloneEmpty()
     {
         return new Mean();
     }
 
-    public Mean Clone()
+    public override Mean Clone()
     {
         return new Mean(this);
     }
 
-    public void Merge(Mean other)
+    public override void Merge(Mean other)
     {
         _mean.Merge(other._mean);
-    }
-
-    IRunningStatistic<double> IRunningStatistic<double>.CloneEmpty()
-    {
-        return CloneEmpty();
-    }
-
-    IRunningStatistic<double> IRunningStatistic<double>.Clone()
-    {
-        return Clone();
-    }
-
-    public void Merge(IRunningStatistic<double> other)
-    {
-        var mean = Require.Type<Mean>(other);
-        Merge(mean);
     }
     
     public static explicit operator double(Mean mean) => mean.Value;

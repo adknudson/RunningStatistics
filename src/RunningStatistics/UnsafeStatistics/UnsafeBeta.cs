@@ -8,13 +8,11 @@ using System.Linq;
 
 namespace RunningStatistics.UnsafeStatistics;
 
-public sealed class UnsafeBeta : IRunningStatistic<bool, UnsafeBeta>
+public sealed class UnsafeBeta : RunningStatisticBase<bool, UnsafeBeta>
 {
     private long _a, _b;
     
     
-    public long Nobs => Successes + Failures;
-
     public long Successes => _a;
 
     public long Failures => _b;
@@ -36,9 +34,14 @@ public sealed class UnsafeBeta : IRunningStatistic<bool, UnsafeBeta>
     }
     
     public double Variance => (double) _a * _b / (Nobs * Nobs * (Nobs + 1));
-    
-    
-    public void Fit(bool value)
+
+
+    protected override long GetNobs()
+    {
+        return Successes + Failures;
+    }
+
+    public override void Fit(bool value)
     {
         if (value)
         {
@@ -56,7 +59,7 @@ public sealed class UnsafeBeta : IRunningStatistic<bool, UnsafeBeta>
         _b += failures;
     }
 
-    public void Fit(IEnumerable<bool> values)
+    public override void Fit(IEnumerable<bool> values)
     {
         var bs = values.ToList();
         var n = bs.Count;
@@ -64,18 +67,18 @@ public sealed class UnsafeBeta : IRunningStatistic<bool, UnsafeBeta>
         Fit(s, n - s);
     }
 
-    public void Reset()
+    public override void Reset()
     {
         _a = 0;
         _b = 0;
     }
 
-    public UnsafeBeta CloneEmpty()
+    public override UnsafeBeta CloneEmpty()
     {
         return new UnsafeBeta();
     }
 
-    public UnsafeBeta Clone()
+    public override UnsafeBeta Clone()
     {
         return new UnsafeBeta
         {
@@ -84,25 +87,10 @@ public sealed class UnsafeBeta : IRunningStatistic<bool, UnsafeBeta>
         };
     }
 
-    public void Merge(UnsafeBeta other)
+    public override void Merge(UnsafeBeta other)
     {
         _a += other.Successes;
         _b += other.Failures;
-    }
-
-    IRunningStatistic<bool> IRunningStatistic<bool>.CloneEmpty()
-    {
-        return CloneEmpty();
-    }
-
-    IRunningStatistic<bool> IRunningStatistic<bool>.Clone()
-    {
-        return Clone();
-    }
-
-    public void Merge(IRunningStatistic<bool> other)
-    {
-        Merge((UnsafeBeta)other);
     }
     
     public double Pdf(double x)
