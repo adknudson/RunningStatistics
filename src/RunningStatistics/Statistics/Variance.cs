@@ -17,17 +17,12 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     {
         get
         {
-            if (Nobs == 0)
+            return Nobs switch
             {
-                return double.NaN;
-            }
-            
-            if (Nobs == 1)
-            { 
-                return double.IsInfinity(_mean) ? double.NaN : 0.0;
-            }
-
-            return _variance * Utils.Bessel(Nobs);
+                0 => double.NaN,
+                1 => double.IsInfinity(_mean) ? double.NaN : 0.0,
+                _ => _variance * Utils.Bessel(Nobs)
+            };
         }
     }
     
@@ -39,9 +34,24 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
 
     protected override long GetNobs() => _nobs;
 
+    public override void Fit(double value)
+    {
+        Require.Finite(value);
+        
+        _nobs += 1;
+        
+        var mu = _mean;
+        var g = 1.0 / Nobs;
+        
+        _mean = Utils.Smooth(_mean, value, g);
+        _variance = Utils.Smooth(_variance, (value - _mean) * (value - mu), g);
+    }
+
     public override void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();
+        ys.ForEach(Require.Finite);
+        
         _nobs += ys.Count;
 
         var mean = ys.Average();
@@ -51,15 +61,6 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
 
         _variance = Utils.Smooth(_variance, variance, g) + delta * delta * g * (1 - g);
         _mean = Utils.Smooth(_mean, mean, g);
-    }
-
-    public override void Fit(double value)
-    {
-        _nobs += 1;
-        var mu = _mean;
-        var g = 1.0 / Nobs;
-        _mean = Utils.Smooth(_mean, value, g);
-        _variance = Utils.Smooth(_variance, (value - _mean) * (value - mu), g);
     }
 
     public override void Reset()
@@ -85,7 +86,7 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     {
         _nobs += variance.Nobs;
 
-        if (Nobs <= 0) return;
+        if (Nobs == 0) return;
 
         var g = (double) variance.Nobs / Nobs;
         var delta = _mean - variance._mean;
@@ -96,5 +97,5 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     
     public static explicit operator double(Variance variance) => variance.Value;
 
-    public override string ToString() => $"{typeof(Variance)} Nobs={Nobs} | σ²={Value}";
+    protected override string GetStatsString() => $"σ²={Value}";
 }
