@@ -1,6 +1,4 @@
-﻿#if NET7_0_OR_GREATER
-
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace RunningStatistics;
 
@@ -49,7 +47,5 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
 
     public static explicit operator TObs(Sum<TObs> sum) => sum.Value;
 
-    public override string ToString() => $"{typeof(Sum<TObs>)} Nobs={Nobs} | Σ={Value}";
+    protected override string GetStatsString() => $"Σ={Value}";
 }
-
-#endif

@@ -72,5 +72,5 @@ public sealed class UnsafeMean : RunningStatisticBase<double, UnsafeMean>
     
     public static explicit operator double(UnsafeMean mean) => mean.Value;
     
-    public override string ToString() => $"{typeof(UnsafeMean)} Nobs={Nobs} | μ={Value}";
+    protected override string GetStatsString() => $"μ={Value}";
 }

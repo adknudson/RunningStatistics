@@ -210,4 +210,6 @@ public sealed class UnsafeBeta : RunningStatisticBase<bool, UnsafeBeta>
             1.0,
             accuracy: 1e-12);
     }
+
+    protected override string GetStatsString() => $"α={Successes}, β={Failures}";
 }

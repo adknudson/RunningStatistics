@@ -73,5 +73,5 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
     
     public static explicit operator double(Mean mean) => mean.Value;
 
-    public override string ToString() => $"{typeof(Mean)} Nobs={Nobs} | μ={Value}";
+    protected override string GetStatsString() => $"μ={Value}";
 }

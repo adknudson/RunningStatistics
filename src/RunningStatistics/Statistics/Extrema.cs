@@ -126,6 +126,9 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
         
         _nobs += extrema.Nobs;
     }
-    
-    public override string ToString() => $"{typeof(Extrema)} Nobs={Nobs} | Min={Min:F2}, Max={Max:F2}, MinCount={MinCount}, MaxCount={MaxCount}";
+
+    protected override string GetStatsString()
+    {
+        return $"Min={Min} (n={MinCount:N0}), Max={Max} (n={MaxCount:N0})"; 
+    }
 }

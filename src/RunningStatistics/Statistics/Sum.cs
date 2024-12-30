@@ -52,6 +52,6 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
 
     public static explicit operator double(Sum sum) => sum.Value;
 
-    public override string ToString() => $"{typeof(Sum)} Nobs={Nobs} | Σ={Value}";
+    protected override string GetStatsString() => $"Σ={Value}";
 }
 

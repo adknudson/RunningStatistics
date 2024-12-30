@@ -89,5 +89,5 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
         return Mean - StandardDeviation * Constants.Sqrt2 * SpecialFunctions.ErfcInv(2.0 * p);
     }
 
-    public override string ToString() => $"{typeof(Normal)} Nobs={Nobs} | μ={Mean}, σ²={Variance}";
+    protected override string GetStatsString() => $"μ={Mean}, σ²={Variance}";
 }

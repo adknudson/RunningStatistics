@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
+// ReSharper disable MemberCanBePrivate.Global
+
 namespace RunningStatistics;
 
 /// <summary>
@@ -213,15 +215,18 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
             }
         }
     }
+
+    private bool BinsAreMatching(ICollection<HistogramBin> other)
+    {
+        return Bins.Count == other.Count && Bins.Zip(other, (bin1, bin2) => (bin1, bin2)).All(z => z.bin1.Equals(z.bin2));
+    }
     
     public IEnumerator<HistogramBin> GetEnumerator() => Bins.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    public override string ToString() => $"{typeof(Histogram)} Nobs={Nobs} | NumBins={NumBins}";
-    
-    private bool BinsAreMatching(ICollection<HistogramBin> other)
+    protected override string GetStatsString()
     {
-        return Bins.Count == other.Count && Bins.Zip(other, (bin1, bin2) => (bin1, bin2)).All(z => z.bin1.Equals(z.bin2));
+        return $"NumBins={NumBins}";
     }
 }

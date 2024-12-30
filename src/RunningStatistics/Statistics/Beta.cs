@@ -90,4 +90,9 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
         Require.ValidProbability(p);
         return _beta.Quantile(p);
     }
+
+    protected override string GetStatsString()
+    {
+        return $"α={Successes}, β={Failures}";
+    }
 }
