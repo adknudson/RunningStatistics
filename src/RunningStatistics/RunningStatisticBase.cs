@@ -60,4 +60,11 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
 
         return newStat;
     }
+
+    public sealed override string ToString()
+    {
+        return $"{typeof(TSelf).Name}(Nobs={Nobs:N0}) | {GetStatsString()}";
+    }
+
+    protected abstract string GetStatsString();
 }
