@@ -1,7 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<Nullable>enable</Nullable>
+		<TargetFramework>net8.0</TargetFramework>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	</PropertyGroup>
+	
+	<PropertyGroup>
 		<PackageVersion>2.0.0</PackageVersion>
 		<Authors>Alex Knudson</Authors>
 		<Title>Running Statistics</Title>
@@ -12,11 +17,8 @@
 		<RepositoryUrl>https://github.com/adknudson/RunningStatistics</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
-		<LangVersion>default</LangVersion>
-		<Nullable>enable</Nullable>
-		<TargetFrameworks>net6.0;net8.0;netstandard2.0</TargetFrameworks>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Added IRunningStatistic interface</PackageReleaseNotes>
+		<PackageReleaseNotes>Added IRunningStatistic interface. Support only latest dotnet version.</PackageReleaseNotes>
 	</PropertyGroup>
 	
 	<ItemGroup>
