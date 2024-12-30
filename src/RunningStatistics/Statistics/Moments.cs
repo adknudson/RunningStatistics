@@ -89,10 +89,7 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
 
     public override void Fit(double value)
     {
-        if (double.IsNaN(value) || double.IsInfinity(value))
-        {
-            throw new ArgumentException("Value must be a finite number", nameof(value));
-        }
+        Require.Finite(value);
         
         _nobs++;
 
