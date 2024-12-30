@@ -1,12 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<Nullable>enable</Nullable>
 		<TargetFramework>net8.0</TargetFramework>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<LangVersion>default</LangVersion>
+		<Nullable>enable</Nullable>
 	</PropertyGroup>
 	
 	<PropertyGroup>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageVersion>2.0.0</PackageVersion>
 		<Authors>Alex Knudson</Authors>
 		<Title>Running Statistics</Title>
