@@ -51,7 +51,7 @@ public class TestCountMap
         Assert.False(countMap.ContainsKey(1));
         Assert.Equal(3, countMap[2]);
         Assert.Equal(1, countMap[3]);
-        Assert.Equal(2, countMap.NumUniqueObs);
+        Assert.Equal(2, countMap.Count);
     }
     
     [Fact]
@@ -125,7 +125,7 @@ public class TestCountMap
     {
         var countMap = new CountMap<int>();
         countMap.Fit(1, 0);
-        Assert.Equal(0, countMap.NumUniqueObs);
+        Assert.Empty(countMap);
     }
 
     [Fact]
@@ -164,7 +164,7 @@ public class TestCountMap
 
         Assert.Equal(0, countMap[1]);
         Assert.Equal(0, countMap[2]);
-        Assert.Equal(0, countMap.NumUniqueObs);
+        Assert.Empty(countMap);
     }
     
     [Fact]
@@ -178,7 +178,7 @@ public class TestCountMap
 
         Assert.Equal(countMap[1], clone[1]);
         Assert.Equal(countMap[2], clone[2]);
-        Assert.Equal(countMap.NumUniqueObs, clone.NumUniqueObs);
+        Assert.Equal(countMap.Count, clone.Count);
         Assert.Equal(countMap.Nobs, clone.Nobs);
     }
 
@@ -197,13 +197,13 @@ public class TestCountMap
         Assert.Equal(2, countMap[1]);
         Assert.Equal(3, countMap[2]);
         Assert.Equal(0, countMap[3]);
-        Assert.Equal(2, countMap.NumUniqueObs);
+        Assert.Equal(2, countMap.Count);
 
         // Clone should reflect changes
         Assert.Equal(3, clone[1]);
         Assert.Equal(3, clone[2]);
         Assert.Equal(4, clone[3]);
-        Assert.Equal(3, clone.NumUniqueObs);
+        Assert.Equal(3, clone.Count);
     }
 
     [Fact]

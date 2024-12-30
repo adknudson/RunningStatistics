@@ -2,12 +2,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable ConvertIfStatementToSwitchStatement
 
 namespace RunningStatistics;
 
 /// <summary>
 /// A dictionary that maps unique values to its number of occurrences. Accessing a non-existent key will return a count
-/// of zero, however a new key will not be added to the internal dictionary.
+/// of zero, however a new key will not be added to the count map.
 /// </summary>
 public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>, IReadOnlyDictionary<TObs, long> 
     where TObs : notnull
@@ -26,16 +28,16 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     }
 
     
-    public long this[TObs key] => _dict.TryGetValue(key, out var value) ? value : 0;
+    public long this[TObs key] => _dict.GetValueOrDefault(key, 0);
+    
+    /// <summary>
+    /// The number of unique observations that have been fitted. Observations with a count of zero are not included.
+    /// </summary>
+    public int Count => _dict.Count;
 
     public IEnumerable<TObs> Keys => _dict.Keys;
 
     public IEnumerable<long> Values => _dict.Values;
-
-    /// <summary>
-    /// The number of unique observations that have been fitted.
-    /// </summary>
-    public int NumUniqueObs => _dict.Count;
 
 
     protected override long GetNobs() => _nobs;
@@ -46,8 +48,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     {
         if (count < 0)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(count), count, "The count must be non-negative");
+            throw new ArgumentOutOfRangeException(nameof(count), count, "The count must be non-negative");
         }
         
         if (count == 0) return;
@@ -67,13 +68,9 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     {
         _nobs += count;
 
-        if (_dict.ContainsKey(value))
+        if (!_dict.TryAdd(value, count))
         {
             _dict[value] += count;
-        }
-        else
-        {
-            _dict[value] = count;
         }
     }
 
@@ -105,38 +102,6 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
         return countMap;
     }
 
-    public bool ContainsKey(TObs key) => _dict.ContainsKey(key);
-
-    public bool TryGetValue(TObs key, out long value) => _dict.TryGetValue(key, out value);
-    
-    public IEnumerator<KeyValuePair<TObs, long>> GetEnumerator() => _dict.GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    
-    public override string ToString() => $"{typeof(CountMap<TObs>)} Nobs={Nobs} | {NumUniqueObs} unique values";
-
-    int IReadOnlyCollection<KeyValuePair<TObs, long>>.Count => _dict.Count;
-
-    /// <summary>
-    /// Returns the current object as a dictionary of Observation-Count pairs.
-    /// </summary>
-    public IDictionary<TObs, long> AsDictionary() => _dict;
-
-    /// <summary>
-    /// Returns a new dictionary with the current Observation-Count pairs.
-    /// </summary>
-    public IDictionary<TObs, long> ToDictionary() => new Dictionary<TObs, long>(_dict);
-
-    /// <summary>
-    /// Returns the current object as a <see cref="ProportionMap{TObs}"/>.
-    /// </summary>
-    public ProportionMap<TObs> AsProportionMap() => new(this);
-
-    /// <summary>
-    /// Returns a clone of the current object as a new <see cref="ProportionMap{TObs}"/>.
-    /// </summary>
-    public ProportionMap<TObs> ToProportionMap() => new(Clone());
-
     public TObs Mode()
     {
         if (Nobs == 0)
@@ -164,7 +129,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
             throw new Exception("Nobs = 0. The median does not exist.");
         }
         
-        return NumUniqueObs % 2 == 0 ? MedianEvenCount() : MedianOddCount();
+        return Count % 2 == 0 ? MedianEvenCount() : MedianOddCount();
     }
 
     private TObs MedianEvenCount()
@@ -194,4 +159,14 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
         // This should be unreachable...
         throw new Exception("Not able to find the median of the count map.");
     }
+    
+    public bool ContainsKey(TObs key) => _dict.ContainsKey(key);
+
+    public bool TryGetValue(TObs key, out long value) => _dict.TryGetValue(key, out value);
+    
+    public IEnumerator<KeyValuePair<TObs, long>> GetEnumerator() => _dict.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    
+    protected override string GetStatsString() => $"{Count} unique observations";
 }
