@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace RunningStatistics;
 
@@ -37,7 +36,8 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
     
     public void UnsafeMerge(IRunningStatistic<TObs> other)
     {
-        Merge((TSelf)other);
+        var typedOther = Require.Type<TSelf>(other);
+        Merge(typedOther);
     }
     
     public abstract void Merge(TSelf other);

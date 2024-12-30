@@ -33,7 +33,7 @@ internal static class Require
     {
         if (obj is not T typed)
         {
-            throw new ArgumentException($"The other stat must be of type {typeof(T)}", nameof(obj));
+            throw new InvalidCastException($"The other stat must be of type {typeof(T)}. Got {obj?.GetType()}");
         }
 
         return typed;

@@ -46,12 +46,14 @@ public class StatsCollection : IRunningStatistic<double, StatsCollection>
         };
     }
     
-    public void Merge(IRunningStatistic<double> other)
+    public void UnsafeMerge(IRunningStatistic<double> other)
     {
         if (other is StatsCollection stats)
         {
             Merge(stats);
         }
+
+        throw new InvalidCastException($"Other statistic must be of type {GetType()}");
     }
     
     public void Merge(StatsCollection other)
