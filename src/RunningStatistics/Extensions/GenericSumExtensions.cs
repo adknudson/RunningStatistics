@@ -1,6 +1,4 @@
-﻿#if NET7_0_OR_GREATER
-
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace RunningStatistics;
 
@@ -47,5 +45,3 @@ public static class GenericSumExtensions
         return sum.Value / sum.Nobs;
     }
 }
-    
-#endif
