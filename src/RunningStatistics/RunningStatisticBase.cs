@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace RunningStatistics;
 
@@ -34,12 +35,9 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
     
     public abstract TSelf Clone();
     
-    public void Merge(IRunningStatistic<TObs> other)
+    public void UnsafeMerge(IRunningStatistic<TObs> other)
     {
-        if (other is TSelf stats)
-        {
-            Merge(stats);
-        }
+        Merge((TSelf)other);
     }
     
     public abstract void Merge(TSelf other);

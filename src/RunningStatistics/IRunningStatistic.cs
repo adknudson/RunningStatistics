@@ -41,10 +41,9 @@ public interface IRunningStatistic<TObs>
     public IRunningStatistic<TObs> Clone();
 
     /// <summary>
-    /// Merge the values from another running statistic. Ideally this should perform a runtime check
-    /// to ensure that the types are compatible.
+    /// Merge the values from another running statistic without performing a type check.
     /// </summary>
-    public void Merge(IRunningStatistic<TObs> other);
+    public void UnsafeMerge(IRunningStatistic<TObs> other);
 }
 
 
