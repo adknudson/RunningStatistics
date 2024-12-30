@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Numerics;
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedMember.Global
 
 namespace RunningStatistics;
 

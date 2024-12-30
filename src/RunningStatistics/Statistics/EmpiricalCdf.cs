@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 // ReSharper disable CompareOfFloatsByEqualityOperator
+// ReSharper disable ConvertIfStatementToSwitchStatement
 
 namespace RunningStatistics;
 

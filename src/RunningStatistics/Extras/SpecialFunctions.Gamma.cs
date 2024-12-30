@@ -47,7 +47,7 @@ internal static partial class SpecialFunctions
     /// Polynomial coefficients for the <see cref="GammaLn"/> approximation.
     /// </summary>
     private static readonly double[] GammaDk =
-    {
+    [
         2.48574089138753565546e-5,
         1.05142378581721974210,
         -3.45687097222016235469,
@@ -59,7 +59,7 @@ internal static partial class SpecialFunctions
         -5.71926117404305781283e-4,
         4.63399473359905636708e-6,
         -2.71994908488607703910e-9
-    };
+    ];
 
     /// <summary>
     /// Computes the logarithm of the Gamma function.

@@ -104,12 +104,7 @@ public sealed class UnsafeBeta : RunningStatisticBase<bool, UnsafeBeta>
         
         if (_a == 0 && _b == 0)
         {
-            if (x is 0 or 1)
-            {
-                return double.PositiveInfinity;
-            }
-
-            return 0.0;
+            return x is 0 or 1 ? double.PositiveInfinity : 0.0;
         }
 
         if (_a == 0)
@@ -164,8 +159,8 @@ public sealed class UnsafeBeta : RunningStatisticBase<bool, UnsafeBeta>
         }
 
         var aa = SpecialFunctions.GammaLn(_a + _b) - SpecialFunctions.GammaLn(_a) - SpecialFunctions.GammaLn(_b);
-        var bb = x == 0.0 ? (_a == 1 ? 0.0 : double.NegativeInfinity) : (_a - 1.0) * Math.Log(x);
-        var cc = x == 1.0 ? (_b == 1 ? 0.0 : double.NegativeInfinity) : (_b - 1.0) * Math.Log(1.0 - x);
+        var bb = x == 0.0 ? _a == 1 ? 0.0 : double.NegativeInfinity : (_a - 1.0) * Math.Log(x);
+        var cc = x == 1.0 ? _b == 1 ? 0.0 : double.NegativeInfinity : (_b - 1.0) * Math.Log(1.0 - x);
 
         return aa + bb + cc;
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 // ReSharper disable CompareOfFloatsByEqualityOperator
+// ReSharper disable ConvertIfStatementToReturnStatement
 
 namespace RunningStatistics;
 

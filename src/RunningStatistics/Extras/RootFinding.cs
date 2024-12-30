@@ -28,6 +28,7 @@
 // </copyright>
 
 using System;
+// ReSharper disable CompareOfFloatsByEqualityOperator
 
 namespace RunningStatistics;
 

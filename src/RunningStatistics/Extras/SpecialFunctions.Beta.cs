@@ -50,7 +50,7 @@ internal static partial class SpecialFunctions
             throw new ArgumentOutOfRangeException(nameof(b), "Value must be non-negative.");
         }
 
-        if (x < 0.0 || x > 1.0)
+        if (x is < 0.0 or > 1.0)
         {
             throw new ArgumentOutOfRangeException(nameof(x), "Value must be in the interval [0, 1].");
         }

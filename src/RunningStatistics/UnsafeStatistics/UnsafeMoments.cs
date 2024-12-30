@@ -1,7 +1,7 @@
 using System;
-
 // ReSharper disable ConvertToAutoPropertyWithPrivateSetter
 // ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedMember.Global
 
 namespace RunningStatistics.UnsafeStatistics;
 
