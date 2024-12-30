@@ -9,11 +9,11 @@ namespace RunningStatistics;
 /// </summary>
 public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
 {
+    private readonly double[] _buffer;
+    private readonly double[] _values;
     private readonly Extrema _extrema;
-    private readonly double[] _buffer, _values;
-    private readonly double[] _cdf;
     
-
+    
     public EmpiricalCdf(int numBins = 200)
     {
         if (numBins < 2)
@@ -23,31 +23,35 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         }
         
         NumBins = numBins;
-        _values = new double[NumBins];
         _buffer = new double[NumBins];
+        _values = new double[NumBins + 2];
         _extrema = new Extrema();
-        _cdf = new double[NumBins + 2];
     }
 
     private EmpiricalCdf(EmpiricalCdf other)
     {
         NumBins = other.NumBins;
-        _values = other._values.ToArray();
         _buffer = other._buffer.ToArray();
         _extrema = other._extrema.Clone();
-        _cdf = other._cdf.ToArray();
+        _values = other._values.ToArray();
     }
 
+
+    /// <summary>
+    /// A reference to the values excluding the min and max. The min and max are handled by the
+    /// <see cref="Extrema"/> object.
+    /// </summary>
+    private Span<double> Values => _values.AsSpan(1, NumBins);
+    
+    private int NumBins { get; }
     
     public double Median => Quantile(0.5);
     
     public double Min => _extrema.Min;
     
     public double Max => _extrema.Max;
+
     
-    private int NumBins { get; }
-
-
     protected override long GetNobs() => _extrema.Nobs;
 
     public override void Fit(double value)
@@ -63,9 +67,10 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         if (bufferCount < NumBins) return;
         
         Array.Sort(_buffer);
+        
         for (var k = 0; k < NumBins; k++)
         {
-            _values[k] = Utils.Smooth(_values[k], _buffer[k], (double) NumBins / Nobs);
+            Values[k] = Utils.Smooth(Values[k], _buffer[k], (double) NumBins / Nobs);
         }
     }
     
@@ -73,7 +78,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     {
         for (var i = 0; i < NumBins; i++)
         {
-            _values[i] = 0;
+            Values[i] = 0;
             _buffer[i] = 0;
         }
 
@@ -98,7 +103,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
 
         for (var k = 0; k < NumBins; k++)
         {
-            _values[k] = Utils.Smooth(_values[k], empiricalCdf._values[k], (double) empiricalCdf.Nobs / Nobs);
+            Values[k] = Utils.Smooth(Values[k], empiricalCdf.Values[k], (double) empiricalCdf.Nobs / Nobs);
         }
     }
     
@@ -126,19 +131,19 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         // if i is less than 1, return the interpolation between min and V[0]
         if (i < 1)
         {
-            return Utils.Smooth(Min, _values[0], r);
+            return Utils.Smooth(Min, Values[0], r);
         }
         
-        // if i is greater than NumBins, return the interpolation between V[NumBins - 1] and max
+        // if i is greater than NumBins, return the interpolation between V[^1] and max
         if (i >= NumBins)
         {
-            return Utils.Smooth(_values[NumBins - 1], Max, r);
+            return Utils.Smooth(Values[^1], Max, r);
         }
         
         // otherwise, return the interpolation between V[floor(i)] and V[ceil(i)]
         var fi = (int)Math.Floor(i) - 1;
         var ci = (int)Math.Ceiling(i) - 1;
-        return Utils.Smooth(_values[fi], _values[ci], r);
+        return Utils.Smooth(Values[fi], Values[ci], r);
     }
 
     /// <summary>
@@ -156,23 +161,25 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
             return 1;
         }
         
-        // put all the values in a single array
-        _cdf[0] = Min;
-        _cdf[_cdf.Length - 1] = Max;
-        Array.Copy(_values, 0, _cdf, 1, NumBins);
+        // set the min and max values. The rest are already set due to the Values span.
+        _values[0] = Min;
+        _values[^1] = Max;
         
         // find the index of the first value greater than x
         // ___v[i]___x___v[i+1]___
-        var i = Array.FindIndex(_cdf, v => v > x);
+        var i = Array.FindIndex(_values, v => v > x);
         
         // x is now between v[i-1] and v[i]
         
         // get the fractional amount between v[i-1] and v[i]
-        var r = (x - _cdf[i - 1]) / (_cdf[i] - _cdf[i - 1]);
+        var r = (x - _values[i - 1]) / (_values[i] - _values[i - 1]);
         
         // return the interpolation between v[i-1] and v[i]
-        return Utils.Smooth(i - 1, i, r) / _cdf.Length;
+        return Utils.Smooth(i - 1, i, r) / _values.Length;
     }
-    
-    public override string ToString() => $"{typeof(EmpiricalCdf)} Nobs={Nobs} | NumBins={NumBins}";
+
+    protected override string GetStatsString()
+    {
+        return $"NumBins={NumBins}, Min={Min}, Max={Max}";
+    }
 }
