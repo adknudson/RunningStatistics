@@ -1,64 +1,108 @@
-﻿namespace RunningStatistics.Examples;
+﻿using System.Collections.ObjectModel;
 
-public class StatsCollection : IRunningStatistic<double, StatsCollection>
+namespace RunningStatistics.Examples;
+
+/// <summary>
+/// Example of a collection of statistics that can be used to store multiple statistics at once.
+/// </summary>
+public class StatsCollection<TObs> : Collection<IRunningStatistic<TObs>>, IRunningStatistic<TObs, StatsCollection<TObs>>
 {
-    private CountMap<double> CountMap { get; init; } = new();
+    public long Nobs { get; private set; }
     
-    private EmpiricalCdf Ecdf { get; init; } = new();
-
-    public long Nobs => Ecdf.Nobs;
     
-    public void Fit(double value)
+    public void Fit(TObs value)
     {
-        CountMap.Fit(value);
-        Ecdf.Fit(value);
+        Fit(value, 1);
     }
 
-    public void Fit(IEnumerable<double> values)
+    public void Fit(TObs value, long count)
     {
-        foreach (var value in values)
+        if (count < 0)
         {
-            Fit(value);
+            throw new ArgumentOutOfRangeException(nameof(count), "Count cannot be negative");
+        }
+        
+        Nobs += count;
+        
+        foreach (var stat in Items)
+        {
+            stat.Fit(value, count);
+        }
+    }
+
+    public void Fit(IEnumerable<TObs> values)
+    {
+        var xs = values.ToList();
+        Nobs += xs.Count;
+
+        foreach (var stat in Items)
+        {
+            stat.Fit(xs);
+        }
+    }
+
+    public void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs)
+    {
+        foreach (var keyValuePair in keyValuePairs)
+        {
+            Fit(keyValuePair.Key, keyValuePair.Value);
         }
     }
 
     public void Reset()
     {
-        CountMap.Reset();
-        Ecdf.Reset();
-    }
-
-    IRunningStatistic<double> IRunningStatistic<double>.CloneEmpty() => CloneEmpty();
-
-    IRunningStatistic<double> IRunningStatistic<double>.Clone() => Clone();
-
-    public StatsCollection CloneEmpty()
-    {
-        return new StatsCollection();
-    }
-
-    public StatsCollection Clone()
-    {
-        return new StatsCollection
+        Nobs = 0;
+        
+        foreach (var stat in Items)
         {
-            CountMap = CountMap.Clone(),
-            Ecdf = Ecdf.Clone()
-        };
-    }
-    
-    public void UnsafeMerge(IRunningStatistic<double> other)
-    {
-        if (other is StatsCollection stats)
-        {
-            Merge(stats);
+            stat.Reset();
         }
+    }
 
-        throw new InvalidCastException($"Other statistic must be of type {GetType()}");
-    }
-    
-    public void Merge(StatsCollection other)
+    public StatsCollection<TObs> CloneEmpty()
     {
-        CountMap.Merge(other.CountMap);
-        Ecdf.Merge(other.Ecdf);
+        var clone = new StatsCollection<TObs>();
+        
+        foreach (var stat in Items)
+        {
+            clone.Add(stat.CloneEmpty());
+        }
+        
+        return clone;
     }
+
+    public StatsCollection<TObs> Clone()
+    {
+        var clone = new StatsCollection<TObs>
+        {
+            Nobs = Nobs
+        };
+
+        foreach (var stat in Items)
+        {
+            clone.Add(stat.Clone());
+        }
+        
+        return clone;
+    }
+
+    public void Merge(StatsCollection<TObs> other)
+    {
+        foreach (var (thisStat, otherStat) in this.Zip(other))
+        {
+            // crude check to ensure that the statistics are of the same type
+            if (thisStat.GetType() != otherStat.GetType())
+            {
+                throw new InvalidOperationException("Cannot merge different types of statistics");
+            }
+            
+            thisStat.UnsafeMerge(otherStat);
+        }
+    }
+
+    IRunningStatistic<TObs> IRunningStatistic<TObs>.CloneEmpty() => CloneEmpty();
+
+    IRunningStatistic<TObs> IRunningStatistic<TObs>.Clone() => Clone();
+
+    public void UnsafeMerge(IRunningStatistic<TObs> other) => Merge((StatsCollection<TObs>)other);
 }

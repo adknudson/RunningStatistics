@@ -2,10 +2,6 @@
 
 namespace RunningStatistics;
 
-/// <summary>
-/// Keep track of the univariate sum.
-/// </summary>
-/// <typeparam name="TObs">Any generic number type.</typeparam>
 public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>> 
     where TObs : IAdditionOperators<TObs, TObs, TObs>, IAdditiveIdentity<TObs, TObs>
 {
@@ -22,7 +18,17 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
         _nobs++;
         Value += value;
     }
-    
+
+    public override void Fit(TObs value, long count)
+    {
+        Require.NonNegative(count);
+        
+        for (var i = 0; i < count; i++)
+        {
+            Fit(value);
+        }
+    }
+
     public override void Reset()
     {
         _nobs = 0;
@@ -30,15 +36,7 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
     }
 
     public override Sum<TObs> CloneEmpty() => new();
-
-    public override Sum<TObs> Clone()
-    {
-        return new Sum<TObs>
-        {
-            _nobs = Nobs,
-            Value = Value
-        };
-    }
+    
     public override void Merge(Sum<TObs> sum)
     {
         _nobs += sum.Nobs;

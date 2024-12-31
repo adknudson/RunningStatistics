@@ -18,16 +18,6 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     private long _nobs;
     
     
-    public CountMap()
-    {
-    }
-
-    public CountMap(IDictionary<TObs, long> dictionary)
-    {
-        Fit(dictionary);
-    }
-
-    
     public long this[TObs key] => _dict.GetValueOrDefault(key, 0);
     
     /// <summary>
@@ -41,27 +31,12 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
 
 
     protected override long GetNobs() => _nobs;
-
-    public override void Fit(TObs value) => UncheckedFit(value, 1);
     
-    public void Fit(TObs value, long count)
+    public override void Fit(TObs value, long count)
     {
-        if (count < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(count), count, "The count must be non-negative");
-        }
-        
-        if (count == 0) return;
-        
+        Require.NonNegative(count);
+        if (count == 0) return; 
         UncheckedFit(value, count);
-    }
-    
-    public void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs)
-    {
-        foreach (var kvp in keyValuePairs)
-        {
-            Fit(kvp.Key, kvp.Value);
-        }
     }
     
     private void UncheckedFit(TObs value, long count)
@@ -74,13 +49,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
         }
     }
 
-    public override void Merge(CountMap<TObs> countMap)
-    {
-        foreach (var kvp in countMap)
-        {
-            UncheckedFit(kvp.Key, kvp.Value);
-        }
-    }
+    public override void Merge(CountMap<TObs> countMap) => Fit(countMap);
 
     public override void Reset()
     {
@@ -90,36 +59,14 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
 
     public override CountMap<TObs> CloneEmpty() => new();
 
-    public override CountMap<TObs> Clone()
-    {
-        var countMap = new CountMap<TObs>();
-        
-        foreach (var kvp in _dict)
-        {
-            countMap.UncheckedFit(kvp.Key, kvp.Value);
-        }
-
-        return countMap;
-    }
-
     public TObs Mode()
     {
         if (Nobs == 0)
         {
             throw new Exception("Nobs = 0. The mode does not exist.");
         }
-        
-        var currentMode = this.First();
 
-        foreach (var obs in this)
-        {
-            if (obs.Value > currentMode.Value)
-            {
-                currentMode = obs;
-            }
-        }
-
-        return currentMode.Key;
+        return _dict.MaxBy(kvp => kvp.Value).Key;
     }
     
     public TObs Median()

@@ -1,46 +1,29 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using RunningStatistics.UnsafeStatistics;
+using RunningStatistics.UncheckedStatistics;
+
+// ReSharper disable UnusedMember.Global
 
 namespace RunningStatistics;
 
 /// <summary>
-/// Tracks the univariate mean.
+/// Tracks the average of a stream of numbers.
 /// </summary>
 public sealed class Mean : RunningStatisticBase<double, Mean>
 {
-    private readonly UnsafeMean _mean;
-
-
-    public Mean()
-    {
-        _mean = new UnsafeMean();
-    }
-
-    private Mean(Mean other)
-    {
-        _mean = other._mean.Clone();
-    }
+    private readonly UncheckedMean _mean = new();
 
 
     public double Value => Nobs == 0 ? double.NaN : _mean.Value;
 
 
-    protected override long GetNobs()
-    {
-        return _mean.Nobs;
-    }
-
-    public override void Fit(double value)
-    {
-        Require.Finite(value);
-        _mean.Fit(value);
-    }
-
-    public void Fit(double value, long count)
+    protected override long GetNobs() => _mean.Nobs;
+    
+    public override void Fit(double value, long count)
     {
         Require.Finite(value);
         Require.NonNegative(count);
+        if (count == 0) return;
         _mean.Fit(value, count);
     }
 
@@ -51,26 +34,12 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
         _mean.Fit(ys);
     }
 
-    public override void Reset()
-    {
-        _mean.Reset();
-    }
+    public override void Reset() => _mean.Reset();
 
-    public override Mean CloneEmpty()
-    {
-        return new Mean();
-    }
-
-    public override Mean Clone()
-    {
-        return new Mean(this);
-    }
-
-    public override void Merge(Mean other)
-    {
-        _mean.Merge(other._mean);
-    }
+    public override Mean CloneEmpty() => new();
     
+    public override void Merge(Mean other) => _mean.Merge(other._mean);
+
     public static explicit operator double(Mean mean) => mean.Value;
 
     protected override string GetStatsString() => $"μ={Value}";

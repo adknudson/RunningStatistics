@@ -1,11 +1,12 @@
 using System;
+
 // ReSharper disable ConvertToAutoPropertyWithPrivateSetter
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedMember.Global
 
-namespace RunningStatistics.UnsafeStatistics;
+namespace RunningStatistics.UncheckedStatistics;
 
-public class UnsafeMoments : RunningStatisticBase<double, UnsafeMoments>
+public class UncheckedMoments : RunningStatisticBase<double, UncheckedMoments>
 {
     private double _mean, _variance, _skewness, _kurtosis;
     private long _nobs;
@@ -57,13 +58,13 @@ public class UnsafeMoments : RunningStatisticBase<double, UnsafeMoments>
     
     protected override long GetNobs() => _nobs;
 
-    public override void Fit(double value)
+    public override void Fit(double value, long count)
     {
-        _nobs++;
-
-        var g = 1.0 / Nobs;
+        _nobs += count;
+        
+        var g = (double) count / Nobs;
         var y2 = value * value;
-
+        
         _mean = Utils.Smooth(_mean, value, g);
         _variance = Utils.Smooth(_variance, y2, g);
         _skewness = Utils.Smooth(_skewness, value * y2, g);
@@ -79,21 +80,9 @@ public class UnsafeMoments : RunningStatisticBase<double, UnsafeMoments>
         _kurtosis = 0;
     }
 
-    public override UnsafeMoments CloneEmpty() => new();
-
-    public override UnsafeMoments Clone()
-    {
-        return new UnsafeMoments
-        {
-            _nobs = _nobs,
-            _mean = _mean,
-            _variance = _variance,
-            _skewness = _skewness,
-            _kurtosis = _kurtosis
-        };
-    }
-
-    public override void Merge(UnsafeMoments other)
+    public override UncheckedMoments CloneEmpty() => new();
+    
+    public override void Merge(UncheckedMoments other)
     {
         _nobs += other.Nobs;
 

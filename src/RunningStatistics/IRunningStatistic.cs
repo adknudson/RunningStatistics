@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+// ReSharper disable UnusedMemberInSuper.Global
+// ReSharper disable UnusedMember.Global
 
 namespace RunningStatistics;
 
@@ -17,11 +19,21 @@ public interface IRunningStatistic<TObs>
     /// Fit a single observation. 
     /// </summary>
     public void Fit(TObs value);
+    
+    /// <summary>
+    /// Fit a single observation with an associated count.
+    /// </summary>
+    public void Fit(TObs value, long count);
 
     /// <summary>
     /// Fit a list of observations.
     /// </summary>
     public void Fit(IEnumerable<TObs> values);
+    
+    /// <summary>
+    /// Fit a list of observations with associated counts.
+    /// </summary>
+    public void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs);
 
     /// <summary>
     /// Reset the running statistic to its initial state.

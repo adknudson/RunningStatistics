@@ -1,13 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RunningStatistics.UnsafeStatistics;
+namespace RunningStatistics.UncheckedStatistics;
 
 /// <summary>
-/// Track the univariate mean. Same as <see cref="Mean"/>, but does no checks to ensure that the observation is a valid
-/// value (i.e. finite).
+/// Track the average value of a stream of numbers.
 /// </summary>
-public sealed class UnsafeMean : RunningStatisticBase<double, UnsafeMean>
+public sealed class UncheckedMean : RunningStatisticBase<double, UncheckedMean>
 {
     private long _nobs;
     
@@ -20,12 +19,7 @@ public sealed class UnsafeMean : RunningStatisticBase<double, UnsafeMean>
         return _nobs;
     }
 
-    public override void Fit(double value)
-    {
-        Fit(value, 1);
-    }
-
-    public void Fit(double value, long count)
+    public override void Fit(double value, long count)
     {
         _nobs += count;
         Value = Utils.Smooth(Value, value, (double)count / Nobs);
@@ -50,27 +44,18 @@ public sealed class UnsafeMean : RunningStatisticBase<double, UnsafeMean>
         Value = 0;
     }
 
-    public override UnsafeMean CloneEmpty()
+    public override UncheckedMean CloneEmpty()
     {
-        return new UnsafeMean();
+        return new UncheckedMean();
     }
-
-    public override UnsafeMean Clone()
-    {
-        return new UnsafeMean
-        {
-            _nobs = Nobs,
-            Value = Value
-        };
-    }
-
-    public override void Merge(UnsafeMean other)
+    
+    public override void Merge(UncheckedMean other)
     {
         _nobs += other.Nobs;
         Value = Nobs == 0 ? 0 : Utils.Smooth(Value, other.Value, (double)other.Nobs / Nobs);
     }
     
-    public static explicit operator double(UnsafeMean mean) => mean.Value;
+    public static explicit operator double(UncheckedMean mean) => mean.Value;
     
     protected override string GetStatsString() => $"μ={Value}";
 }

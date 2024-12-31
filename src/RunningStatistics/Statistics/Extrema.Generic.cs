@@ -23,14 +23,10 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
 
     public override void Fit(TObs value) => UncheckedFit(value, 1);
 
-    public void Fit(TObs value, long count)
+    public override void Fit(TObs value, long count)
     {
-        if (count < 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(count), count, "Count must be non-negative.");
-        }
-        
+        Require.NonNegative(count);
+        if (count == 0) return;
         UncheckedFit(value, count);
     }
     
@@ -80,19 +76,7 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     }
 
     public override Extrema<TObs> CloneEmpty() => new();
-
-    public override Extrema<TObs> Clone()
-    {
-        return new Extrema<TObs>
-        {
-            Min = Min,
-            Max = Max,
-            MinCount = MinCount,
-            MaxCount = MaxCount,
-            _nobs = Nobs
-        };
-    }
-
+    
     public override void Merge(Extrema<TObs> extrema)
     {
         if (Min.Equals(extrema.Min))

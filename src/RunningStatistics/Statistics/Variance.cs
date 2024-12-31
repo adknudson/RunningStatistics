@@ -33,15 +33,17 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
 
 
     protected override long GetNobs() => _nobs;
-
-    public override void Fit(double value)
+    
+    public override void Fit(double value, long count)
     {
         Require.Finite(value);
+        Require.NonNegative(count);
+        if (count == 0) return;
         
-        _nobs += 1;
+        _nobs += count;
         
         var mu = _mean;
-        var g = 1.0 / Nobs;
+        var g = (double) count / Nobs;
         
         _mean = Utils.Smooth(_mean, value, g);
         _variance = Utils.Smooth(_variance, (value - _mean) * (value - mu), g);
@@ -59,10 +61,10 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
         var g = (double) ys.Count / Nobs;
         var delta = _mean - mean;
 
-        _variance = Utils.Smooth(_variance, variance, g) + delta * delta * g * (1 - g);
         _mean = Utils.Smooth(_mean, mean, g);
+        _variance = Utils.Smooth(_variance, variance, g) + delta * delta * g * (1 - g);
     }
-
+    
     public override void Reset()
     {
         _nobs = 0;
@@ -71,16 +73,6 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     }
 
     public override Variance CloneEmpty() => new();
-
-    public override Variance Clone()
-    {
-        return new Variance
-        {
-            _nobs = Nobs,
-            _mean = _mean,
-            _variance = _variance
-        };
-    }
     
     public override void Merge(Variance variance)
     {
@@ -91,8 +83,8 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
         var g = (double) variance.Nobs / Nobs;
         var delta = _mean - variance._mean;
 
-        _variance = Utils.Smooth(_variance, variance._variance, g) + delta * delta * g * (1 - g);
         _mean = Utils.Smooth(_mean, variance._mean, g);
+        _variance = Utils.Smooth(_variance, variance._variance, g) + delta * delta * g * (1 - g);
     }
     
     public static explicit operator double(Variance variance) => variance.Value;

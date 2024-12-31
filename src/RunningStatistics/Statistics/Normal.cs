@@ -6,23 +6,10 @@ namespace RunningStatistics;
 
 public sealed class Normal : RunningStatisticBase<double, Normal>
 {
-    private readonly Mean _mean;
-    private readonly Variance _variance;
+    private readonly Mean _mean = new();
+    private readonly Variance _variance = new();
 
 
-    public Normal()
-    {
-        _mean = new Mean();
-        _variance = new Variance();
-    }
-    
-    private Normal(Normal other)
-    {
-        _mean = other._mean.Clone();
-        _variance = other._variance.Clone();
-    }
-    
-    
     public double Mean => _mean.Value;
     
     /// <summary>
@@ -37,18 +24,21 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
     
     
     protected override long GetNobs() => _mean.Nobs;
-    
+
+    public override void Fit(double value, long count)
+    {
+        Require.Finite(value);
+        Require.NonNegative(count);
+        if (count == 0) return;
+        _mean.Fit(value, count);
+    }
+
     public override void Fit(IEnumerable<double> values)
     {
         var xs = values.ToList();
+        xs.ForEach(Require.Finite);
         _mean.Fit(xs);
         _variance.Fit(xs);
-    }
-
-    public override void Fit(double value)
-    {
-        _mean.Fit(value);
-        _variance.Fit(value);
     }
 
     public override void Reset()
@@ -58,9 +48,7 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
     }
 
     public override Normal CloneEmpty() => new();
-
-    public override Normal Clone() => new(this);
-
+    
     public override void Merge(Normal normal)
     {
         _mean.Merge(normal._mean);
@@ -80,12 +68,7 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
 
     public double Quantile(double p)
     {
-        if (p is < 0 or > 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(p), p, "The quantile must be between 0 and 1.");
-        }
-        
+        Require.ValidProbability(p);
         return Mean - StandardDeviation * Constants.Sqrt2 * SpecialFunctions.ErfcInv(2.0 * p);
     }
 

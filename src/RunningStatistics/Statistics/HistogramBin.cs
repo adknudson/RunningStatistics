@@ -58,13 +58,17 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
 
     public bool Contains(double value)
     {
+        // strictly outside of the bin
         if (value < Lower || value > Upper) return false;
+        // strictly inside of the bin
         if (Lower < value && value < Upper) return true;
         
+        // potentially on the boundary
         if (value == Lower) return ClosedLeft;
         if (value == Upper) return ClosedRight;
 
-        return false;
+        // should never reach here
+        throw new InvalidOperationException("Unexpected state");
     }
 
     public void Reset()
@@ -79,12 +83,7 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
 
     public void Increment(long count)
     {
-        if (count < 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(count), count, "Count must be non-negative");
-        }
-        
+        Require.NonNegative(count);
         Nobs += count;
     }
 

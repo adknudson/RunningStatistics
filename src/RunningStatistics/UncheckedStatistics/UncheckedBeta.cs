@@ -6,9 +6,9 @@ using System.Linq;
 // ReSharper disable ConvertIfStatementToSwitchStatement
 // ReSharper disable CompareOfFloatsByEqualityOperator
 
-namespace RunningStatistics.UnsafeStatistics;
+namespace RunningStatistics.UncheckedStatistics;
 
-public sealed class UnsafeBeta : RunningStatisticBase<bool, UnsafeBeta>
+public sealed class UncheckedBeta : RunningStatisticBase<bool, UncheckedBeta>
 {
     private long _a, _b;
     
@@ -41,15 +41,15 @@ public sealed class UnsafeBeta : RunningStatisticBase<bool, UnsafeBeta>
         return Successes + Failures;
     }
 
-    public override void Fit(bool value)
+    public override void Fit(bool value, long count)
     {
         if (value)
         {
-            _a += 1;
+            _a += count;
         }
         else
         {
-            _b += 1;
+            _b += count;
         }
     }
 
@@ -73,21 +73,12 @@ public sealed class UnsafeBeta : RunningStatisticBase<bool, UnsafeBeta>
         _b = 0;
     }
 
-    public override UnsafeBeta CloneEmpty()
+    public override UncheckedBeta CloneEmpty()
     {
-        return new UnsafeBeta();
+        return new UncheckedBeta();
     }
-
-    public override UnsafeBeta Clone()
-    {
-        return new UnsafeBeta
-        {
-            _a = Successes,
-            _b = Failures
-        };
-    }
-
-    public override void Merge(UnsafeBeta other)
+    
+    public override void Merge(UncheckedBeta other)
     {
         _a += other.Successes;
         _b += other.Failures;

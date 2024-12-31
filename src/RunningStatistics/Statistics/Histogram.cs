@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -32,7 +31,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     
     private int NumBins => Bins.Count;
 
-    private IList<HistogramBin> Bins { get; } = new List<HistogramBin>();
+    private List<HistogramBin> Bins { get; } = [];
 
     /// <summary>
     /// Get a list of the histogram edges.
@@ -96,27 +95,14 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     }
 
     protected override long GetNobs() => _nobs;
-
-    public void Fit(IEnumerable<KeyValuePair<double, long>> keyValuePairs)
-    {
-        foreach (var kvp in keyValuePairs)
-        {
-            Fit(kvp.Key, kvp.Value);
-        }
-    }
     
-    public void Fit(double value, long count)
+    public override void Fit(double value, long count)
     {
-        if (count < 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(count), count, "Count must be non-negative.");
-        }
-        
+        Require.NotNaN(value);
+        Require.NonNegative(count);
+        if (count == 0) return;
         UncheckedFit(value, count);
     }
-    
-    public override void Fit(double value) => UncheckedFit(value, 1);
     
     private void UncheckedFit(double value, long count)
     {
@@ -170,28 +156,16 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     public override void Reset()
     {
         _nobs = 0;
+        
         foreach (var bin in Bins)
         {
             bin.Reset();
         }
+        
         _outOfBounds.Reset();
     }
 
     public override Histogram CloneEmpty() => new(_edges, LeftClosed, EndsClosed);
-
-    public override Histogram Clone()
-    {
-        var hist = CloneEmpty();
-        hist._nobs = _outOfBounds.Nobs;
-        hist._outOfBounds = _outOfBounds.Clone();
-        
-        foreach (var bin in this)
-        {
-            hist.UncheckedFit(bin.Midpoint, bin.Nobs);
-        }
-        
-        return hist;
-    }
     
     public override void Merge(Histogram histogram)
     {
@@ -225,8 +199,5 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    protected override string GetStatsString()
-    {
-        return $"NumBins={NumBins}";
-    }
+    protected override string GetStatsString() => $"NumBins={NumBins}";
 }

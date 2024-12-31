@@ -9,6 +9,8 @@ public class TestCountMap
     [Fact]
     public void Initialize_WithDictionary_SetsCountsCorrectly()
     {
+        var countMap = new CountMap<int>();
+        
         var initialData = new Dictionary<int, long>
         {
             { 1, 2 },
@@ -16,42 +18,11 @@ public class TestCountMap
             { 3, 1 }
         };
 
-        var countMap = new CountMap<int>(initialData);
+        countMap.Fit(initialData);
 
         Assert.Equal(2, countMap[1]);
         Assert.Equal(3, countMap[2]);
         Assert.Equal(1, countMap[3]);
-    }
-    
-    [Fact]
-    public void Initialize_WithDictionaryContainingNegativeCount_ThrowsArgumentOutOfRangeException()
-    {
-        var initialData = new Dictionary<int, long>
-        {
-            { 1, -2 },
-            { 2, 3 },
-            { 3, 1 }
-        };
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => new CountMap<int>(initialData));
-    }
-    
-    [Fact]
-    public void Initialize_WithDictionaryContainingZeroCount_DoesNotAddObservation()
-    {
-        var initialData = new Dictionary<int, long>
-        {
-            { 1, 0 },
-            { 2, 3 },
-            { 3, 1 }
-        };
-
-        var countMap = new CountMap<int>(initialData);
-
-        Assert.False(countMap.ContainsKey(1));
-        Assert.Equal(3, countMap[2]);
-        Assert.Equal(1, countMap[3]);
-        Assert.Equal(2, countMap.Count);
     }
     
     [Fact]

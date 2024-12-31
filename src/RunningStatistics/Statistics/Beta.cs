@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using RunningStatistics.UnsafeStatistics;
+using RunningStatistics.UncheckedStatistics;
 
 namespace RunningStatistics;
 
 public sealed class Beta : RunningStatisticBase<bool, Beta>
 {
-    private readonly UnsafeBeta _beta = new();
+    private readonly UncheckedBeta _beta = new();
 
 
     public Beta()
@@ -34,16 +34,14 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
     public double Variance => _beta.Variance;
 
 
-    protected override long GetNobs()
+    protected override long GetNobs() => _beta.Nobs;
+
+    public override void Fit(bool value, long count)
     {
-        return _beta.Nobs;
+        Require.NonNegative(count);
+        _beta.Fit(value, count);
     }
 
-    public override void Fit(bool success)
-    {
-        _beta.Fit(success);
-    }
-    
     public void Fit(long successes, long failures)
     {
         Require.NonNegative(successes);
@@ -51,29 +49,15 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
         _beta.Fit(successes, failures);
     }
 
-    public override void Fit(IEnumerable<bool> values)
-    {
-        _beta.Fit(values);
-    }
+    public override void Fit(IEnumerable<bool> values) => _beta.Fit(values);
 
-    public override void Reset()
-    {
-        _beta.Reset();
-    }
+    public override void Reset() => _beta.Reset();
 
     public override Beta CloneEmpty() => new();
-
-    public override Beta Clone() => new(Successes, Failures);
-
-    public override void Merge(Beta other)
-    {
-        _beta.Merge(other._beta);
-    }
     
-    public double Pdf(double x)
-    {
-        return _beta.Pdf(x);
-    }
+    public override void Merge(Beta other) => _beta.Merge(other._beta);
+
+    public double Pdf(double x) => _beta.Pdf(x);
 
     public double Cdf(double x)
     {
@@ -91,8 +75,5 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
         return _beta.Quantile(p);
     }
 
-    protected override string GetStatsString()
-    {
-        return $"α={Successes}, β={Failures}";
-    }
+    protected override string GetStatsString() => $"α={Successes:N0}, β={Failures:N0}";
 }

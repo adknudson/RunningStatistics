@@ -14,13 +14,26 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
 
     protected abstract long GetNobs();
     
-    public abstract void Fit(TObs value);
+    public virtual void Fit(TObs value)
+    {
+        Fit(value, 1);
+    }
+
+    public abstract void Fit(TObs value, long count);
     
     public virtual void Fit(IEnumerable<TObs> values)
     {
         foreach (var value in values)
         {
             Fit(value);
+        }
+    }
+    
+    public virtual void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs)
+    {
+        foreach (var (value, count) in keyValuePairs)
+        {
+            Fit(value, count);
         }
     }
     
@@ -31,8 +44,13 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
     IRunningStatistic<TObs> IRunningStatistic<TObs>.Clone() => Clone();
     
     public abstract TSelf CloneEmpty();
-    
-    public abstract TSelf Clone();
+
+    public TSelf Clone()
+    {
+        var newStat = CloneEmpty();
+        newStat.UnsafeMerge(this);
+        return newStat;
+    }
     
     public void UnsafeMerge(IRunningStatistic<TObs> other)
     {

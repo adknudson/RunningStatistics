@@ -13,15 +13,18 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
 
     protected override long GetNobs() => _nobs;
 
-    public override void Fit(double value)
+    public override void Fit(double value, long count)
     {
-        _nobs++;
-        Value += value;
+        Require.Finite(value);
+        Require.NonNegative(count);
+        _nobs += count;
+        Value += value * count;
     }
 
     public override void Fit(IEnumerable<double> values)
     {
         var xs = values.ToList();
+        xs.ForEach(Require.Finite);
         _nobs += xs.Count;
         Value += xs.Sum();
     }
@@ -33,22 +36,14 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
     }
 
     public override Sum CloneEmpty() => new();
-
-    public override Sum Clone()
-    {
-        return new Sum
-        {
-            _nobs = Nobs,
-            Value = Value
-        };
-    }
+    
     public override void Merge(Sum sum)
     {
         _nobs += sum.Nobs;
         Value += sum.Value;
     }
 
-    public double Mean() => Value / Nobs;
+    public double Mean() => Nobs == 0 ? double.NaN : Value / Nobs;
 
     public static explicit operator double(Sum sum) => sum.Value;
 

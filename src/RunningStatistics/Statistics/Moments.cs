@@ -1,5 +1,6 @@
 ﻿using System;
-using RunningStatistics.UnsafeStatistics;
+using System.Collections.Generic;
+using RunningStatistics.UncheckedStatistics;
 
 namespace RunningStatistics;
 
@@ -8,16 +9,8 @@ namespace RunningStatistics;
 /// </summary>
 public sealed class Moments : RunningStatisticBase<double, Moments>
 {
-    private readonly UnsafeMoments _moment = new();
+    private readonly UncheckedMoments _moment = new();
     
-    
-    public Moments() { }
-    
-    private Moments(Moments other)
-    {
-        _moment = other._moment.Clone();
-    }
-
     
     /// <summary>
     /// The first central moment is the measure of central location.
@@ -53,23 +46,20 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
 
     protected override long GetNobs() => _moment.Nobs;
 
-    public override void Fit(double value)
+    public override void Fit(double value, long count)
     {
         Require.Finite(value);
-        _moment.Fit(value);
+        Require.NonNegative(count);
+        if (count == 0) return;
+        _moment.Fit(value, count);
     }
 
     public override void Reset() => _moment.Reset();
 
     public override Moments CloneEmpty() => new();
-
-    public override Moments Clone() => new(this);
-
-    public override void Merge(Moments other)
-    {
-        _moment.Merge(other._moment);
-    }
     
+    public override void Merge(Moments other) => _moment.Merge(other._moment);
+
     protected override string GetStatsString()
     {
         return $"M1={Mean:F2}, M2={Variance:F2}, M3={Skewness:F2}, M4={Kurtosis:F2}";

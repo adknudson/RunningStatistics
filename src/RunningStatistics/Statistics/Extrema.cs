@@ -1,5 +1,4 @@
-﻿using System;
-// ReSharper disable CompareOfFloatsByEqualityOperator
+﻿using RunningStatistics.UncheckedStatistics;
 
 namespace RunningStatistics;
 
@@ -8,124 +7,33 @@ namespace RunningStatistics;
 /// </summary>
 public sealed class Extrema : RunningStatisticBase<double, Extrema>
 {
-    private long _nobs;
+    private readonly UncheckedExtrema _extrema = new();
 
-
-    public double Min { get; private set; } = double.PositiveInfinity;
-
-    public double Max { get; private set; } = double.NegativeInfinity;
-
-    public long MinCount { get; private set; }
-
-    public long MaxCount { get; private set; }
-
-
-    protected override long GetNobs() => _nobs;
-
-    public override void Fit(double value)
-    {
-        if (double.IsNaN(value))
-        {
-            throw new ArgumentException("Value must not be NaN.", nameof(value));
-        }
-        
-        UncheckedFit(value, 1);
-    }
-
-    public void Fit(double value, long count)
-    {
-        if (count < 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(count), count, "Count must be non-negative.");
-        }
-
-        if (double.IsNaN(value))
-        {
-            throw new ArgumentException("Value must not be NaN.", nameof(value));
-        }
-        
-        UncheckedFit(value, count);
-    }
     
-    private void UncheckedFit(double value, long count)
-    {
-        _nobs += count;
+    public double Min => _extrema.Min;
 
-        if (_nobs == count)
-        {
-            Min = Max = value;
-        }
-        
-        if (value < Min)
-        {
-            Min = value;
-            MinCount = 0;
-        } 
-        else if (value > Max)
-        {
-            Max = value;
-            MaxCount = 0;
-        }
+    public double Max => _extrema.Max;
 
-        if (value == Min)
-        {
-            MinCount += count;
-        }
-        
-        if (value == Max)
-        {
-            MaxCount += count;
-        }
-    }
+    public long MinCount => _extrema.MinCount;
+
+    public long MaxCount => _extrema.MaxCount;
     
-    public override void Reset()
+
+    protected override long GetNobs() => _extrema.Nobs;
+    
+    public override void Fit(double value, long count)
     {
-        Min = double.PositiveInfinity;
-        Max = double.NegativeInfinity;
-        MinCount = 0;
-        MaxCount = 0;
-        _nobs = 0;
+        Require.NotNaN(value);
+        Require.NonNegative(count);
+        if (count == 0) return;
+        _extrema.Fit(value, count);
     }
+
+    public override void Reset() => _extrema.Reset();
 
     public override Extrema CloneEmpty() => new();
 
-    public override Extrema Clone()
-    {
-        return new Extrema
-        {
-            Min = Min,
-            Max = Max,
-            MinCount = MinCount,
-            MaxCount = MaxCount,
-            _nobs = Nobs
-        };
-    }
-
-    public override void Merge(Extrema extrema)
-    {
-        if (Min == extrema.Min)
-        {
-            MinCount += extrema.MinCount;
-        }
-        else if (extrema.Min < Min)
-        {
-            Min = extrema.Min;
-            MinCount = extrema.MinCount;
-        }
-        
-        if (Max == extrema.Max)
-        {
-            MaxCount += extrema.MaxCount;
-        }
-        else if (extrema.Max > Max)
-        {
-            Max = extrema.Max;
-            MaxCount = extrema.MaxCount;
-        }
-        
-        _nobs += extrema.Nobs;
-    }
+    public override void Merge(Extrema other) => _extrema.Merge(other._extrema);
 
     protected override string GetStatsString()
     {

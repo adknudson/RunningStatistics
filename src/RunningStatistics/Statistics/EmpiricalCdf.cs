@@ -29,14 +29,6 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         _extrema = new Extrema();
     }
 
-    private EmpiricalCdf(EmpiricalCdf other)
-    {
-        NumBins = other.NumBins;
-        _buffer = other._buffer.ToArray();
-        _extrema = other._extrema.Clone();
-        _values = other._values.ToArray();
-    }
-
 
     /// <summary>
     /// A reference to the values excluding the min and max. The min and max are handled by the
@@ -74,7 +66,17 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
             Values[k] = Utils.Smooth(Values[k], _buffer[k], (double) NumBins / Nobs);
         }
     }
-    
+
+    public override void Fit(double value, long count)
+    {
+        Require.NonNegative(count);
+        
+        for (var i = 0; i < count; i++)
+        {
+            Fit(value);
+        }
+    }
+
     public override void Reset()
     {
         for (var i = 0; i < NumBins; i++)
@@ -87,8 +89,6 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     }
     
     public override EmpiricalCdf CloneEmpty() => new(NumBins);
-
-    public override EmpiricalCdf Clone() => new(this);
 
     public override void Merge(EmpiricalCdf empiricalCdf)
     {
