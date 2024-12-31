@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-// ReSharper disable UnusedMemberInSuper.Global
-// ReSharper disable UnusedMember.Global
 
 namespace RunningStatistics;
 
@@ -53,7 +51,7 @@ public interface IRunningStatistic<TObs>
     public IRunningStatistic<TObs> Clone();
 
     /// <summary>
-    /// Merge the values from another running statistic without performing a type check.
+    /// Merge the values from another running statistic without the guarantee of the types being the same.
     /// </summary>
     public void UnsafeMerge(IRunningStatistic<TObs> other);
 }
@@ -80,7 +78,7 @@ public interface IRunningStatistic<TObs, TSelf> : IRunningStatistic<TObs>
     public new TSelf Clone();
     
     /// <summary>
-    /// Merge the values from another running statistic.
+    /// Merge the values from another running statistic of the same concrete type.
     /// </summary>
     public void Merge(TSelf other);
 }
