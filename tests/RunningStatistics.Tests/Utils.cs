@@ -11,9 +11,4 @@ internal static class Utils
         var tol = Math.Max(absTol, relTol * Math.Max(Math.Abs(expected), Math.Abs(actual)));
         Assert.True(Math.Abs(expected - actual) <= tol, $"Expected: {expected}, Actual: {actual}, Tolerance: {tol}");
     }
-    
-    public static double RelError(double expected, double observed)
-    {
-        return (observed - expected) / expected;
-    }
 }
