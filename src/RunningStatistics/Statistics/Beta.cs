@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using RunningStatistics.UncheckedStatistics;
+using RunningStatistics.Unchecked;
 
 namespace RunningStatistics;
 

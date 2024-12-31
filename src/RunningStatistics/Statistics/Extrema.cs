@@ -1,4 +1,4 @@
-﻿using RunningStatistics.UncheckedStatistics;
+﻿using RunningStatistics.Unchecked;
 
 namespace RunningStatistics;
 

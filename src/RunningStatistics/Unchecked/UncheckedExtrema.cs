@@ -1,5 +1,5 @@
 ﻿// ReSharper disable CompareOfFloatsByEqualityOperator
-namespace RunningStatistics.UncheckedStatistics;
+namespace RunningStatistics.Unchecked;
 
 public class UncheckedExtrema : RunningStatisticBase<double, UncheckedExtrema>
 {

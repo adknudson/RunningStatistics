@@ -4,7 +4,7 @@ using System;
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedMember.Global
 
-namespace RunningStatistics.UncheckedStatistics;
+namespace RunningStatistics.Unchecked;
 
 public class UncheckedMoments : RunningStatisticBase<double, UncheckedMoments>
 {

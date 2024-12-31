@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using RunningStatistics.UncheckedStatistics;
+using RunningStatistics.Unchecked;
 
 // ReSharper disable UnusedMember.Global
 

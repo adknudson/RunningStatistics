@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RunningStatistics.UncheckedStatistics;
+namespace RunningStatistics.Unchecked;
 
 /// <summary>
 /// Track the average value of a stream of numbers.

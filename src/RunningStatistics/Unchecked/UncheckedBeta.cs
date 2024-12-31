@@ -6,7 +6,7 @@ using System.Linq;
 // ReSharper disable ConvertIfStatementToSwitchStatement
 // ReSharper disable CompareOfFloatsByEqualityOperator
 
-namespace RunningStatistics.UncheckedStatistics;
+namespace RunningStatistics.Unchecked;
 
 public sealed class UncheckedBeta : RunningStatisticBase<bool, UncheckedBeta>
 {
