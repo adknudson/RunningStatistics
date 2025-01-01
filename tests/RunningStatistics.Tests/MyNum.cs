@@ -2,12 +2,12 @@
 using System.Globalization;
 using System.Numerics;
 
-namespace RunningStatistics.Tests.Extras;
+namespace RunningStatistics.Tests;
 
-public readonly struct MyNum : 
-    IComparable<MyNum>, 
+internal readonly struct MyNum(decimal value) :
+    IComparable<MyNum>,
     IComparisonOperators<MyNum, MyNum, bool>,
-    IConvertible, 
+    IConvertible,
     IEquatable<MyNum>,
     IFormattable,
     IParsable<MyNum>,
@@ -24,13 +24,7 @@ public readonly struct MyNum :
     IUnaryNegationOperators<MyNum, MyNum>,
     IMinMaxValue<MyNum>
 {
-    public MyNum(decimal value)
-    {
-        Value = value;
-    }
-
-
-    public decimal Value { get; }
+    public decimal Value { get; } = value;
 
     public static MyNum AdditiveIdentity { get; } = new(0);
     public static MyNum Zero { get; } = new(0);

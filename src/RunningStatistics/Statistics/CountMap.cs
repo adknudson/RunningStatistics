@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-// ReSharper disable MemberCanBePrivate.Global
-// ReSharper disable ConvertIfStatementToSwitchStatement
 
 namespace RunningStatistics;
 
@@ -58,54 +54,6 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     }
 
     public override CountMap<TObs> CloneEmpty() => new();
-
-    public TObs Mode()
-    {
-        if (Nobs == 0)
-        {
-            throw new Exception("Nobs = 0. The mode does not exist.");
-        }
-
-        return _dict.MaxBy(kvp => kvp.Value).Key;
-    }
-    
-    public TObs Median()
-    {
-        if (Nobs == 0)
-        {
-            throw new Exception("Nobs = 0. The median does not exist.");
-        }
-        
-        return Count % 2 == 0 ? MedianEvenCount() : MedianOddCount();
-    }
-
-    private TObs MedianEvenCount()
-    {
-        var cdf = 0.0;
-        
-        foreach (var kvp in _dict.OrderBy(kvp => kvp.Key)) 
-        {
-            cdf += (double)kvp.Value / Nobs;
-            if (cdf >= 0.5) return kvp.Key;
-        }
-        
-        // This should be unreachable...
-        throw new Exception("Not able to find the median of the count map.");
-    }
-    
-    private TObs MedianOddCount()
-    {
-        var cdf = 0.0;
-        
-        foreach (var kvp in _dict.OrderBy(kvp => kvp.Key)) 
-        {
-            cdf += (double)kvp.Value / Nobs;
-            if (cdf > 0.5) return kvp.Key;
-        }
-        
-        // This should be unreachable...
-        throw new Exception("Not able to find the median of the count map.");
-    }
     
     public bool ContainsKey(TObs key) => _dict.ContainsKey(key);
 

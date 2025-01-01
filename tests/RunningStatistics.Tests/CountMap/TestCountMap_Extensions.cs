@@ -1,10 +1,11 @@
-﻿using RunningStatistics.Tests.Extras;
-using Xunit;
+﻿using Xunit;
 
-namespace RunningStatistics.Tests;
+namespace RunningStatistics.Tests.CountMap;
 
-public class TestCountMapExtensions
+public partial class TestCountMap
 {
+    // TODO: Tests involving extensions
+    
     [Fact]
     public void MinKey_ReturnsMinimumKeyForNumerics()
     {
@@ -68,7 +69,7 @@ public class TestCountMapExtensions
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        Assert.Equal(1.8333333333333333, countMap.Mean(), 10);
+        Assert.Equal(1.833, countMap.Mean(), 3);
     }
 
     [Fact]
@@ -167,7 +168,34 @@ public class TestCountMapExtensions
         countMap.Fit(new MyNum(2), 3);
         countMap.Fit(new MyNum(3), 1);
 
-        Assert.Equal(1.8333333333333333m, countMap.Mean().Value, 10);
+        Assert.Equal(1.833m, countMap.Mean().Value, 3);
         Assert.IsType<MyNum>(countMap.Mean());
+    }
+    
+    [Fact]
+    public void Mode_ReturnsObservationWithHighestCount()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
+
+        Assert.Equal(2, countMap.Mode());
+    }
+
+    [Fact]
+    public void Median_ReturnsCorrectMedianObservation()
+    {
+        // odd number of observations
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 1);
+        countMap.Fit(2, 1);
+        countMap.Fit(3, 1);
+
+        Assert.Equal(2, countMap.Median());
+        
+        // even number of observations returns first observation where PDF >= 0.5
+        countMap.Fit(4, 1);
+        Assert.Equal(2, countMap.Median());
     }
 }

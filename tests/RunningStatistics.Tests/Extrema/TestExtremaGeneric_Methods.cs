@@ -1,9 +1,8 @@
-﻿using RunningStatistics.Tests.Extras;
-using Xunit;
+﻿using Xunit;
 
-namespace RunningStatistics.Tests;
+namespace RunningStatistics.Tests.Extrema;
 
-public class TestExtremaGeneric
+public partial class TestExtremaGeneric
 {
     [Fact]
     public void FitUpdatesMinAndMaxCorrectlyForMyNum()

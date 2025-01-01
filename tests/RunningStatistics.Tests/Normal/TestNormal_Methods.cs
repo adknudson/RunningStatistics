@@ -1,13 +1,13 @@
 ﻿using Xunit;
 
-namespace RunningStatistics.Tests;
+namespace RunningStatistics.Tests.Normal;
 
-public class TestNormal
+public partial class TestNormal
 {
     [Fact]
     public void ShouldReturnNaN_WhenNoData()
     {
-        var x = new Normal();
+        var x = new RunningStatistics.Normal();
         Assert.Equal(double.NaN, x.Mean);
         Assert.Equal(double.NaN, x.Variance);
         Assert.Equal(double.NaN, x.StandardDeviation);
@@ -16,14 +16,14 @@ public class TestNormal
     [Fact]
     public void ShouldHaveZeroObservations_WhenNoData()
     {
-        var x = new Normal();
+        var x = new RunningStatistics.Normal();
         Assert.Equal(0, x.Nobs);
     }
     
     [Fact]
     public void SingleFiniteObservation()
     {
-        var x = new Normal();
+        var x = new RunningStatistics.Normal();
         x.Fit(10);
         Assert.Equal(1, x.Nobs);
         Assert.Equal(10, x.Mean);
@@ -34,7 +34,7 @@ public class TestNormal
     [Fact]
     public void SingleInfiniteObservation()
     {
-        var x = new Normal();
+        var x = new RunningStatistics.Normal();
         x.Fit(double.PositiveInfinity);
         Assert.Equal(1, x.Nobs);
         Assert.Equal(double.PositiveInfinity, x.Mean);
@@ -52,7 +52,7 @@ public class TestNormal
         const int n = 10_000_000;
         var dist = new MathNet.Numerics.Distributions.Normal(mean, std);
         
-        var norm = new Normal();
+        var norm = new RunningStatistics.Normal();
         
         for (var i = 0; i < n; i++)
         {
@@ -79,7 +79,7 @@ public class TestNormal
         const int n = 10_000_000;
         var dist = new MathNet.Numerics.Distributions.Normal(mean, std);
         
-        var norm = new Normal();
+        var norm = new RunningStatistics.Normal();
         
         for (var i = 0; i < n; i++)
         {
@@ -106,7 +106,7 @@ public class TestNormal
         const int n = 10_000_000;
         var dist = new MathNet.Numerics.Distributions.Normal(mean, std);
         
-        var norm = new Normal();
+        var norm = new RunningStatistics.Normal();
         
         for (var i = 0; i < n; i++)
         {

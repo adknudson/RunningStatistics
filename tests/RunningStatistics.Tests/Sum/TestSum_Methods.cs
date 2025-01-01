@@ -1,20 +1,20 @@
 ﻿using Xunit;
 
-namespace RunningStatistics.Tests;
+namespace RunningStatistics.Tests.Sum;
 
-public class TestSum
+public partial class TestSum
 {
     [Fact]
     public void SumWithNoNumbers()
     {
-        var sum = new Sum();
+        var sum = new RunningStatistics.Sum();
         Assert.Equal(0, sum.Value);
     }
 
     [Fact]
     public void SumWithSingleNumber()
     {
-        var sum = new Sum();
+        var sum = new RunningStatistics.Sum();
         sum.Fit(42);
         Assert.Equal(42, sum.Value);
     }
@@ -22,7 +22,7 @@ public class TestSum
     [Fact]
     public void SumOfPositiveNumbers()
     {
-        var sum = new Sum();
+        var sum = new RunningStatistics.Sum();
         sum.Fit(10);
         sum.Fit(20);
         sum.Fit(30);
@@ -32,7 +32,7 @@ public class TestSum
     [Fact]
     public void SumOfNegativeNumbers()
     {
-        var sum = new Sum();
+        var sum = new RunningStatistics.Sum();
         sum.Fit(-10);
         sum.Fit(-20);
         sum.Fit(-30);
@@ -42,7 +42,7 @@ public class TestSum
     [Fact]
     public void SumOfMixedNumbers()
     {
-        var sum = new Sum();
+        var sum = new RunningStatistics.Sum();
         sum.Fit(10);
         sum.Fit(-20);
         sum.Fit(30);
@@ -52,14 +52,14 @@ public class TestSum
     [Fact]
     public void MeanWithNoNumbers()
     {
-        var sum = new Sum();
+        var sum = new RunningStatistics.Sum();
         Assert.Equal(double.NaN, sum.Mean());
     }
 
     [Fact]
     public void MeanWithSingleNumber()
     {
-        var sum = new Sum();
+        var sum = new RunningStatistics.Sum();
         sum.Fit(42);
         Assert.Equal(42, sum.Mean());
     }
@@ -67,7 +67,7 @@ public class TestSum
     [Fact]
     public void MeanOfPositiveNumbers()
     {
-        var sum = new Sum();
+        var sum = new RunningStatistics.Sum();
         sum.Fit(10);
         sum.Fit(20);
         sum.Fit(30);
@@ -77,7 +77,7 @@ public class TestSum
     [Fact]
     public void MeanOfNegativeNumbers()
     {
-        var sum = new Sum();
+        var sum = new RunningStatistics.Sum();
         sum.Fit(-10);
         sum.Fit(-20);
         sum.Fit(-30);
@@ -87,7 +87,7 @@ public class TestSum
     [Fact]
     public void MeanOfMixedNumbers()
     {
-        var sum = new Sum();
+        var sum = new RunningStatistics.Sum();
         sum.Fit(10);
         sum.Fit(-20);
         sum.Fit(30);

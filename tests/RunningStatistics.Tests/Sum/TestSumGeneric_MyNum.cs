@@ -1,10 +1,9 @@
 ﻿using System;
-using RunningStatistics.Tests.Extras;
 using Xunit;
 
-namespace RunningStatistics.Tests;
+namespace RunningStatistics.Tests.Sum;
 
-public class TestSumGenericMyNum
+public partial class TestSumGenericMyNum
 {
     [Fact]
     public void SumWithNoNumbers()

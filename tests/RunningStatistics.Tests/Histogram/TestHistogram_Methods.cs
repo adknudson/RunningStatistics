@@ -2,9 +2,9 @@
 using System.Linq;
 using Xunit;
 
-namespace RunningStatistics.Tests;
+namespace RunningStatistics.Tests.Histogram;
 
-public class TestHistogram
+public partial class TestHistogram
 {
     // |-inf, 0|, |0, 10|, |10, 100|
     private readonly double[] _edges = [double.NegativeInfinity, 0, 10, 100];
@@ -12,7 +12,7 @@ public class TestHistogram
     [Fact]
     public void FitValueOutOfBoundsIncreasesOutOfBoundsCount()
     {
-        Histogram h = new(_edges, false, false);
+        RunningStatistics.Histogram h = new(_edges, false, false);
         h.Fit(200);
         Assert.Equal(1, h.OutOfBoundsCounts.Upper);
     }
@@ -20,7 +20,7 @@ public class TestHistogram
     [Fact]
     public void ResetClearsAllCounts()
     {
-        Histogram h = new(_edges, false, false);
+        RunningStatistics.Histogram h = new(_edges, false, false);
         h.Fit(5);
         h.Fit(15);
         h.Reset();
@@ -35,7 +35,7 @@ public class TestHistogram
     public void EmptyHistIsZero()
     {
         // (-inf, 0], (0, 10], (10, 100]
-        Histogram h = new(_edges, false, false);
+        RunningStatistics.Histogram h = new(_edges, false, false);
 
         Assert.Equal(0, h.Nobs);
 
@@ -52,7 +52,7 @@ public class TestHistogram
         var rng = new Random();
         double[] smallEdges = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
 
-        Histogram a = new(smallEdges), b = new(smallEdges), c = new(smallEdges);
+        RunningStatistics.Histogram a = new(smallEdges), b = new(smallEdges), c = new(smallEdges);
 
         double v;
         for (var i = 0; i < n; i++)
@@ -81,7 +81,7 @@ public class TestHistogram
     public void LeftClosed()
     {
         // [-inf, 0), [0, 10), [10, 100]
-        Histogram h = new(_edges);
+        RunningStatistics.Histogram h = new(_edges);
 
         h.Fit(-1);
         h.Fit(1);
@@ -102,7 +102,7 @@ public class TestHistogram
     public void LeftOpen()
     {
         // [-inf, 0), [0, 10), [10, 100)
-        Histogram h = new(_edges, true, false);
+        RunningStatistics.Histogram h = new(_edges, true, false);
 
         h.Fit(-1);
         h.Fit(1);
@@ -123,7 +123,7 @@ public class TestHistogram
     public void RightClosed()
     {
         // [-inf, 0], (0, 10], (10, 100]
-        Histogram h = new(_edges, false);
+        RunningStatistics.Histogram h = new(_edges, false);
 
         h.Fit(double.NegativeInfinity);
         h.Fit(10);
@@ -144,7 +144,7 @@ public class TestHistogram
     public void RightOpen()
     {
         // (-inf, 0], (0, 10], (10, 100]
-        Histogram h = new(_edges, false, false);
+        RunningStatistics.Histogram h = new(_edges, false, false);
 
         h.Fit(double.NegativeInfinity);
         h.Fit(0.0);
@@ -166,8 +166,8 @@ public class TestHistogram
     public void StaticMergeDoesNotAffectOriginals()
     {
         // (0, 0.1], (0.1, 0.5], (0.5, 0.9]
-        Histogram a = new([0, 0.1, 0.5, 0.9], leftClosed: false, endsClosed: false);
-        Histogram b = new([0, 0.1, 0.5, 0.9], leftClosed: false, endsClosed: false);
+        RunningStatistics.Histogram a = new([0, 0.1, 0.5, 0.9], leftClosed: false, endsClosed: false);
+        RunningStatistics.Histogram b = new([0, 0.1, 0.5, 0.9], leftClosed: false, endsClosed: false);
             
         var rng = new Random();
             
@@ -177,7 +177,7 @@ public class TestHistogram
             b.Fit(rng.NextDouble());
         }
 
-        var c = Histogram.Merge(a, b);
+        var c = RunningStatistics.Histogram.Merge(a, b);
         Assert.Equal(a.Nobs + b.Nobs, c.Nobs);
         Assert.Equal(a.OutOfBoundsCounts.Upper + b.OutOfBoundsCounts.Upper, c.OutOfBoundsCounts.Upper);
 

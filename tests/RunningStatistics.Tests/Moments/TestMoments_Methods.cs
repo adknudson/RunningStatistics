@@ -2,14 +2,14 @@
 using MathNet.Numerics.Distributions;
 using Xunit;
 
-namespace RunningStatistics.Tests;
+namespace RunningStatistics.Tests.Moments;
 
-public class TestMoments
+public partial class TestMoments
 {
     [Fact]
     public void EmptyMomentsAreNaN()
     {
-        Moments m = new();
+        RunningStatistics.Moments m = new();
 
         Assert.Equal(double.NaN, m.Mean);
         Assert.Equal(double.NaN, m.Variance);
@@ -22,7 +22,7 @@ public class TestMoments
     [Fact]
     public void SingleFiniteObservation()
     {
-        Moments m = new();
+        RunningStatistics.Moments m = new();
         m.Fit(1);
         
         Assert.Equal(1, m.Mean);
@@ -36,7 +36,7 @@ public class TestMoments
     [Fact]
     public void TwoFiniteObservations()
     {
-        Moments m = new();
+        RunningStatistics.Moments m = new();
         m.Fit(1);
         m.Fit(2);
         
@@ -51,7 +51,7 @@ public class TestMoments
     [Fact]
     public void ThrowsExceptionOnNonFiniteNumber()
     {
-        Moments m = new();
+        RunningStatistics.Moments m = new();
         Assert.Throws<ArgumentException>(() => m.Fit(double.NaN));
         Assert.Throws<ArgumentException>(() => m.Fit(double.PositiveInfinity));
         Assert.Throws<ArgumentException>(() => m.Fit(double.NegativeInfinity));
@@ -60,8 +60,8 @@ public class TestMoments
     [Fact]
     public void MergeEmptyAreNaN()
     {
-        Moments a = new(); 
-        Moments b = new(); 
+        RunningStatistics.Moments a = new(); 
+        RunningStatistics.Moments b = new(); 
         a.Merge(b);
 
         Assert.Equal(double.NaN, a.Mean);
@@ -76,9 +76,9 @@ public class TestMoments
         const int n = 2000;
         var rng = new Random();
 
-        Moments a = new(); 
-        Moments b = new(); 
-        Moments c = new();
+        RunningStatistics.Moments a = new(); 
+        RunningStatistics.Moments b = new(); 
+        RunningStatistics.Moments c = new();
 
         double v;
         for (var i = 0; i < n; i++)
@@ -106,8 +106,8 @@ public class TestMoments
     [Fact]
     public void StaticMergeDoesNotAffectOriginals()
     {
-        Moments a = new();
-        Moments b = new();
+        RunningStatistics.Moments a = new();
+        RunningStatistics.Moments b = new();
         var rng = new Random();
         
         for (var i = 0; i < 100; i++)
@@ -116,7 +116,7 @@ public class TestMoments
             b.Fit(rng.NextDouble());
         }
 
-        var c = Moments.Merge(a, b);
+        var c = RunningStatistics.Moments.Merge(a, b);
         Assert.Equal(a.Nobs + b.Nobs, c.Nobs);
             
         c.Fit(rng.NextDouble());
@@ -129,7 +129,7 @@ public class TestMoments
         const int n = 10_000_000;
         var rng = new Random();
 
-        var moments = new Moments();
+        var moments = new RunningStatistics.Moments();
 
         for (var i = 0; i < n; i++)
         {
@@ -155,7 +155,7 @@ public class TestMoments
         const int n = 10_000_000;
         var dist = new MathNet.Numerics.Distributions.Normal(mean, stdDev);
 
-        var moments = new Moments();
+        var moments = new RunningStatistics.Moments();
 
         for (var i = 0; i < n; i++)
         {
@@ -179,7 +179,7 @@ public class TestMoments
         const double s2 = sd * sd;
         var dist = new LogNormal(mu, sd);
 
-        var moments = new Moments();
+        var moments = new RunningStatistics.Moments();
 
         for (var i = 0; i < n; i++)
         {

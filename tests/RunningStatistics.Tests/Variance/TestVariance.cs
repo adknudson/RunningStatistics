@@ -1,13 +1,13 @@
 ﻿using Xunit;
 
-namespace RunningStatistics.Tests;
+namespace RunningStatistics.Tests.Variance;
 
 public class TestVariance
 {
     [Fact]
     public void EmptyVarianceReturnsNan()
     {
-        Variance v = new();
+        RunningStatistics.Variance v = new();
         Assert.Equal(0, v.Nobs);
         Assert.Equal(double.NaN, v.Value);
         Assert.Equal(double.NaN, v.StandardDeviation);
@@ -16,7 +16,7 @@ public class TestVariance
     [Fact]
     public void SingleFiniteObservation()
     {
-        Variance v = new();
+        RunningStatistics.Variance v = new();
         v.Fit(10);
         Assert.Equal(1, v.Nobs);
         Assert.Equal(0, v.Value);
@@ -26,7 +26,7 @@ public class TestVariance
     [Fact]
     public void SingleInfiniteObservation()
     {
-        Variance v = new();
+        RunningStatistics.Variance v = new();
         v.Fit(double.PositiveInfinity);
         Assert.Equal(1, v.Nobs);
         Assert.Equal(double.NaN, v.Value);
@@ -36,10 +36,10 @@ public class TestVariance
     [Fact]
     public void MergingVariances()
     {
-        Variance a = new(), b = new();
+        RunningStatistics.Variance a = new(), b = new();
         a.Fit(10);
         b.Fit(20);
-        var c = Variance.Merge(a, b);
+        var c = RunningStatistics.Variance.Merge(a, b);
         a.Merge(b);
         
         Assert.Equal(2, a.Nobs);
@@ -52,7 +52,7 @@ public class TestVariance
     [Fact]
     public void ResetVariance()
     {
-        Variance a = new();
+        RunningStatistics.Variance a = new();
         a.Fit(1);
         a.Fit(2);
         a.Fit(3);

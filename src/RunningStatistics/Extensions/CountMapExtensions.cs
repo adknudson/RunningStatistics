@@ -398,4 +398,46 @@ public static class CountMapExtensions
         var variance = countMap.Variance(mean, false);
         return countMap.ExcessKurtosis(mean, variance);
     }
+    
+    public static TObs Mode<TObs>(this CountMap<TObs> countMap) where TObs : notnull
+    {
+        if (countMap.Nobs == 0)
+        {
+            throw new Exception("Nobs = 0. The mode does not exist.");
+        }
+
+        return countMap.MaxBy(kvp => kvp.Value).Key;
+    }
+    
+    public static TObs Median<TObs>(this CountMap<TObs> countMap) where TObs : notnull
+    {
+        if (countMap.Nobs == 0)
+        {
+            throw new Exception("Nobs = 0. The median does not exist.");
+        }
+
+        if (countMap.Count % 2 == 0)
+        {
+            var cdf = 0.0;
+        
+            foreach (var kvp in countMap.OrderBy(kvp => kvp.Key)) 
+            {
+                cdf += (double)kvp.Value / countMap.Nobs;
+                if (cdf >= 0.5) return kvp.Key;
+            }
+        }
+        else
+        {
+            var cdf = 0.0;
+        
+            foreach (var kvp in countMap.OrderBy(kvp => kvp.Key))
+            {
+                cdf += (double)kvp.Value / countMap.Nobs;
+                if (cdf > 0.5) return kvp.Key;
+            }
+        } 
+
+        // This should be unreachable...
+        throw new Exception("Not able to find the median of the count map.");
+    }
 }

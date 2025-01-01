@@ -4,22 +4,16 @@ using Xunit;
 
 namespace RunningStatistics.Tests;
 
-public abstract class AbstractRunningStatsTest<TObs, TSelf> where TSelf : IRunningStatistic<TObs, TSelf>
+public abstract class AbstractRunningStatsTest<TObs, TSelf>(
+    Func<TSelf> runningStatFactory,
+    Func<TObs> observationFactory)
+    where TSelf : IRunningStatistic<TObs, TSelf>
 {
-    protected AbstractRunningStatsTest(
-        Func<TSelf> runningStatFactory,
-        Func<TObs> observationFactory)
-    {
-        RunningStatFactory = runningStatFactory;
-        GenerateNextObservation = observationFactory;
-    }
+    private Func<TSelf> RunningStatFactory { get; } = runningStatFactory;
 
-    
-    private Func<TSelf> RunningStatFactory { get; }
-    
-    private Func<TObs> GenerateNextObservation { get; }
-    
-    
+    private Func<TObs> GenerateNextObservation { get; } = observationFactory;
+
+
     [Fact]
     public void NewStatistic_NobsIsZero()
     {

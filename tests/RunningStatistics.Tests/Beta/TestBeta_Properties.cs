@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace RunningStatistics.Tests;
+namespace RunningStatistics.Tests.Beta;
 
-public class TestBeta
+public partial class TestBeta
 {
     [Fact]
     public void ConstructorInitializesParametersCorrectly()
     {
-        Beta beta = new(5, 10);
+        RunningStatistics.Beta beta = new(5, 10);
         Assert.Equal(5, beta.Successes);
         Assert.Equal(10, beta.Failures);
     }
@@ -17,7 +17,7 @@ public class TestBeta
     [Fact]
     public void PropertiesReturnExpectedValuesAfterFit()
     {
-        Beta beta = new();
+        RunningStatistics.Beta beta = new();
         beta.Fit(5, 10);
         Assert.Equal(5, beta.Successes);
         Assert.Equal(10, beta.Failures);
@@ -26,10 +26,10 @@ public class TestBeta
     [Fact]
     public void ParametersMustBeNonNegative()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Beta(-1, 10));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Beta(10, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RunningStatistics.Beta(-1, 10));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RunningStatistics.Beta(10, -1));
 
-        var beta = new Beta();
+        var beta = new RunningStatistics.Beta();
         Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(-1, 10));
         Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(10, -1));
     }
@@ -37,7 +37,7 @@ public class TestBeta
     [Fact]
     public void FitMultipleValues()
     {
-        Beta beta = new();
+        RunningStatistics.Beta beta = new();
         var values = new List<bool> { true, false, true, true, false };
         beta.Fit(values);
         Assert.Equal(3, beta.Successes);
@@ -47,7 +47,7 @@ public class TestBeta
     [Fact]
     public void EmptyBetaReturnsNaN()
     {
-        Beta beta = new();
+        RunningStatistics.Beta beta = new();
         Assert.Equal(double.NaN, beta.Mean);
         Assert.Equal(double.NaN, beta.Median);
         Assert.Equal(double.NaN, beta.Mode);
@@ -57,7 +57,7 @@ public class TestBeta
     [Fact]
     public void MergeEmptyReturnsNaN()
     {
-        Beta a = new(), b = new();
+        RunningStatistics.Beta a = new(), b = new();
         a.Merge(b);
         
         Assert.Equal(double.NaN, a.Mean);
@@ -69,8 +69,8 @@ public class TestBeta
     [Fact]
     public void MergeNonEmptyDistributions()
     {
-        Beta a = new(5, 10);
-        Beta b = new(10, 5);
+        RunningStatistics.Beta a = new(5, 10);
+        RunningStatistics.Beta b = new(10, 5);
         a.Merge(b);
         
         Assert.Equal(15, a.Successes);
@@ -80,7 +80,7 @@ public class TestBeta
     [Fact]
     public void PdfWorks()
     {
-        Beta beta = new(100, 50);
+        RunningStatistics.Beta beta = new(100, 50);
         var mBeta = new MathNet.Numerics.Distributions.Beta(100, 50);
 
         Assert.Equal(0.0, beta.Pdf(-0.5));
@@ -97,7 +97,7 @@ public class TestBeta
     [Fact]
     public void PdfEdgeCases()
     {
-        Beta beta = new(100, 50);
+        RunningStatistics.Beta beta = new(100, 50);
         
         // Values less than 0
         Assert.Equal(0.0, beta.Pdf(-0.5));
@@ -124,25 +124,25 @@ public class TestBeta
     public void PdfHandlesSpecialCases()
     {
         // Case when _a == 0 and _b == 0
-        var beta = new Beta(0, 0);
+        var beta = new RunningStatistics.Beta(0, 0);
         Assert.Equal(double.PositiveInfinity, beta.Pdf(0));
         Assert.Equal(double.PositiveInfinity, beta.Pdf(1));
         Assert.Equal(0.0, beta.Pdf(0.5));
 
         // Case when _a == 0
-        beta = new Beta(0, 10);
+        beta = new RunningStatistics.Beta(0, 10);
         Assert.Equal(double.PositiveInfinity, beta.Pdf(0));
         Assert.Equal(0.0, beta.Pdf(0.5));
         Assert.Equal(0.0, beta.Pdf(1));
 
         // Case when _b == 0
-        beta = new Beta(10, 0);
+        beta = new RunningStatistics.Beta(10, 0);
         Assert.Equal(0.0, beta.Pdf(0));
         Assert.Equal(0.0, beta.Pdf(0.5));
         Assert.Equal(double.PositiveInfinity, beta.Pdf(1));
 
         // Case when _a == 1 and _b == 1
-        beta = new Beta(1, 1);
+        beta = new RunningStatistics.Beta(1, 1);
         Assert.Equal(1.0, beta.Pdf(0));
         Assert.Equal(1.0, beta.Pdf(0.5));
         Assert.Equal(1.0, beta.Pdf(1));
@@ -151,7 +151,7 @@ public class TestBeta
     [Fact]
     public void CdfWorks()
     {
-        Beta beta = new(100, 50);
+        RunningStatistics.Beta beta = new(100, 50);
         var mBeta = new MathNet.Numerics.Distributions.Beta(100, 50);
 
         Assert.Equal(0.0, beta.Cdf(-0.5));
@@ -168,7 +168,7 @@ public class TestBeta
     [Fact]
     public void CdfEdgeCases()
     {
-        Beta beta = new(100, 50);
+        RunningStatistics.Beta beta = new(100, 50);
 
         // Values less than 0
         Assert.Equal(0.0, beta.Cdf(-0.5));
@@ -195,27 +195,27 @@ public class TestBeta
     public void CdfHandlesSpecialCases()
     {
         // Case when _a == 0 and _b == 0
-        var beta = new Beta(0, 0);
+        var beta = new RunningStatistics.Beta(0, 0);
         Assert.Throws<ArgumentException>(() => beta.Cdf(0));
         Assert.Throws<ArgumentException>(() => beta.Cdf(1));
         Assert.Throws<ArgumentException>(() => beta.Cdf(0.5));
 
         // Case when _a == 0
-        beta = new Beta(0, 10);
+        beta = new RunningStatistics.Beta(0, 10);
         Assert.Equal(0.0, beta.Cdf(-0.0000001));
         Assert.Equal(1.0, beta.Cdf(0));
         Assert.Equal(1.0, beta.Cdf(0.5));
         Assert.Equal(1.0, beta.Cdf(1));
 
         // Case when _b == 0
-        beta = new Beta(10, 0);
+        beta = new RunningStatistics.Beta(10, 0);
         Assert.Equal(0.0, beta.Cdf(0));
         Assert.Equal(0.0, beta.Cdf(0.5));
         Assert.Equal(0.0, beta.Cdf(0.9999999));
         Assert.Equal(1.0, beta.Cdf(1));
 
         // Case when _a == 1 and _b == 1, CDF is equal to x
-        beta = new Beta(1, 1);
+        beta = new RunningStatistics.Beta(1, 1);
         Random random = new();
         for (var i = 0; i < 100; i++)
         {
@@ -227,7 +227,7 @@ public class TestBeta
     [Fact]
     public void QuantileWorks()
     {
-        var beta = new Beta(100, 50);
+        var beta = new RunningStatistics.Beta(100, 50);
         var mBeta = new MathNet.Numerics.Distributions.Beta(100, 50);
         
         // Normal range
@@ -249,7 +249,7 @@ public class TestBeta
     [Fact]
     public void QuantileEdgeCases()
     {
-        var beta = new Beta(100, 50);
+        var beta = new RunningStatistics.Beta(100, 50);
 
         // Values less than 0
         Assert.Throws<ArgumentOutOfRangeException>(() => beta.Quantile(-0.5));

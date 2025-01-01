@@ -1,14 +1,14 @@
 ﻿using System;
 using Xunit;
 
-namespace RunningStatistics.Tests;
+namespace RunningStatistics.Tests.Extrema;
 
-public class TestExtrema
+public partial class TestExtrema
 {
     [Fact]
     public void ConstructorInitializesProperties()
     {
-        Extrema extrema = new();
+        RunningStatistics.Extrema extrema = new();
 
         Assert.Equal(double.PositiveInfinity, extrema.Min);
         Assert.Equal(double.NegativeInfinity, extrema.Max);
@@ -20,7 +20,7 @@ public class TestExtrema
     [Fact]
     public void FittingSingleValue()
     {
-        Extrema extrema = new();
+        RunningStatistics.Extrema extrema = new();
 
         extrema.Fit(10.0);
         Assert.Equal(10.0, extrema.Min);
@@ -33,7 +33,7 @@ public class TestExtrema
     [Fact]
     public void FitUpdatesMinAndMaxCorrectly()
     {
-        Extrema extrema = new();
+        RunningStatistics.Extrema extrema = new();
         extrema.Fit(5.0);
         extrema.Fit(3.0);
         extrema.Fit(7.0);
@@ -45,7 +45,7 @@ public class TestExtrema
     [Fact]
     public void FitUpdatesMinCountAndMaxCountCorrectly()
     {
-        Extrema extrema = new();
+        RunningStatistics.Extrema extrema = new();
         extrema.Fit(5.0);
         extrema.Fit(3.0);
         extrema.Fit(3.0);
@@ -60,7 +60,7 @@ public class TestExtrema
     [Fact]
     public void FitUpdatesNobsCorrectly()
     {
-        Extrema extrema = new();
+        RunningStatistics.Extrema extrema = new();
         extrema.Fit(5.0);
         extrema.Fit(3.0);
         extrema.Fit(7.0);
@@ -71,14 +71,14 @@ public class TestExtrema
     [Fact]
     public void FitHandlesNaNValues()
     {
-        Extrema extrema = new();
+        RunningStatistics.Extrema extrema = new();
         Assert.Throws<ArgumentException>(() => extrema.Fit(double.NaN));
     }
 
     [Fact]
     public void FitHandlesExtremeValues()
     {
-        Extrema extrema = new();
+        RunningStatistics.Extrema extrema = new();
         extrema.Fit(double.MinValue);
         extrema.Fit(double.MaxValue);
         extrema.Fit(double.MinValue);
@@ -93,11 +93,11 @@ public class TestExtrema
     [Fact]
     public void MergeCombinesMinAndMaxCorrectly()
     {
-        Extrema a = new();
+        RunningStatistics.Extrema a = new();
         a.Fit(1.0);
         a.Fit(2.0);
 
-        Extrema b = new();
+        RunningStatistics.Extrema b = new();
         b.Fit(0.5);
         b.Fit(3.0);
 
@@ -110,12 +110,12 @@ public class TestExtrema
     [Fact]
     public void MergeCombinesMinCountAndMaxCountCorrectly()
     {
-        Extrema a = new();
+        RunningStatistics.Extrema a = new();
         a.Fit(1.0);
         a.Fit(1.0);
         a.Fit(2.0);
 
-        Extrema b = new();
+        RunningStatistics.Extrema b = new();
         b.Fit(1.0);
         b.Fit(3.0);
         b.Fit(3.0);
@@ -129,11 +129,11 @@ public class TestExtrema
     [Fact]
     public void MergeCombinesNobsCorrectly()
     {
-        Extrema a = new();
+        RunningStatistics.Extrema a = new();
         a.Fit(1.0);
         a.Fit(2.0);
 
-        Extrema b = new();
+        RunningStatistics.Extrema b = new();
         b.Fit(0.5);
         b.Fit(3.0);
 
@@ -145,8 +145,8 @@ public class TestExtrema
     [Fact]
     public void MergeEmptyAreInf()
     {
-        Extrema a = new();
-        Extrema b = new(); 
+        RunningStatistics.Extrema a = new();
+        RunningStatistics.Extrema b = new(); 
         a.Merge(b);
 
         Assert.Equal(double.PositiveInfinity, a.Min);
@@ -163,7 +163,7 @@ public class TestExtrema
         const int n = 2000;
         var rng = new Random();
 
-        Extrema a = new(); Extrema b = new(); Extrema c = new();
+        RunningStatistics.Extrema a = new(); RunningStatistics.Extrema b = new(); RunningStatistics.Extrema c = new();
 
         double v;
         for (var i = 0; i < n; i++)
@@ -191,13 +191,13 @@ public class TestExtrema
     [Fact]
     public void StaticMergeDoesNotAffectOriginals()
     {
-        Extrema a = new();
+        RunningStatistics.Extrema a = new();
         a.Fit([1, 1, 2, 3, 5, 8, 13, 21, 34, 55]);
 
-        Extrema b = new();
+        RunningStatistics.Extrema b = new();
         b.Fit([-1, -1, -1, 34]);
 
-        var c = Extrema.Merge(a, b);
+        var c = RunningStatistics.Extrema.Merge(a, b);
             
         Assert.Equal(1, a.Min);
         Assert.Equal(55, a.Max);
@@ -212,7 +212,7 @@ public class TestExtrema
     [Fact]
     public void ResetMethodResetsProperties()
     {
-        Extrema extrema = new();
+        RunningStatistics.Extrema extrema = new();
         extrema.Fit(1.0);
         extrema.Fit(2.0);
         extrema.Fit(3.0);

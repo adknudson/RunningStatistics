@@ -1,7 +1,7 @@
 ﻿using System;
 using Xunit;
 
-namespace RunningStatistics.Tests;
+namespace RunningStatistics.Tests.Histogram;
 
 public class TestHistogramBin
 {

@@ -2,36 +2,36 @@
 using MathNet.Numerics.Distributions;
 using Xunit;
 
-namespace RunningStatistics.Tests;
+namespace RunningStatistics.Tests.EmpiricalCdf;
 
-public class TestEmpiricalCdf
+public partial class TestEmpiricalCdf
 {
     [Fact]
     public void ConstructorThrowsOnInvalidBins()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new EmpiricalCdf(-1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new EmpiricalCdf(0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new EmpiricalCdf(1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RunningStatistics.EmpiricalCdf(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RunningStatistics.EmpiricalCdf(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RunningStatistics.EmpiricalCdf(1));
     }
     
     [Fact]
     public void FitThrowsOnNaN()
     {
-        EmpiricalCdf cdf = new(20);
+        RunningStatistics.EmpiricalCdf cdf = new(20);
         Assert.Throws<ArgumentException>(() => cdf.Fit(double.NaN));
     }
     
     [Fact]
     public void FitThrowsOnInfinity()
     {
-        EmpiricalCdf cdf = new(20);
+        RunningStatistics.EmpiricalCdf cdf = new(20);
         Assert.Throws<ArgumentException>(() => cdf.Fit(double.PositiveInfinity));
     }
     
     [Fact]
     public void QuantileOfEmptyIsZero()
     {
-        EmpiricalCdf cdf = new(20);
+        RunningStatistics.EmpiricalCdf cdf = new(20);
         var rng = new Random();
 
         for (var i = 0; i < 10; i++)
@@ -45,8 +45,8 @@ public class TestEmpiricalCdf
     [Fact]
     public void MergeEmptyIsZero()
     {
-        EmpiricalCdf a = new(20);
-        EmpiricalCdf b = new(20);
+        RunningStatistics.EmpiricalCdf a = new(20);
+        RunningStatistics.EmpiricalCdf b = new(20);
         
         a.Merge(b);
 
@@ -56,15 +56,15 @@ public class TestEmpiricalCdf
     [Fact]
     public void MergeDifferentBuffersThrowsError()
     {
-        EmpiricalCdf a = new(10);
-        EmpiricalCdf b = new(20);
+        RunningStatistics.EmpiricalCdf a = new(10);
+        RunningStatistics.EmpiricalCdf b = new(20);
         Assert.Throws<Exception>(() => a.Merge(b));
     }
 
     [Fact]
     public void ResetWorksAsExpected()
     {
-        EmpiricalCdf cdf = new(10);
+        RunningStatistics.EmpiricalCdf cdf = new(10);
         Random rng = new();
             
         for (var i = 0; i < 1000; i++)
@@ -80,7 +80,7 @@ public class TestEmpiricalCdf
     [Fact]
     public void MergingWhereOneIsEmptyEqualsNonEmptyInstance()
     {
-        EmpiricalCdf a = new(20), b = new(20);
+        RunningStatistics.EmpiricalCdf a = new(20), b = new(20);
         Random rng = new();
 
         for (var i = 0; i < 1000; i++)
@@ -88,8 +88,8 @@ public class TestEmpiricalCdf
             b.Fit(rng.NextDouble());
         }
 
-        var aMergeB = EmpiricalCdf.Merge(a, b);
-        var bMergeA = EmpiricalCdf.Merge(b, a);
+        var aMergeB = RunningStatistics.EmpiricalCdf.Merge(a, b);
+        var bMergeA = RunningStatistics.EmpiricalCdf.Merge(b, a);
             
         Assert.Equal(b.Min, aMergeB.Min);
         Assert.Equal(b.Max, aMergeB.Max);
@@ -109,9 +109,9 @@ public class TestEmpiricalCdf
         const int n = 50_000;
         Random rng = new();
 
-        EmpiricalCdf a = new();
-        EmpiricalCdf b = new();
-        EmpiricalCdf c = new();
+        RunningStatistics.EmpiricalCdf a = new();
+        RunningStatistics.EmpiricalCdf b = new();
+        RunningStatistics.EmpiricalCdf c = new();
 
         double v;
         for (var i = 0; i < n; i++)
@@ -137,7 +137,7 @@ public class TestEmpiricalCdf
     [Fact]
     public void CdfEdgeCases()
     {
-        EmpiricalCdf cdf = new(20);
+        RunningStatistics.EmpiricalCdf cdf = new(20);
         Random rng = new();
         
         for (var _ = 0; _ < 1000; _++)
@@ -154,7 +154,7 @@ public class TestEmpiricalCdf
     [Fact]
     public void QuantileEdgeCases()
     {
-        EmpiricalCdf cdf = new(20);
+        RunningStatistics.EmpiricalCdf cdf = new(20);
         Random rng = new();
         
         for (var _ = 0; _ < 1000; _++)
@@ -174,7 +174,7 @@ public class TestEmpiricalCdf
         const int n = 10_000_000;
 
         var dist = new ContinuousUniform();
-        EmpiricalCdf cdf = new();
+        RunningStatistics.EmpiricalCdf cdf = new();
 
         for (var i = 0; i < n; i++)
         {
@@ -196,7 +196,7 @@ public class TestEmpiricalCdf
         const int n = 10_000_000;
         var dist = new MathNet.Numerics.Distributions.Normal(0, 1);
 
-        EmpiricalCdf cdf = new();
+        RunningStatistics.EmpiricalCdf cdf = new();
 
         for (var i = 0; i < n; i++)
         {
@@ -224,7 +224,7 @@ public class TestEmpiricalCdf
         const int n = 10_000_000;
         var dist = new LogNormal(0.0, 0.1);
 
-        EmpiricalCdf cdf = new();
+        RunningStatistics.EmpiricalCdf cdf = new();
 
         for (var i = 0; i < n; i++)
         {
