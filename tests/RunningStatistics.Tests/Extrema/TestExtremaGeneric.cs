@@ -4,5 +4,5 @@ namespace RunningStatistics.Tests.Extrema;
 
 public partial class TestExtremaGeneric()
     : AbstractRunningStatsTest<double, Extrema<double>>(
-        () => new Extrema<double>(),
-        () => Random.Shared.NextDouble());
+        () => Random.Shared.NextDouble(), 
+        () => new Extrema<double>());
