@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using RunningStatistics.Unchecked;
+using System.Linq;
+// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
+// ReSharper disable ConvertIfStatementToSwitchStatement
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace RunningStatistics;
 
 public sealed class Beta : RunningStatisticBase<bool, Beta>
 {
-    private readonly UncheckedBeta _beta = new();
+    private long _a, _b;
 
 
     public Beta()
@@ -17,63 +20,85 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
     {
         Require.NonNegative(successes);
         Require.NonNegative(failures);
-        _beta.Fit(successes, failures);
+        
+        _a = successes;
+        _b = failures;
     }
 
-    
-    public long Successes => _beta.Successes;
 
-    public long Failures => _beta.Failures;
+    public long Successes => _a;
 
-    public double Mean => Nobs == 0 ? double.NaN : _beta.Mean;
+    public long Failures => _b;
 
-    public double Median => _beta.Median;
+    public double Mean => Nobs > 0 
+        ? (double)_a / (_a + _b) 
+        : double.NaN;
 
-    public double Mode => _beta.Mode;
+    public double Median => _a > 1 && _b > 1 
+        ? this.Quantile(0.5)
+        : double.NaN;
 
-    public double Variance => _beta.Variance;
+    public double Mode => _a > 1 && _b > 1
+        ? (double)(_a - 1) / (_a + _b - 2)
+        : double.NaN;
+
+    public double Variance => _a > 0 && _b > 0
+        ? (_a * _b) / (Math.Pow(_a + _b, 2) * (_a + _b + 1))
+        : double.NaN;
 
 
-    protected override long GetNobs() => _beta.Nobs;
+    protected override long GetNobs() => _a + _b;
 
     public override void Fit(bool value, long count)
     {
         Require.NonNegative(count);
-        _beta.Fit(value, count);
+        
+        if (value)
+        {
+            checked { _a += count; }
+        }
+        else
+        {
+            checked { _b += count; }
+        }
     }
 
     public void Fit(long successes, long failures)
     {
         Require.NonNegative(successes);
         Require.NonNegative(failures);
-        _beta.Fit(successes, failures);
+        
+        checked
+        {
+            _a += successes;
+            _b += failures;
+        }
     }
 
-    public override void Fit(IEnumerable<bool> values) => _beta.Fit(values);
+    public override void Fit(IEnumerable<bool> values)
+    {
+        var bs = values.ToList();
+        var n = bs.Count;
+        var s = bs.Count(b => b);
+        Fit(s, n - s);
+    }
 
-    public override void Reset() => _beta.Reset();
+    public override void Reset()
+    {
+        _a = 0;
+        _b = 0;
+    }
 
     public override Beta CloneEmpty() => new();
-    
-    public override void Merge(Beta other) => _beta.Merge(other._beta);
 
-    public double Pdf(double x) => _beta.Pdf(x);
-
-    public double Cdf(double x)
+    public override void Merge(Beta other)
     {
-        if (Successes == 0 && Failures == 0)
+        checked
         {
-            throw new ArgumentException("CDF is undefined for both a = 0 and b = 0"); 
+            _a += other.Successes;
+            _b += other.Failures;
         }
-
-        return _beta.Cdf(x);
     }
-
-    public double Quantile(double p)
-    {
-        Require.ValidProbability(p);
-        return _beta.Quantile(p);
-    }
-
+    
     protected override string GetStatsString() => $"α={Successes:N0}, β={Failures:N0}";
 }

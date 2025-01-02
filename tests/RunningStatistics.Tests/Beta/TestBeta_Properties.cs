@@ -1,53 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using Xunit;
+﻿using Xunit;
 
 namespace RunningStatistics.Tests.Beta;
 
 public partial class TestBeta
 {
     [Fact]
-    public void ConstructorInitializesParametersCorrectly()
+    public void EmptyBeta_StatisticalPropertiesAreNaN()
     {
-        RunningStatistics.Beta beta = new(5, 10);
-        Assert.Equal(5, beta.Successes);
-        Assert.Equal(10, beta.Failures);
-    }
-    
-    [Fact]
-    public void PropertiesReturnExpectedValuesAfterFit()
-    {
-        RunningStatistics.Beta beta = new();
-        beta.Fit(5, 10);
-        Assert.Equal(5, beta.Successes);
-        Assert.Equal(10, beta.Failures);
-    }
-    
-    [Fact]
-    public void ParametersMustBeNonNegative()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new RunningStatistics.Beta(-1, 10));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new RunningStatistics.Beta(10, -1));
-
-        var beta = new RunningStatistics.Beta();
-        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(-1, 10));
-        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(10, -1));
-    }
-    
-    [Fact]
-    public void FitMultipleValues()
-    {
-        RunningStatistics.Beta beta = new();
-        var values = new List<bool> { true, false, true, true, false };
-        beta.Fit(values);
-        Assert.Equal(3, beta.Successes);
-        Assert.Equal(2, beta.Failures);
-    }
-    
-    [Fact]
-    public void EmptyBetaReturnsNaN()
-    {
-        RunningStatistics.Beta beta = new();
+        var beta = GenerateStatistic();
+        
         Assert.Equal(double.NaN, beta.Mean);
         Assert.Equal(double.NaN, beta.Median);
         Assert.Equal(double.NaN, beta.Mode);
@@ -55,208 +16,100 @@ public partial class TestBeta
     }
 
     [Fact]
-    public void MergeEmptyReturnsNaN()
+    public void SingleTrueObservation_StatisticalPropertiesAreCorrect()
     {
-        RunningStatistics.Beta a = new(), b = new();
-        a.Merge(b);
+        var beta = GenerateStatistic();
+        beta.Fit(true);
         
-        Assert.Equal(double.NaN, a.Mean);
-        Assert.Equal(double.NaN, a.Median);
-        Assert.Equal(double.NaN, a.Mode);
-        Assert.Equal(double.NaN, a.Variance);
+        Assert.Equal(1, beta.Nobs);
+        Assert.Equal(1, beta.Successes);
+        Assert.Equal(0, beta.Failures);
+        
+        Assert.Equal(1.0, beta.Mean);
+        Assert.Equal(double.NaN, beta.Median);
+        Assert.Equal(double.NaN, beta.Mode);
+        Assert.Equal(double.NaN, beta.Variance);
     }
     
     [Fact]
-    public void MergeNonEmptyDistributions()
+    public void SingleFalseObservation_StatisticalPropertiesAreCorrect()
     {
-        RunningStatistics.Beta a = new(5, 10);
-        RunningStatistics.Beta b = new(10, 5);
-        a.Merge(b);
+        var beta = GenerateStatistic();
+        beta.Fit(false);
         
-        Assert.Equal(15, a.Successes);
-        Assert.Equal(15, a.Failures);
+        Assert.Equal(1, beta.Nobs);
+        Assert.Equal(0, beta.Successes);
+        Assert.Equal(1, beta.Failures);
+        
+        Assert.Equal(0.0, beta.Mean);
+        Assert.Equal(double.NaN, beta.Median);
+        Assert.Equal(double.NaN, beta.Mode);
+        Assert.Equal(double.NaN, beta.Variance);
     }
 
     [Fact]
-    public void PdfWorks()
+    public void SeveralTrueObservations_StatisticalPropertiesAreCorrect()
     {
-        RunningStatistics.Beta beta = new(100, 50);
-        var mBeta = new MathNet.Numerics.Distributions.Beta(100, 50);
-
-        Assert.Equal(0.0, beta.Pdf(-0.5));
+        var beta = GenerateStatistic();
+        beta.Fit(true, 3);
         
-        Assert.Equal(mBeta.Density(0.00), beta.Pdf(0.00));
-        Assert.Equal(mBeta.Density(0.25), beta.Pdf(0.25));
-        Assert.Equal(mBeta.Density(0.50), beta.Pdf(0.50));
-        Assert.Equal(mBeta.Density(0.75), beta.Pdf(0.75));
-        Assert.Equal(mBeta.Density(1.00), beta.Pdf(1.00));
+        Assert.Equal(3, beta.Nobs);
+        Assert.Equal(3, beta.Successes);
+        Assert.Equal(0, beta.Failures);
         
-        Assert.Equal(0.0, beta.Pdf(1.5));
-    }
-    
-    [Fact]
-    public void PdfEdgeCases()
-    {
-        RunningStatistics.Beta beta = new(100, 50);
-        
-        // Values less than 0
-        Assert.Equal(0.0, beta.Pdf(-0.5));
-        Assert.Equal(0.0, beta.Pdf(-0.0000001));
-
-        // Values greater than 1
-        Assert.Equal(0.0, beta.Pdf(1.5));
-        Assert.Equal(0.0, beta.Pdf(1.0000001));
-
-        // Values very close to 0
-        Assert.Equal(0.0, beta.Pdf(0.0000001), 10);
-
-        // Values very close to 1
-        Assert.Equal(0.0, beta.Pdf(0.9999999), 10);
-
-        // Exact 0
-        Assert.Equal(0.0, beta.Pdf(0.0));
-
-        // Exact 1
-        Assert.Equal(0.0, beta.Pdf(1.0));
+        Assert.Equal(1.0, beta.Mean);
+        Assert.Equal(double.NaN, beta.Median);
+        Assert.Equal(double.NaN, beta.Mode);
+        Assert.Equal(double.NaN, beta.Variance);
     }
     
     [Fact]
-    public void PdfHandlesSpecialCases()
+    public void SeveralFalseObservations_StatisticalPropertiesAreCorrect()
     {
-        // Case when _a == 0 and _b == 0
-        var beta = new RunningStatistics.Beta(0, 0);
-        Assert.Equal(double.PositiveInfinity, beta.Pdf(0));
-        Assert.Equal(double.PositiveInfinity, beta.Pdf(1));
-        Assert.Equal(0.0, beta.Pdf(0.5));
-
-        // Case when _a == 0
-        beta = new RunningStatistics.Beta(0, 10);
-        Assert.Equal(double.PositiveInfinity, beta.Pdf(0));
-        Assert.Equal(0.0, beta.Pdf(0.5));
-        Assert.Equal(0.0, beta.Pdf(1));
-
-        // Case when _b == 0
-        beta = new RunningStatistics.Beta(10, 0);
-        Assert.Equal(0.0, beta.Pdf(0));
-        Assert.Equal(0.0, beta.Pdf(0.5));
-        Assert.Equal(double.PositiveInfinity, beta.Pdf(1));
-
-        // Case when _a == 1 and _b == 1
-        beta = new RunningStatistics.Beta(1, 1);
-        Assert.Equal(1.0, beta.Pdf(0));
-        Assert.Equal(1.0, beta.Pdf(0.5));
-        Assert.Equal(1.0, beta.Pdf(1));
+        var beta = GenerateStatistic();
+        beta.Fit(false, 3);
+        
+        Assert.Equal(3, beta.Nobs);
+        Assert.Equal(0, beta.Successes);
+        Assert.Equal(3, beta.Failures);
+        
+        Assert.Equal(0.0, beta.Mean);
+        Assert.Equal(double.NaN, beta.Median);
+        Assert.Equal(double.NaN, beta.Mode);
+        Assert.Equal(double.NaN, beta.Variance);
     }
     
     [Fact]
-    public void CdfWorks()
+    public void OneTrueOneFalseObservation_StatisticalPropertiesAreCorrect()
     {
-        RunningStatistics.Beta beta = new(100, 50);
-        var mBeta = new MathNet.Numerics.Distributions.Beta(100, 50);
-
-        Assert.Equal(0.0, beta.Cdf(-0.5));
+        var beta = GenerateStatistic();
+        beta.Fit(true);
+        beta.Fit(false);
         
-        Assert.Equal(mBeta.CumulativeDistribution(0.00), beta.Cdf(0.00));
-        Assert.Equal(mBeta.CumulativeDistribution(0.25), beta.Cdf(0.25));
-        Assert.Equal(mBeta.CumulativeDistribution(0.50), beta.Cdf(0.50));
-        Assert.Equal(mBeta.CumulativeDistribution(0.75), beta.Cdf(0.75));
-        Assert.Equal(mBeta.CumulativeDistribution(1.00), beta.Cdf(1.00));
+        Assert.Equal(2, beta.Nobs);
+        Assert.Equal(1, beta.Successes);
+        Assert.Equal(1, beta.Failures);
         
-        Assert.Equal(1.0, beta.Cdf(1.5));
+        Assert.Equal(0.5, beta.Mean);
+        Assert.Equal(double.NaN, beta.Median);
+        Assert.Equal(double.NaN, beta.Mode);
+        Assert.Equal(0.08333333333333333, beta.Variance, 10);
     }
     
     [Fact]
-    public void CdfEdgeCases()
+    public void AtLeastTwoOfEachObservation_StatisticalPropertiesAreCorrect()
     {
-        RunningStatistics.Beta beta = new(100, 50);
-
-        // Values less than 0
-        Assert.Equal(0.0, beta.Cdf(-0.5));
-        Assert.Equal(0.0, beta.Cdf(-0.0000001));
-
-        // Values greater than 1
-        Assert.Equal(1.0, beta.Cdf(1.5));
-        Assert.Equal(1.0, beta.Cdf(1.0000001));
-
-        // Values very close to 0
-        Assert.Equal(0.0, beta.Cdf(0.0000001), 10);
-
-        // Values very close to 1
-        Assert.Equal(1.0, beta.Cdf(0.9999999), 10);
-
-        // Exact 0
-        Assert.Equal(0.0, beta.Cdf(0.0));
-
-        // Exact 1
-        Assert.Equal(1.0, beta.Cdf(1.0));
-    }
-
-    [Fact]
-    public void CdfHandlesSpecialCases()
-    {
-        // Case when _a == 0 and _b == 0
-        var beta = new RunningStatistics.Beta(0, 0);
-        Assert.Throws<ArgumentException>(() => beta.Cdf(0));
-        Assert.Throws<ArgumentException>(() => beta.Cdf(1));
-        Assert.Throws<ArgumentException>(() => beta.Cdf(0.5));
-
-        // Case when _a == 0
-        beta = new RunningStatistics.Beta(0, 10);
-        Assert.Equal(0.0, beta.Cdf(-0.0000001));
-        Assert.Equal(1.0, beta.Cdf(0));
-        Assert.Equal(1.0, beta.Cdf(0.5));
-        Assert.Equal(1.0, beta.Cdf(1));
-
-        // Case when _b == 0
-        beta = new RunningStatistics.Beta(10, 0);
-        Assert.Equal(0.0, beta.Cdf(0));
-        Assert.Equal(0.0, beta.Cdf(0.5));
-        Assert.Equal(0.0, beta.Cdf(0.9999999));
-        Assert.Equal(1.0, beta.Cdf(1));
-
-        // Case when _a == 1 and _b == 1, CDF is equal to x
-        beta = new RunningStatistics.Beta(1, 1);
-        Random random = new();
-        for (var i = 0; i < 100; i++)
-        {
-            var x = random.NextDouble();
-            Assert.Equal(x, beta.Cdf(x));
-        }
-    }
-
-    [Fact]
-    public void QuantileWorks()
-    {
-        var beta = new RunningStatistics.Beta(100, 50);
-        var mBeta = new MathNet.Numerics.Distributions.Beta(100, 50);
+        var beta = GenerateStatistic();
+        beta.Fit(true, 20);
+        beta.Fit(false, 50);
         
-        // Normal range
-        Assert.Equal(0, beta.Quantile(0));
-        Assert.Equal(mBeta.InverseCumulativeDistribution(0.00), beta.Quantile(0.00));
-        Assert.Equal(mBeta.InverseCumulativeDistribution(0.25), beta.Quantile(0.25));
-        Assert.Equal(mBeta.InverseCumulativeDistribution(0.50), beta.Quantile(0.50));
-        Assert.Equal(mBeta.InverseCumulativeDistribution(0.75), beta.Quantile(0.75));
-        Assert.Equal(mBeta.InverseCumulativeDistribution(1.00), beta.Quantile(1.00));
-        Assert.Equal(1, beta.Quantile(1));
+        Assert.Equal(70, beta.Nobs);
+        Assert.Equal(20, beta.Successes);
+        Assert.Equal(50, beta.Failures);
         
-        // Almost 0
-        Assert.Equal(mBeta.InverseCumulativeDistribution(0.0000001), beta.Quantile(0.0000001));
-        
-        // Almost 1
-        Assert.Equal(mBeta.InverseCumulativeDistribution(0.9999999), beta.Quantile(0.9999999));
-    }
-    
-    [Fact]
-    public void QuantileEdgeCases()
-    {
-        var beta = new RunningStatistics.Beta(100, 50);
-
-        // Values less than 0
-        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Quantile(-0.5));
-        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Quantile(-0.0000001));
-
-        // Values greater than 1
-        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Quantile(1.5));
-        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Quantile(1.0000001));
+        Assert.Equal(0.2857142857142857, beta.Mean, 10);
+        Assert.Equal(0.2836634994541317, beta.Median, 10);
+        Assert.Equal(0.27941176470588236, beta.Mode, 10);
+        Assert.Equal(0.002874389192296637, beta.Variance, 10);
     }
 }
