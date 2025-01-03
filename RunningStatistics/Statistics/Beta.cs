@@ -80,12 +80,7 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
 
 
     protected override long GetNobs() => _a + _b;
-
-    /// <summary>
-    /// Fits the Beta distribution with a new observation.
-    /// </summary>
-    /// <param name="value">The observation value (true for success, false for failure).</param>
-    /// <param name="count">The count of the observation. Must be non-negative.</param>
+    
     public override void Fit(bool value, long count)
     {
         Require.NonNegative(count);
@@ -113,11 +108,7 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
         _a += successes;
         _b += failures;
     }
-
-    /// <summary>
-    /// Fits the Beta distribution with a collection of boolean values.
-    /// </summary>
-    /// <param name="values">The collection of boolean values. True for success, false for failure.</param>
+    
     public override void Fit(IEnumerable<bool> values)
     {
         var bs = values.ToList();
@@ -125,26 +116,15 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
         var s = bs.Count(b => b);
         Fit(s, n - s);
     }
-
-    /// <summary>
-    /// Resets the Beta distribution.
-    /// </summary>
+    
     public override void Reset()
     {
         _a = 0;
         _b = 0;
     }
-
-    /// <summary>
-    /// Creates a new empty instance of the <see cref="Beta"/> class.
-    /// </summary>
-    /// <returns>A new empty instance of the <see cref="Beta"/> class.</returns>
+    
     public override Beta CloneEmpty() => new();
-
-    /// <summary>
-    /// Merges another Beta distribution into this one.
-    /// </summary>
-    /// <param name="other">The other Beta distribution to merge.</param>
+    
     public override void Merge(Beta other)
     {
         checked
