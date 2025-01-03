@@ -9,9 +9,9 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
     Func<TSelf> generateStatistic)
     where TSelf : IRunningStatistic<TObs, TSelf>
 {
-    protected Func<TSelf> GenerateStatistic { get; } = generateStatistic;
+    private Func<TSelf> GenerateStatistic { get; } = generateStatistic;
 
-    protected Func<TObs> GenerateObservation { get; } = observationFactory;
+    private Func<TObs> GenerateObservation { get; } = observationFactory;
 
 
     [Fact]

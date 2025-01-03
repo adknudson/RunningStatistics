@@ -7,7 +7,7 @@ public partial class TestBeta
     [Fact]
     public void EmptyBeta_StatisticalPropertiesAreNaN()
     {
-        var beta = GenerateStatistic();
+        var beta = new RunningStatistics.Beta();
         
         Assert.Equal(double.NaN, beta.Mean);
         Assert.Equal(double.NaN, beta.Median);
@@ -18,7 +18,7 @@ public partial class TestBeta
     [Fact]
     public void SingleTrueObservation_StatisticalPropertiesAreCorrect()
     {
-        var beta = GenerateStatistic();
+        var beta = new RunningStatistics.Beta();
         beta.Fit(true);
         
         Assert.Equal(1, beta.Nobs);
@@ -34,7 +34,7 @@ public partial class TestBeta
     [Fact]
     public void SingleFalseObservation_StatisticalPropertiesAreCorrect()
     {
-        var beta = GenerateStatistic();
+        var beta = new RunningStatistics.Beta();
         beta.Fit(false);
         
         Assert.Equal(1, beta.Nobs);
@@ -50,7 +50,7 @@ public partial class TestBeta
     [Fact]
     public void SeveralTrueObservations_StatisticalPropertiesAreCorrect()
     {
-        var beta = GenerateStatistic();
+        var beta = new RunningStatistics.Beta();
         beta.Fit(true, 3);
         
         Assert.Equal(3, beta.Nobs);
@@ -66,7 +66,7 @@ public partial class TestBeta
     [Fact]
     public void SeveralFalseObservations_StatisticalPropertiesAreCorrect()
     {
-        var beta = GenerateStatistic();
+        var beta = new RunningStatistics.Beta();
         beta.Fit(false, 3);
         
         Assert.Equal(3, beta.Nobs);
@@ -82,7 +82,7 @@ public partial class TestBeta
     [Fact]
     public void OneTrueOneFalseObservation_StatisticalPropertiesAreCorrect()
     {
-        var beta = GenerateStatistic();
+        var beta = new RunningStatistics.Beta();
         beta.Fit(true);
         beta.Fit(false);
         
@@ -99,7 +99,7 @@ public partial class TestBeta
     [Fact]
     public void AtLeastTwoOfEachObservation_StatisticalPropertiesAreCorrect()
     {
-        var beta = GenerateStatistic();
+        var beta = new RunningStatistics.Beta();
         beta.Fit(true, 20);
         beta.Fit(false, 50);
         
