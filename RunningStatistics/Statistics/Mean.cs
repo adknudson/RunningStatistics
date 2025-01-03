@@ -3,12 +3,18 @@ using System.Linq;
 
 namespace RunningStatistics;
 
+/// <summary>
+/// Represents the average value of a series of numbers.
+/// </summary>
 public sealed class Mean : RunningStatisticBase<double, Mean>
 {
     private long _nobs;
     private double _value;
 
 
+    /// <summary>
+    /// Gets the current average value.
+    /// </summary>
     public double Value => Nobs < 1 ? double.NaN : _value;
 
 
@@ -54,8 +60,6 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
         _nobs += other.Nobs;
         _value = Nobs == 0 ? 0 : Utils.Smooth(_value, other._value, (double)other.Nobs / Nobs);
     }
-
-    public static explicit operator double(Mean mean) => mean.Value;
 
     protected override string GetStatsString() => $"μ={Value}";
 }
