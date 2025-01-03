@@ -1,22 +1,43 @@
 ﻿using System;
-using System.Numerics;
-// ReSharper disable UnusedMember.Global
+// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
 
 namespace RunningStatistics;
 
+/// <summary>
+/// Represents a running statistic that tracks the minimum and maximum values observed for a generic type.
+/// </summary>
+/// <typeparam name="TObs">The type of the observations.
+/// Must implement <see cref="IComparable{TObs}"/>.</typeparam>
 public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
-    where TObs : IMinMaxValue<TObs>, IComparable<TObs>
+    where TObs : IComparable<TObs>
 {
+    private TObs? _min, _max;
+    private long _minCount, _maxCount;
     private long _nobs;
-    
 
-    public TObs Min { get; private set; } = TObs.MaxValue;
+    /// <summary>
+    /// Gets the minimum value observed.
+    /// </summary>
+    public TObs Min => _nobs > 0
+        ? _min!
+        : throw new InvalidOperationException("Nobs must be greater than 0");
 
-    public TObs Max { get; private set; } = TObs.MinValue;
-    
-    public long MinCount { get; private set; }
+    /// <summary>
+    /// Gets the maximum value observed.
+    /// </summary>
+    public TObs Max => _nobs > 0
+        ? _max!
+        : throw new InvalidOperationException("Nobs must be greater than 0");
 
-    public long MaxCount { get; private set; }
+    /// <summary>
+    /// Gets the count of observations that have the minimum value.
+    /// </summary>
+    public long MinCount => _minCount;
+
+    /// <summary>
+    /// Gets the count of observations that have the maximum value.
+    /// </summary>
+    public long MaxCount => _maxCount;
     
 
     protected override long GetNobs() => _nobs;
@@ -30,76 +51,90 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
         UncheckedFit(value, count);
     }
     
-    /// <summary>
-    /// Fit the value without checking if the count is non-negative.
-    /// </summary>
     private void UncheckedFit(TObs value, long count)
     {
+        if (_nobs == 0)
+        {
+            _min = _max = value;
+        }
+        
         _nobs += count;
-
-        if (_nobs == count)
+        
+        if (value.CompareTo(_min) < 0)
         {
-            Min = Max = value;
+            _min = value;
+            _minCount = 0;
+        }
+        else if (value.CompareTo(_max) > 0)
+        {
+            _max = value;
+            _maxCount = 0;
         }
         
-        if (value.CompareTo(Min) < 0)
+        if (value.Equals(_min))
         {
-            Min = value;
-            MinCount = 0;
-        } 
-        else if (value.CompareTo(Max) > 0)
-        {
-            Max = value;
-            MaxCount = 0;
+            _minCount += count;
         }
         
-        // value is in the range [Min, Max]
-
-        if (value.Equals(Min))
+        if (value.Equals(_max))
         {
-            MinCount += count;
-        }
-        
-        if (value.Equals(Max))
-        {
-            MaxCount += count;
+            _maxCount += count;
         }
     }
 
     public override void Reset()
     {
-        Min = TObs.MaxValue;
-        Max = TObs.MinValue;
-        MinCount = 0;
-        MaxCount = 0;
+        _min = default;
+        _max = default;
+        _minCount = 0;
+        _maxCount = 0;
         _nobs = 0;
     }
 
     public override Extrema<TObs> CloneEmpty() => new();
     
-    public override void Merge(Extrema<TObs> extrema)
+    public override void Merge(Extrema<TObs> other)
     {
-        if (Min.Equals(extrema.Min))
+        // If both are empty, do nothing
+        if (other.Nobs == 0 && Nobs == 0) return;
+        
+        // if this is empty, copy the other
+        if (Nobs == 0)
         {
-            MinCount += extrema.MinCount;
-        }
-        else if (extrema.Min.CompareTo(Min) < 0)
-        {
-            Min = extrema.Min;
-            MinCount = extrema.MinCount;
+            _min = other.Min;
+            _max = other.Max;
+            _minCount = other._minCount;
+            _maxCount = other._maxCount;
+            _nobs = other.Nobs;
+            return;
         }
         
-        if (Max.Equals(extrema.Max))
+        // if the other is empty, do nothing
+        if (other.Nobs == 0) return;
+        
+        // if both are non-empty, merge
+        
+        if (Min.Equals(other.Min))
         {
-            MaxCount += extrema.MaxCount;
+            _minCount += other._minCount;
         }
-        else if (extrema.Max.CompareTo(Max) > 0)
+        else if (other.Min.CompareTo(Min) < 0)
         {
-            Max = extrema.Max;
-            MaxCount = extrema.MaxCount;
+            _min = other.Min;
+            _minCount = other._minCount;
         }
         
-        _nobs += extrema.Nobs;
+        if (Max.Equals(other.Max))
+        {
+            _maxCount += other._maxCount;
+        }
+        else if (other.Max.CompareTo(Max) > 0)
+        {
+            _max = other.Max;
+            _maxCount = other._maxCount;
+        }
+        
+        _nobs += other.Nobs;
     }
 
     protected override string GetStatsString()

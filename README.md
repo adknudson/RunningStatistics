@@ -12,7 +12,7 @@ Online (single pass) algorithms for statistical measures based on the Julia pack
 | Sum\<T\>           | The overall sum of any type that implements `IAdditionOperators` and `IAdditiveIdentity` |
 | Variance           | The univariate variance                                                                  |
 | Extrema            | The min and max of `double` observations                                                 |
-| Extrema\<T\>       | The min and max of any type that implements `IMinMaxValue` and `IComparisonOperators`    |
+| Extrema\<T\>       | The min and max of any type that implements `IComparable<T>`                             |
 | Moments            | The Mean, Variance, Skewness, and (excess) Kurtosis                                      |
 | EmpiricalCdf       | Approximate order statistics (quantiles)                                                 |
 | CountMap\<T\>      | Counts for each unique value                                                             |

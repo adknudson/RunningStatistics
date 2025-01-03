@@ -1,19 +1,37 @@
 ﻿// ReSharper disable CompareOfFloatsByEqualityOperator
+// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
 
 namespace RunningStatistics;
 
+/// <summary>
+/// Represents a running statistic that tracks the minimum and maximum values observed.
+/// </summary>
 public sealed class Extrema : RunningStatisticBase<double, Extrema>
 {
+    private double _min = double.PositiveInfinity;
+    private double _max = double.NegativeInfinity;
+    private long _minCount, _maxCount;
     private long _nobs;
-    
-    
-    public double Min { get; private set; } = double.PositiveInfinity;
 
-    public double Max { get; private set; } = double.NegativeInfinity;
+    /// <summary>
+    /// Gets the minimum value observed.
+    /// </summary>
+    public double Min => _nobs > 0 ? _min : double.NaN;
 
-    public long MinCount { get; private set; }
+    /// <summary>
+    /// Gets the maximum value observed.
+    /// </summary>
+    public double Max => _nobs > 0 ? _max : double.NaN;
 
-    public long MaxCount { get; private set; }
+    /// <summary>
+    /// Gets the count of observations that have the minimum value.
+    /// </summary>
+    public long MinCount => _minCount;
+
+    /// <summary>
+    /// Gets the count of observations that have the maximum value.
+    /// </summary>
+    public long MaxCount => _maxCount;
 
 
     protected override long GetNobs() => _nobs;
@@ -28,41 +46,41 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
 
     private void UncheckedFit(double value, long count)
     {
+        if (_nobs == 0)
+        {
+            _min = _max = value;
+        }
+        
         _nobs += count;
-
-        if (_nobs == count)
-        {
-            Min = Max = value;
-        }
         
-        if (value < Min)
+        if (value < _min)
         {
-            Min = value;
-            MinCount = 0;
+            _min = value;
+            _minCount = 0;
         } 
-        else if (value > Max)
+        else if (value > _max)
         {
-            Max = value;
-            MaxCount = 0;
+            _max = value;
+            _maxCount = 0;
         }
 
-        if (value == Min)
+        if (value == _min)
         {
-            MinCount += count;
+            _minCount += count;
         }
         
-        if (value == Max)
+        if (value == _max)
         {
-            MaxCount += count;
+            _maxCount += count;
         }
     }
 
     public override void Reset()
     {
-        Min = double.PositiveInfinity;
-        Max = double.NegativeInfinity;
-        MinCount = 0;
-        MaxCount = 0;
+        _min = double.PositiveInfinity;
+        _max = double.NegativeInfinity;
+        _minCount = 0;
+        _maxCount = 0;
         _nobs = 0;
     }
 
@@ -70,24 +88,43 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
 
     public override void Merge(Extrema other)
     {
-        if (Min == other.Min)
+        // If both are empty, do nothing
+        if (other.Nobs == 0 && Nobs == 0) return;
+        
+        // if this is empty, copy the other
+        if (Nobs == 0)
         {
-            MinCount += other.MinCount;
-        }
-        else if (other.Min < Min)
-        {
-            Min = other.Min;
-            MinCount = other.MinCount;
+            _min = other._min;
+            _max = other._max;
+            _minCount = other._minCount;
+            _maxCount = other._maxCount;
+            _nobs = other.Nobs;
+            return;
         }
         
-        if (Max == other.Max)
+        // if the other is empty, do nothing
+        if (other.Nobs == 0) return;
+        
+        // if both are non-empty, merge
+        
+        if (_min == other._min)
         {
-            MaxCount += other.MaxCount;
+            _minCount += other._minCount;
         }
-        else if (other.Max > Max)
+        else if (other._min < _min)
         {
-            Max = other.Max;
-            MaxCount = other.MaxCount;
+            _min = other._min;
+            _minCount = other._minCount;
+        }
+        
+        if (_max == other._max)
+        {
+            _maxCount += other._maxCount;
+        }
+        else if (other._max > _max)
+        {
+            _max = other._max;
+            _maxCount = other._maxCount;
         }
         
         _nobs += other.Nobs;

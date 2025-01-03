@@ -10,8 +10,8 @@ public partial class TestExtrema
     {
         RunningStatistics.Extrema extrema = new();
 
-        Assert.Equal(double.PositiveInfinity, extrema.Min);
-        Assert.Equal(double.NegativeInfinity, extrema.Max);
+        Assert.Equal(double.NaN, extrema.Min);
+        Assert.Equal(double.NaN, extrema.Max);
         Assert.Equal(0, extrema.MinCount);
         Assert.Equal(0, extrema.MaxCount);
         Assert.Equal(0, extrema.Nobs);
@@ -143,14 +143,14 @@ public partial class TestExtrema
     }
 
     [Fact]
-    public void MergeEmptyAreInf()
+    public void MergeEmpty_PropertiesAreCorrect()
     {
         RunningStatistics.Extrema a = new();
         RunningStatistics.Extrema b = new(); 
         a.Merge(b);
 
-        Assert.Equal(double.PositiveInfinity, a.Min);
-        Assert.Equal(double.NegativeInfinity, a.Max);
+        Assert.Equal(double.NaN, a.Min);
+        Assert.Equal(double.NaN, a.Max);
         Assert.Equal(0, a.MinCount);
         Assert.Equal(0, a.MaxCount);
         Assert.Equal(0, a.Nobs);
@@ -219,8 +219,8 @@ public partial class TestExtrema
 
         extrema.Reset();
 
-        Assert.Equal(double.PositiveInfinity, extrema.Min);
-        Assert.Equal(double.NegativeInfinity, extrema.Max);
+        Assert.Equal(double.NaN, extrema.Min);
+        Assert.Equal(double.NaN, extrema.Max);
         Assert.Equal(0, extrema.MinCount);
         Assert.Equal(0, extrema.MaxCount);
         Assert.Equal(0, extrema.Nobs);
