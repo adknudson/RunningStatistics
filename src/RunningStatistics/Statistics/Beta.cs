@@ -55,11 +55,11 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
         
         if (value)
         {
-            checked { _a += count; }
+            _a += count;
         }
         else
         {
-            checked { _b += count; }
+            _b += count;
         }
     }
 
@@ -67,12 +67,9 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
     {
         Require.NonNegative(successes);
         Require.NonNegative(failures);
-        
-        checked
-        {
-            _a += successes;
-            _b += failures;
-        }
+
+        _a += successes;
+        _b += failures;
     }
 
     public override void Fit(IEnumerable<bool> values)
