@@ -29,7 +29,7 @@ public partial class TestEmpiricalCdf
     }
     
     [Fact]
-    public void QuantileOfEmptyIsZero()
+    public void Quantile_FewerObservationsThanNumberOfBinsThrows()
     {
         RunningStatistics.EmpiricalCdf cdf = new(20);
         var rng = new Random();
@@ -39,22 +39,30 @@ public partial class TestEmpiricalCdf
             cdf.Fit(rng.NextDouble());
         }
 
-        Assert.Equal(0.0, cdf.Quantile(0.5));
+        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(0.25));
+        Assert.Throws<InvalidOperationException>(() => cdf.Median);
     }
 
     [Fact]
-    public void MergeEmptyIsZero()
+    public void Quantile_NumObservationsEqualToNumberOfBins()
     {
-        RunningStatistics.EmpiricalCdf a = new(20);
-        RunningStatistics.EmpiricalCdf b = new(20);
+        RunningStatistics.EmpiricalCdf cdf = new(20);
+        var rng = new Random();
         
-        a.Merge(b);
-
-        Assert.Equal(0.0, a.Quantile(0.5));
+        for (var i = 0; i < 20; i++)
+        {
+            cdf.Fit(rng.NextDouble());
+        }
+        
+        Assert.Equal(cdf.Min, cdf.Quantile(0));
+        Assert.Equal(cdf.Max, cdf.Quantile(1));
+        
+        // This shouldn't throw an exception
+        cdf.Quantile(0.25);
     }
 
     [Fact]
-    public void MergeDifferentBuffersThrowsError()
+    public void MergeDifferentBuffersThrowsException()
     {
         RunningStatistics.EmpiricalCdf a = new(10);
         RunningStatistics.EmpiricalCdf b = new(20);

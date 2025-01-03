@@ -47,7 +47,24 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     public override void Fit(double value)
     {
         Require.Finite(value);
+        UncheckedFit(value);
+    }
+
+    public override void Fit(double value, long count)
+    {
+        Require.Finite(value);
+        Require.NonNegative(count);
         
+        if (count == 0) return;
+        
+        for (var i = 0; i < count; i++)
+        {
+            UncheckedFit(value);
+        }
+    }
+
+    private void UncheckedFit(double value)
+    {
         var i = Nobs % NumBins;
         var bufferCount = i + 1;
         _buffer[i] = value;
@@ -61,16 +78,6 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         for (var k = 0; k < NumBins; k++)
         {
             Values[k] = Utils.Smooth(Values[k], _buffer[k], (double) NumBins / Nobs);
-        }
-    }
-
-    public override void Fit(double value, long count)
-    {
-        Require.NonNegative(count);
-        
-        for (var i = 0; i < count; i++)
-        {
-            Fit(value);
         }
     }
 
@@ -110,6 +117,12 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     /// </summary>
     public double Quantile(double p)
     {
+        if (Nobs < NumBins)
+        {
+            throw new InvalidOperationException(
+                $"The number of observations must be at least {NumBins} to compute the quantile.");
+        }
+        
         Require.ValidProbability(p);
 
         if (p == 0)
@@ -149,6 +162,12 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     /// </summary>
     public double Cdf(double x)
     {
+        if (Nobs < NumBins)
+        {
+            throw new InvalidOperationException(
+                $"The number of observations must be at least {NumBins} to compute the CDF.");
+        }
+        
         if (x < Min)
         {
             return 0;
