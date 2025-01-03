@@ -2,6 +2,10 @@
 
 namespace RunningStatistics;
 
+/// <summary>
+/// The <c>Moments</c> class calculates and maintains running statistics for the first four central
+/// moments: mean, variance, skewness, and kurtosis. The variance is the unbiased sample variance.
+/// </summary>
 public sealed class Moments : RunningStatisticBase<double, Moments>
 {
     private double _mean, _variance, _skewness, _kurtosis;
@@ -40,7 +44,8 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     }
 
     /// <summary>
-    /// The fourth central moment is a measure of the heaviness of the tail of the distribution. This is the non-excess (historical) kurtosis.
+    /// The fourth central moment is a measure of the heaviness of the tail of the distribution.
+    /// This is the non-excess (historical) kurtosis.
     /// </summary>
     public double Kurtosis
     {
