@@ -34,7 +34,7 @@ internal static class Require
     /// <summary>
     /// Requires that the value is in the interval [0, 1].
     /// </summary>
-    /// <param name="p"></param>
+    /// <param name="p">The probability value.</param>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public static void ValidProbability(double p)
     {
