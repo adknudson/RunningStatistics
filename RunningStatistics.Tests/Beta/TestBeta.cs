@@ -34,4 +34,14 @@ public partial class TestBeta()
         Assert.Throws<ArgumentOutOfRangeException>(() => new RunningStatistics.Beta(10, -1));
         Assert.Throws<ArgumentOutOfRangeException>(() => new RunningStatistics.Beta(-1, -1));
     }
+    
+    [Fact]
+    public void Fit_GuardsAgainstNegativeCount()
+    {
+        RunningStatistics.Beta beta = new();
+        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(true, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(false, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(-1, 1));
+    }
 }
