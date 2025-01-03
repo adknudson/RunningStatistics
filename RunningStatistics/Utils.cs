@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace RunningStatistics;
+﻿namespace RunningStatistics;
 
 internal static class Utils
 {
@@ -17,19 +13,15 @@ internal static class Utils
     }
 
     /// <summary>
-    /// Weighted interpolation of two values.
+    /// Linear interpolation of two values.
     /// </summary>
-    public static double Smooth(double a, double b, double w)
+    /// <param name="a">The first value</param>
+    /// <param name="b">The second value</param>
+    /// <param name="p">The percent of weight given to the second value</param>
+    /// <returns>A value between <see cref="a"/> and <see cref="b"/></returns>
+    public static double Smooth(double a, double b, double p)
     {
-        return a + w * (b - a);
-    }
-
-    /// <summary>
-    /// Compute the (biased) variance of a collection of values.
-    /// </summary>
-    public static double Variance(IEnumerable<double> xs, double mean)
-    {
-        var meanSquare = xs.Average(s => s * s);
-        return Math.Abs(meanSquare - mean * mean);
+        Require.ValidProbability(p);
+        return a + p * (b - a);
     }
 }

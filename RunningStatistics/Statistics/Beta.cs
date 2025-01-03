@@ -30,7 +30,7 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
 
     public long Failures => _b;
 
-    public double Mean => Nobs > 0 
+    public double Mean => Nobs > 0
         ? (double)_a / (_a + _b) 
         : double.NaN;
 
@@ -43,7 +43,7 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
         : double.NaN;
 
     public double Variance => _a > 0 && _b > 0
-        ? (_a * _b) / (Math.Pow(_a + _b, 2) * (_a + _b + 1))
+        ? _a * _b / (Math.Pow(_a + _b, 2) * (_a + _b + 1))
         : double.NaN;
 
 
