@@ -4,14 +4,24 @@ using System.Linq;
 
 namespace RunningStatistics;
 
+/// <summary>
+/// Represents a running variance statistic. Returns the unbiased sample variance.
+/// </summary>
 public sealed class Variance : RunningStatisticBase<double, Variance>
 {
     private double _mean, _variance;
     private long _nobs;
 
-    
+    /// <summary>
+    /// Gets the unbiased sample variance. Returns <see cref="double.NaN"/> if the number of
+    /// observations is less than 2.
+    /// </summary>
     public double Value => Nobs < 2 ? double.NaN : _variance * Utils.Bessel(Nobs);
 
+    /// <summary>
+    /// The corrected sample standard deviation. Returns <see cref="double.NaN"/> if the number of
+    /// observations is less than 2.
+    /// </summary>
     public double StandardDeviation => Math.Sqrt(Value);
 
 
