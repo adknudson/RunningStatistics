@@ -6,9 +6,6 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-/// <summary>
-/// A histogram with bin partitions defined by edges.
-/// </summary>
 public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumerable<HistogramBin>
 {
     private HistogramOutOfBounds _outOfBounds;

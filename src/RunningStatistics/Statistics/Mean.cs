@@ -3,9 +3,6 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-/// <summary>
-/// Tracks the average of a stream of numbers.
-/// </summary>
 public sealed class Mean : RunningStatisticBase<double, Mean>
 {
     private long _nobs;

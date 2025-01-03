@@ -3,10 +3,6 @@ using System.Collections.Generic;
 
 namespace RunningStatistics;
 
-/// <summary>
-/// A dictionary that maps unique values to its number of occurrences. Accessing a non-existent key will return a count
-/// of zero, however a new key will not be added to the count map.
-/// </summary>
 public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>, IReadOnlyDictionary<TObs, long> 
     where TObs : notnull
 {

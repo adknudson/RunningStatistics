@@ -49,4 +49,3 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
 
     protected override string GetStatsString() => $"Σ={Value}";
 }
-

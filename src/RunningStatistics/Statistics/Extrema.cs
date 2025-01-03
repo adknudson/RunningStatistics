@@ -1,9 +1,7 @@
 ﻿// ReSharper disable CompareOfFloatsByEqualityOperator
+
 namespace RunningStatistics;
 
-/// <summary>
-/// Minimum and maximum (and number of occurrences for each) for a data stream of type <see cref="double"/>.
-/// </summary>
 public sealed class Extrema : RunningStatisticBase<double, Extrema>
 {
     private long _nobs;

@@ -5,9 +5,6 @@ using System.Linq;
 
 namespace RunningStatistics;
 
-/// <summary>
-/// Approximate order statistics (CDF) with batches of a given size.
-/// </summary>
 public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
 {
     private readonly double[] _buffer;

@@ -10,9 +10,6 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     private long _nobs;
 
     
-    /// <summary>
-    /// Returns the bias-corrected variance.
-    /// </summary>
     public double Value
     {
         get
@@ -26,9 +23,6 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
         }
     }
     
-    /// <summary>
-    /// The sample standard deviation.
-    /// </summary>
     public double StandardDeviation => Math.Sqrt(Value);
 
 
