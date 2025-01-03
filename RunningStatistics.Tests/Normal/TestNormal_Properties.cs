@@ -34,14 +34,26 @@ public partial class TestNormal
     }
     
     [Fact]
-    public void FitSingleObservation_PropertiesAreCorrect()
+    public void FitOneObservation_PropertiesAreCorrect()
     {
         var normal = new RunningStatistics.Normal();
         normal.Fit(1.0);
         
         Assert.Equal(1, normal.Nobs);
         Assert.Equal(1.0, normal.Mean);
-        Assert.Equal(0.0, normal.Variance);
+        Assert.Equal(double.NaN, normal.Variance);
+    }
+
+    [Fact]
+    public void FitTwoObservations_PropertiesAreCorrect()
+    {
+        var normal = new RunningStatistics.Normal();
+        normal.Fit(1.0);
+        normal.Fit(2.0);
+        
+        Assert.Equal(2, normal.Nobs);
+        Assert.Equal(1.5, normal.Mean);
+        Assert.Equal(0.5, normal.Variance);
     }
     
     [Fact]

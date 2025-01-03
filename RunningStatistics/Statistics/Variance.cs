@@ -10,19 +10,8 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     private long _nobs;
 
     
-    public double Value
-    {
-        get
-        {
-            return Nobs switch
-            {
-                0 => double.NaN,
-                1 => double.IsInfinity(_mean) ? double.NaN : 0.0,
-                _ => _variance * Utils.Bessel(Nobs)
-            };
-        }
-    }
-    
+    public double Value => Nobs < 2 ? double.NaN : _variance * Utils.Bessel(Nobs);
+
     public double StandardDeviation => Math.Sqrt(Value);
 
 
@@ -59,7 +48,7 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
         _nobs += values.Count;
 
         var mean = values.Average();
-        var variance = Utils.Variance(values, mean);
+        var variance = ComputeVariance(values, mean);
         var g = (double) values.Count / Nobs;
         var delta = _mean - mean;
 
@@ -91,5 +80,11 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     
     public static explicit operator double(Variance variance) => variance.Value;
 
-    protected override string GetStatsString() => $"σ²={Value}";
+    protected override string GetStatsString() => $"s²={Value}";
+    
+    private static double ComputeVariance(List<double> xs, double mean)
+    {
+        var meanSquare = xs.Average(s => s * s);
+        return Math.Abs(meanSquare - mean * mean);
+    }
 }

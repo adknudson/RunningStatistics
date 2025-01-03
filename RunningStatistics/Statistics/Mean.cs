@@ -9,7 +9,7 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
     private double _value;
 
 
-    public double Value => Nobs == 0 ? double.NaN : _value;
+    public double Value => Nobs < 1 ? double.NaN : _value;
 
 
     protected override long GetNobs() => _nobs;

@@ -11,18 +11,18 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     /// <summary>
     /// The first central moment is the measure of central location.
     /// </summary>
-    public double Mean => Nobs == 0 ? double.NaN : _mean;
+    public double Mean => Nobs < 1 ? double.NaN : _mean;
 
     /// <summary>
     /// The second central moment is the measure of the spread of the distribution. This returns the
     /// unbiased sample variance.
     /// </summary>
-    public double Variance => Nobs == 0 ? double.NaN : (_variance - _mean * _mean) * Utils.Bessel(Nobs);
+    public double Variance => Nobs < 2 ? double.NaN : (_variance - _mean * _mean) * Utils.Bessel(Nobs);
 
     /// <summary>
     /// The corrected sample standard deviation.
     /// </summary>
-    public double StandardDeviation => Nobs == 0 ? double.NaN : Math.Sqrt(Variance);
+    public double StandardDeviation => Nobs < 2 ? double.NaN : Math.Sqrt(Variance);
 
     /// <summary>
     /// The third central moment is the measure of the lopsidedness of the distribution
@@ -31,7 +31,7 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     {
         get
         {
-            if (Nobs == 0) return double.NaN;
+            if (Nobs < 2) return double.NaN;
 
             var mean2 = _mean * _mean;
             var vr = _variance - mean2;
@@ -46,7 +46,7 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     {
         get
         {
-            if (Nobs == 0) return double.NaN;
+            if (Nobs < 2) return double.NaN;
 
             var mean2 = _mean * _mean;
             var mean4 = mean2 * mean2;

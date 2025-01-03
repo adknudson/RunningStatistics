@@ -66,8 +66,8 @@ public partial class TestVariance
         v.Fit(1.0);
         
         Assert.Equal(1, v.Nobs);
-        Assert.Equal(0.0, v.Value);
-        Assert.Equal(0.0, v.StandardDeviation);
+        Assert.Equal(double.NaN, v.Value);
+        Assert.Equal(double.NaN, v.StandardDeviation);
     }
     
     [Fact]
