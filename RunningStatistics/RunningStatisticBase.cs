@@ -3,8 +3,7 @@
 namespace RunningStatistics;
 
 /// <summary>
-/// The base class for all running statistics. This class provides a default implementation for the
-/// generic clone and merge methods. 
+/// The base class for all running statistics. This class provides default implementations when possible.
 /// </summary>
 public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs, TSelf>
     where TSelf : IRunningStatistic<TObs, TSelf>
@@ -54,7 +53,7 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
     
     public void UnsafeMerge(IRunningStatistic<TObs> other)
     {
-        Require.Type<TSelf>(other, out var typedOther);
+        Require.TypeToBe<TSelf>(other, out var typedOther);
         Merge(typedOther);
     }
     
