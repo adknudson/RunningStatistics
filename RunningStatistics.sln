@@ -1,10 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunningStatistics", "src\RunningStatistics\RunningStatistics.csproj", "{FF443DA7-57C5-425E-9BD9-0F2F95C38780}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunningStatistics", "RunningStatistics\RunningStatistics.csproj", "{FF443DA7-57C5-425E-9BD9-0F2F95C38780}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunningStatistics.Tests", "tests\RunningStatistics.Tests\RunningStatistics.Tests.csproj", "{22CBFE0B-6054-4325-BBFF-4108791D355A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunningStatistics.Tests", "RunningStatistics.Tests\RunningStatistics.Tests.csproj", "{22CBFE0B-6054-4325-BBFF-4108791D355A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunningStatistics.Examples", "examples\RunningStatistics.Examples\RunningStatistics.Examples.csproj", "{46547661-CCC0-4101-805E-845B2821F868}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunningStatistics.Examples", "RunningStatistics.Examples\RunningStatistics.Examples.csproj", "{46547661-CCC0-4101-805E-845B2821F868}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\RunningStatistics\RunningStatistics.csproj" />
+    <ProjectReference Include="..\RunningStatistics\RunningStatistics.csproj" />
   </ItemGroup>
-
+  
 </Project>
