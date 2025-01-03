@@ -2,12 +2,20 @@
 
 namespace RunningStatistics;
 
+/// <summary>
+/// Represents a running sum of observations.
+/// </summary>
+/// <typeparam name="TObs">The type of the observations. Must implement
+/// <see cref="IAdditionOperators{TObs,TObs,TObs}"/> and <see cref="IAdditiveIdentity{TObs,TObs}"/>.</typeparam>
 public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>> 
     where TObs : IAdditionOperators<TObs, TObs, TObs>, IAdditiveIdentity<TObs, TObs>
 {
     private long _nobs;
     
     
+    /// <summary>
+    /// The current sum of the observations.
+    /// </summary>
     public TObs Value { get; private set; } = TObs.AdditiveIdentity;
 
 

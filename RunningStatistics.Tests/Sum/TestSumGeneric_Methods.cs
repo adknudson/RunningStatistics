@@ -5,14 +5,14 @@ namespace RunningStatistics.Tests.Sum;
 public partial class TestSumGeneric
 {
     [Fact]
-    public void SumWithNoNumbers()
+    public void SumWith_NoNumbers()
     {
         var sum = new Sum<long>();
         Assert.Equal(0L, sum.Value);
     }
 
     [Fact]
-    public void SumWithSingleNumber()
+    public void SumWith_SingleNumber()
     {
         var sum = new Sum<long>();
         sum.Fit(42L);
@@ -20,7 +20,7 @@ public partial class TestSumGeneric
     }
 
     [Fact]
-    public void SumOfPositiveNumbers()
+    public void SumOf_PositiveNumbers()
     {
         var sum = new Sum<long>();
         sum.Fit(10L);
@@ -30,7 +30,7 @@ public partial class TestSumGeneric
     }
 
     [Fact]
-    public void SumOfNegativeNumbers()
+    public void SumOf_NegativeNumbers()
     {
         var sum = new Sum<long>();
         sum.Fit(-10L);
@@ -40,7 +40,7 @@ public partial class TestSumGeneric
     }
 
     [Fact]
-    public void SumOfMixedNumbers()
+    public void SumOf_MixedNumbers()
     {
         var sum = new Sum<long>();
         sum.Fit(10L);
@@ -50,14 +50,14 @@ public partial class TestSumGeneric
     }
 
     [Fact]
-    public void MeanWithNoNumbers()
+    public void MeanWith_NoNumbers()
     {
         var sum = new Sum<long>();
         Assert.Equal(double.NaN, sum.Mean());
     }
 
     [Fact]
-    public void MeanWithSingleNumber()
+    public void MeanWith_SingleNumber()
     {
         var sum = new Sum<long>();
         sum.Fit(42L);
@@ -65,7 +65,7 @@ public partial class TestSumGeneric
     }
 
     [Fact]
-    public void MeanOfPositiveNumbers()
+    public void MeanOf_PositiveNumbers()
     {
         var sum = new Sum<long>();
         sum.Fit(10L);
@@ -75,7 +75,7 @@ public partial class TestSumGeneric
     }
 
     [Fact]
-    public void MeanOfNegativeNumbers()
+    public void MeanOf_NegativeNumbers()
     {
         var sum = new Sum<long>();
         sum.Fit(-10L);
@@ -85,7 +85,7 @@ public partial class TestSumGeneric
     }
 
     [Fact]
-    public void MeanOfMixedNumbers()
+    public void MeanOf_MixedNumbers()
     {
         var sum = new Sum<long>();
         sum.Fit(10L);

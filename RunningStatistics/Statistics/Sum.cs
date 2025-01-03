@@ -3,11 +3,17 @@ using System.Linq;
 
 namespace RunningStatistics;
 
+/// <summary>
+/// Represents a running sum of observations.
+/// </summary>
 public sealed class Sum : RunningStatisticBase<double, Sum>
 {
     private long _nobs;
     
     
+    /// <summary>
+    /// The current sum of the observations.
+    /// </summary>
     public double Value { get; private set; }
 
 
@@ -42,10 +48,6 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
         _nobs += sum.Nobs;
         Value += sum.Value;
     }
-
-    public double Mean() => Nobs == 0 ? double.NaN : Value / Nobs;
-
-    public static explicit operator double(Sum sum) => sum.Value;
-
+    
     protected override string GetStatsString() => $"Σ={Value}";
 }

@@ -3,17 +3,17 @@ using Xunit;
 
 namespace RunningStatistics.Tests.Sum;
 
-public partial class TestSumGenericMyNum
+public partial class TestSumGeneric
 {
     [Fact]
-    public void SumWithNoNumbers()
+    public void SumWithMyNum_NoNumbers()
     {
         var sum = new Sum<MyNum>();
         Assert.Equal(new MyNum(0), sum.Value);
     }
 
     [Fact]
-    public void SumWithSingleNumber()
+    public void SumWithMyNum_SingleNumber()
     {
         var sum = new Sum<MyNum>();
         sum.Fit(new MyNum(42));
@@ -21,7 +21,7 @@ public partial class TestSumGenericMyNum
     }
 
     [Fact]
-    public void SumOfPositiveNumbers()
+    public void SumOfMyNum_PositiveNumbers()
     {
         var sum = new Sum<MyNum>();
         sum.Fit(new MyNum(10));
@@ -31,7 +31,7 @@ public partial class TestSumGenericMyNum
     }
 
     [Fact]
-    public void SumOfNegativeNumbers()
+    public void SumOfMyNum_NegativeNumbers()
     {
         var sum = new Sum<MyNum>();
         sum.Fit(new MyNum(-10));
@@ -41,7 +41,7 @@ public partial class TestSumGenericMyNum
     }
 
     [Fact]
-    public void SumOfMixedNumbers()
+    public void SumOfMyNum_MixedNumbers()
     {
         var sum = new Sum<MyNum>();
         sum.Fit(new MyNum(10));
@@ -51,14 +51,14 @@ public partial class TestSumGenericMyNum
     }
     
     [Fact]
-    public void MeanWithNoNumbers()
+    public void MeanWithMyNum_NoNumbers()
     {
         var sum = new Sum<MyNum>();
         Assert.Throws<DivideByZeroException>(() => sum.Mean());
     }
 
     [Fact]
-    public void MeanWithSingleNumber()
+    public void MeanWithMyNum_SingleNumber()
     {
         var sum = new Sum<MyNum>();
         sum.Fit(new MyNum(42));
@@ -66,7 +66,7 @@ public partial class TestSumGenericMyNum
     }
 
     [Fact]
-    public void MeanOfPositiveNumbers()
+    public void MeanOfMyNum_PositiveNumbers()
     {
         var sum = new Sum<MyNum>();
         sum.Fit(new MyNum(10));
@@ -76,7 +76,7 @@ public partial class TestSumGenericMyNum
     }
 
     [Fact]
-    public void MeanOfNegativeNumbers()
+    public void MeanOfMyNum_NegativeNumbers()
     {
         var sum = new Sum<MyNum>();
         sum.Fit(new MyNum(-10));
@@ -86,7 +86,7 @@ public partial class TestSumGenericMyNum
     }
 
     [Fact]
-    public void MeanOfMixedNumbers()
+    public void MeanOfMyNum_MixedNumbers()
     {
         var sum = new Sum<MyNum>();
         sum.Fit(new MyNum(10));
