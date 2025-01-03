@@ -11,9 +11,9 @@ internal static class Utils
     /// </summary>
     /// <param name="n"></param>
     /// <returns></returns>
-    public static double Bessel(long n)
+    public static double Bessel(double n)
     {
-        return (double) n / (n - 1);
+        return n / (n - 1);
     }
 
     /// <summary>
