@@ -12,14 +12,8 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
 
     public double Mean => _mean.Value;
     
-    /// <summary>
-    /// The bias-corrected variance.
-    /// </summary>
     public double Variance => _variance.Value;
     
-    /// <summary>
-    /// The sample standard deviation.
-    /// </summary>
     public double StandardDeviation => Math.Sqrt(Variance);
     
     
@@ -30,15 +24,26 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
         Require.Finite(value);
         Require.NonNegative(count);
         if (count == 0) return;
-        _mean.Fit(value, count);
+        UncheckedFit(value, count);
     }
 
     public override void Fit(IEnumerable<double> values)
     {
-        var xs = values.ToList();
-        xs.ForEach(Require.Finite);
-        _mean.Fit(xs);
-        _variance.Fit(xs);
+        var ys = values.ToList();
+        ys.ForEach(Require.Finite);
+        UncheckedFit(ys);
+    }
+    
+    private void UncheckedFit(double value, long count)
+    {
+        _mean.UncheckedFit(value, count);
+        _variance.UncheckedFit(value, count);
+    }
+
+    private void UncheckedFit(List<double> values)
+    {
+        _mean.UncheckedFit(values);
+        _variance.UncheckedFit(values);
     }
 
     public override void Reset()

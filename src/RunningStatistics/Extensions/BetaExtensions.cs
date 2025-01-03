@@ -1,6 +1,4 @@
 ﻿using System;
-using RunningStatistics.Unchecked;
-
 // ReSharper disable ConvertIfStatementToSwitchStatement
 // ReSharper disable CompareOfFloatsByEqualityOperator
 
@@ -13,11 +11,6 @@ public static class BetaExtensions
         return BetaPdf(beta.Successes, beta.Failures, x);
     }
     
-    public static double Pdf(this UncheckedBeta beta, double x)
-    {
-        return BetaPdf(beta.Successes, beta.Failures, x);
-    }
-
     private static double BetaPdf(double a, double b, double x)
     {
         if (x is < 0 or > 1)
@@ -99,11 +92,6 @@ public static class BetaExtensions
         return BetaCdf(beta.Successes, beta.Failures, x);
     }
     
-    public static double Cdf(this UncheckedBeta beta, double x)
-    {
-        return BetaCdf(beta.Successes, beta.Failures, x);
-    }
-
     private static double BetaCdf(double a, double b, double x)
     {
         if (x < 0)
@@ -142,11 +130,6 @@ public static class BetaExtensions
         return BetaInvCdf(beta.Successes, beta.Failures, p);
     }
     
-    public static double Quantile(this UncheckedBeta beta, double p)
-    {
-        return BetaInvCdf(beta.Successes, beta.Failures, p);
-    }
-
     private static double BetaInvCdf(double a, double b, double p)
     {
         if (a == 0 && b > 0)

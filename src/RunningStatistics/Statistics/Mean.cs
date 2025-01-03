@@ -1,8 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using RunningStatistics.Unchecked;
-
-// ReSharper disable UnusedMember.Global
 
 namespace RunningStatistics;
 
@@ -11,34 +8,55 @@ namespace RunningStatistics;
 /// </summary>
 public sealed class Mean : RunningStatisticBase<double, Mean>
 {
-    private readonly UncheckedMean _mean = new();
+    private long _nobs;
+    private double _value;
 
 
-    public double Value => Nobs == 0 ? double.NaN : _mean.Value;
+    public double Value => Nobs == 0 ? double.NaN : _value;
 
 
-    protected override long GetNobs() => _mean.Nobs;
-    
+    protected override long GetNobs() => _nobs;
+
     public override void Fit(double value, long count)
     {
         Require.Finite(value);
         Require.NonNegative(count);
         if (count == 0) return;
-        _mean.Fit(value, count);
+        UncheckedFit(value, count);
     }
 
     public override void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();
         ys.ForEach(Require.Finite);
-        _mean.Fit(ys);
+        UncheckedFit(ys);
+    }
+    
+    internal void UncheckedFit(List<double> values)
+    {
+        _nobs += values.Count;
+        _value = Utils.Smooth(_value, values.Average(), (double)values.Count / Nobs);
     }
 
-    public override void Reset() => _mean.Reset();
+    internal void UncheckedFit(double value, long count)
+    {
+        _nobs += count;
+        _value = Utils.Smooth(_value, value, (double)count / Nobs);
+    }
+
+    public override void Reset()
+    {
+        _nobs = 0;
+        _value = 0;
+    }
 
     public override Mean CloneEmpty() => new();
-    
-    public override void Merge(Mean other) => _mean.Merge(other._mean);
+
+    public override void Merge(Mean other)
+    {
+        _nobs += other.Nobs;
+        _value = Nobs == 0 ? 0 : Utils.Smooth(_value, other._value, (double)other.Nobs / Nobs);
+    }
 
     public static explicit operator double(Mean mean) => mean.Value;
 
