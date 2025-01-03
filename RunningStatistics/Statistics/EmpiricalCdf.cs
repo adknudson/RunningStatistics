@@ -1,17 +1,23 @@
 ﻿using System;
-using System.Linq;
 // ReSharper disable CompareOfFloatsByEqualityOperator
 // ReSharper disable ConvertIfStatementToSwitchStatement
 
 namespace RunningStatistics;
 
+/// <summary>
+/// Represents an empirical cumulative distribution function (CDF) with a specified number of bins.
+/// </summary>
 public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
 {
     private readonly double[] _buffer;
     private readonly double[] _values;
     private readonly Extrema _extrema;
     
-    
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EmpiricalCdf"/> class with the specified number of bins.
+    /// </summary>
+    /// <param name="numBins">The number of bins to use. Must be >= 2.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="numBins"/> is less than 2.</exception>
     public EmpiricalCdf(int numBins = 200)
     {
         if (numBins < 2)
@@ -33,12 +39,24 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     /// </summary>
     private Span<double> Values => _values.AsSpan(1, NumBins);
     
+    /// <summary>
+    /// Gets the number of bins.
+    /// </summary>
     private int NumBins { get; }
     
+    /// <summary>
+    /// Gets the median of the empirical CDF.
+    /// </summary>
     public double Median => Quantile(0.5);
     
+    /// <summary>
+    /// Gets the minimum value observed.
+    /// </summary>
     public double Min => _extrema.Min;
     
+    /// <summary>
+    /// Gets the maximum value observed.
+    /// </summary>
     public double Max => _extrema.Max;
 
     
@@ -115,6 +133,10 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     /// <summary>
     /// Finds the pth quantile of the empirical CDF.
     /// </summary>
+    /// <param name="p">The probability for which to find the quantile. Must be between 0 and 1.</param>
+    /// <returns>The pth quantile.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the number of observations is less than the number of bins.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="p"/> is not a valid probability.</exception>
     public double Quantile(double p)
     {
         if (Nobs < NumBins)
@@ -160,6 +182,9 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     /// <summary>
     /// The probability that X will take on a value less than or equal to x.
     /// </summary>
+    /// <param name="x">The value for which to compute the CDF.</param>
+    /// <returns>The probability that X will take on a value less than or equal to x.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the number of observations is less than the number of bins.</exception>
     public double Cdf(double x)
     {
         if (Nobs < NumBins)
