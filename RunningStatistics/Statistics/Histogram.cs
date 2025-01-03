@@ -128,13 +128,13 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
 
         if (value < firstBin.Lower)
         {
-            _oob.Fit(OutOfBoundsSide.Lower, count);
+            _oob.Fit(lower: true, count);
             return;
         }
 
         if (value > lastBin.Upper)
         {
-            _oob.Fit(OutOfBoundsSide.Upper, count);
+            _oob.Fit(lower: false, count);
             return;
         }
 
@@ -146,7 +146,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
             }
             else
             {
-                _oob.Fit(OutOfBoundsSide.Upper, count);
+                _oob.Fit(lower: false, count);
             }
             return;
         }
@@ -159,7 +159,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
             }
             else
             {
-                _oob.Fit(OutOfBoundsSide.Lower, count);
+                _oob.Fit(lower: true, count);
             }
             return;
         }
