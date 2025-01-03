@@ -10,7 +10,7 @@ namespace RunningStatistics;
 /// </summary>
 public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumerable<HistogramBin>
 {
-    private HistogramOutOfBounds _outOfBounds;
+    private HistogramOutOfBounds _oob;
     private readonly List<double> _edges;
     private bool _binsAreInitialized;
     private long _nobs;
@@ -36,7 +36,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     /// <summary>
     /// Gets the counts of values that are outside the bounds of the histogram bins.
     /// </summary>
-    public (long Lower, long Upper) OutOfBoundsCounts => _outOfBounds.Counts;
+    public (long Lower, long Upper) OutOfBoundsCounts => (_oob.Lower, _oob.Upper);
     
     /// <summary>
     /// The number of bins in the histogram.
@@ -128,13 +128,13 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
 
         if (value < firstBin.Lower)
         {
-            _outOfBounds.Update(OutOfBoundsSide.Lower, count);
+            _oob.Fit(OutOfBoundsSide.Lower, count);
             return;
         }
 
         if (value > lastBin.Upper)
         {
-            _outOfBounds.Update(OutOfBoundsSide.Upper, count);
+            _oob.Fit(OutOfBoundsSide.Upper, count);
             return;
         }
 
@@ -146,7 +146,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
             }
             else
             {
-                _outOfBounds.Update(OutOfBoundsSide.Upper, count);
+                _oob.Fit(OutOfBoundsSide.Upper, count);
             }
             return;
         }
@@ -159,7 +159,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
             }
             else
             {
-                _outOfBounds.Update(OutOfBoundsSide.Lower, count);
+                _oob.Fit(OutOfBoundsSide.Lower, count);
             }
             return;
         }
@@ -177,14 +177,14 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
             bin.Reset();
         }
         
-        _outOfBounds.Reset();
+        _oob.Reset();
     }
 
     public override Histogram CloneEmpty() => new(_edges, LeftClosed, EndsClosed);
     
     public override void Merge(Histogram histogram)
     {
-        _outOfBounds.Merge(histogram._outOfBounds);
+        _oob.Merge(histogram._oob);
         
         if (BinsAreMatching(histogram.Bins))
         {

@@ -16,14 +16,9 @@ internal enum OutOfBoundsSide
 /// </summary>
 internal struct HistogramOutOfBounds
 {
-    private long Lower { get; set; }
+    public long Lower { get; private set; }
 
-    private long Upper { get; set; }
-        
-    public (long, long) Counts => (Lower, Upper);
-
-    public long Nobs => Lower + Upper;
-
+    public long Upper { get; private set; }
     
     public void Reset()
     {
@@ -31,7 +26,7 @@ internal struct HistogramOutOfBounds
         Upper = 0;
     }
 
-    public void Update(OutOfBoundsSide side, long count)
+    public void Fit(OutOfBoundsSide side, long count)
     {
         switch (side)
         {
@@ -50,19 +45,5 @@ internal struct HistogramOutOfBounds
     {
         Lower += other.Lower;
         Upper += other.Upper;
-    }
-
-    public HistogramOutOfBounds Clone()
-    {
-        return new HistogramOutOfBounds
-        {
-            Lower = Lower,
-            Upper = Upper
-        };
-    }
-
-    public override string ToString()
-    {
-        return $"{typeof(HistogramOutOfBounds)} Nobs={Nobs} | LowerCount={Lower}, UpperCount={Upper}";
     }
 }
