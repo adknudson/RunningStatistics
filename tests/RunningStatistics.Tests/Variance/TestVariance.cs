@@ -1,65 +1,165 @@
-﻿using Xunit;
+﻿using System;
+using System.Collections.Generic;
+using Xunit;
 
 namespace RunningStatistics.Tests.Variance;
 
-public class TestVariance
+public partial class TestVariance()
+    : AbstractRunningStatsTest<double, RunningStatistics.Variance>(
+        () => Random.Shared.NextDouble(),
+        () => new RunningStatistics.Variance())
 {
     [Fact]
-    public void EmptyVarianceReturnsNan()
+    public void Fit_GuardsAgainstNaN()
     {
-        RunningStatistics.Variance v = new();
-        Assert.Equal(0, v.Nobs);
-        Assert.Equal(double.NaN, v.Value);
-        Assert.Equal(double.NaN, v.StandardDeviation);
-    }
+        var v = new RunningStatistics.Variance();
+        Assert.Throws<ArgumentException>(() => v.Fit(double.NaN));
+        Assert.Throws<ArgumentException>(() => v.Fit(double.NaN, 2));
+        Assert.Throws<ArgumentException>(() => v.Fit([1.0, double.NaN, 2.0]));
+        Assert.Throws<ArgumentException>(() =>
+        {
+            var keyValuePairs = new List<KeyValuePair<double, long>>
+            {
+                new(1.0, 1),
+                new(double.NaN, 2),
+                new(2.0, 3)
+            };
 
-    [Fact]
-    public void SingleFiniteObservation()
-    {
-        RunningStatistics.Variance v = new();
-        v.Fit(10);
-        Assert.Equal(1, v.Nobs);
-        Assert.Equal(0, v.Value);
-        Assert.Equal(0, v.StandardDeviation);
+            v.Fit(keyValuePairs);
+        });
     }
     
     [Fact]
-    public void SingleInfiniteObservation()
+    public void Fit_GuardsAgainstNegativeCount()
     {
-        RunningStatistics.Variance v = new();
-        v.Fit(double.PositiveInfinity);
-        Assert.Equal(1, v.Nobs);
-        Assert.Equal(double.NaN, v.Value);
-        Assert.Equal(double.NaN, v.StandardDeviation);
+        var v = new RunningStatistics.Variance();
+        Assert.Throws<ArgumentOutOfRangeException>(() => v.Fit(1.0, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        {
+            var keyValuePairs = new List<KeyValuePair<double, long>>
+            {
+                new(1.0, 1),
+                new(2.0, -2)
+            };
+
+            v.Fit(keyValuePairs);
+        });
     }
 
     [Fact]
-    public void MergingVariances()
+    public void Fit_GuardsAgainstInfiniteValues()
     {
-        RunningStatistics.Variance a = new(), b = new();
-        a.Fit(10);
-        b.Fit(20);
-        var c = RunningStatistics.Variance.Merge(a, b);
-        a.Merge(b);
+        var v = new RunningStatistics.Variance();
+        Assert.Throws<ArgumentException>(() => v.Fit(double.PositiveInfinity));
+        Assert.Throws<ArgumentException>(() => v.Fit(double.NegativeInfinity));
         
-        Assert.Equal(2, a.Nobs);
-        Assert.Equal(1, b.Nobs);
-        Assert.Equal(2, c.Nobs);
+        Assert.Throws<ArgumentException>(() => v.Fit(double.PositiveInfinity, 2));
+        Assert.Throws<ArgumentException>(() => v.Fit(double.NegativeInfinity, 2));
+
+        Assert.Throws<ArgumentException>(() => v.Fit([1.0, double.PositiveInfinity, 2.0]));
+        Assert.Throws<ArgumentException>(() => v.Fit([1.0, double.NegativeInfinity, 2.0]));
         
-        Assert.Equal(a.Value, c.Value, 2);
+        Assert.Throws<ArgumentException>(() =>
+        {
+            var keyValuePairs = new List<KeyValuePair<double, long>>
+            {
+                new(1.0, 1),
+                new(double.PositiveInfinity, 2),
+                new(2.0, 3)
+            };
+
+            v.Fit(keyValuePairs);
+        });
+        
+        Assert.Throws<ArgumentException>(() =>
+        {
+            var keyValuePairs = new List<KeyValuePair<double, long>>
+            {
+                new(1.0, 1),
+                new(double.NegativeInfinity, 2),
+                new(2.0, 3)
+            };
+
+            v.Fit(keyValuePairs);
+        });
+    }
+    
+    [Fact]
+    public void Fit_ZeroCountDoesNotChangeState()
+    {
+        var v = new RunningStatistics.Variance();
+        v.Fit(1.0);
+        v.Fit(2.0);
+        v.Fit(3.0, 0);
+        
+        Assert.Equal(2, v.Nobs);
+        Assert.Equal(0.5, v.Value);
     }
 
     [Fact]
-    public void ResetVariance()
+    public void Merge_DoesNotChangeOtherState()
     {
-        RunningStatistics.Variance a = new();
-        a.Fit(1);
-        a.Fit(2);
-        a.Fit(3);
+        var v1 = new RunningStatistics.Variance();
+        v1.Fit(1.0);
+        v1.Fit(2.0);
         
-        a.Reset();
+        var v2 = new RunningStatistics.Variance();
+        v2.Fit(3.0);
+        v2.Fit(4.0);
         
-        Assert.Equal(0, a.Nobs);
-        Assert.Equal(double.NaN, a.Value);
+        // pre-conditions
+        Assert.Equal(2, v2.Nobs);
+        Assert.Equal(0.5, v2.Value);
+        
+        v1.Merge(v2);
+        
+        // post-conditions
+        Assert.Equal(4, v1.Nobs);
+        Assert.Equal(1.6666666666666667, v1.Value, 10);
+        Assert.Equal(2, v2.Nobs);
+        Assert.Equal(0.5, v2.Value);
+    }
+    
+    [Fact]
+    public void Merge_WithEmptyOther()
+    {
+        var v1 = new RunningStatistics.Variance();
+        v1.Fit(1.0);
+        v1.Fit(2.0);
+        
+        var v2 = new RunningStatistics.Variance();
+        v1.Merge(v2);
+        
+        Assert.Equal(2, v1.Nobs);
+        Assert.Equal(0.5, v1.Value);
+    }
+    
+    [Fact]
+    public void Merge_WithNonEmptyOther()
+    {
+        var v1 = new RunningStatistics.Variance();
+        v1.Fit(1.0);
+        v1.Fit(2.0);
+        
+        var v2 = new RunningStatistics.Variance();
+        v2.Fit(3.0);
+        v2.Fit(4.0);
+        
+        v1.Merge(v2);
+        
+        Assert.Equal(4, v1.Nobs);
+        Assert.Equal(1.6666666666666667, v1.Value, 10);
+    }
+    
+    [Fact]
+    public void MergeEmpty_WithEmptyOther()
+    {
+        var v1 = new RunningStatistics.Variance();
+        var v2 = new RunningStatistics.Variance();
+        
+        v1.Merge(v2);
+        
+        Assert.Equal(0, v1.Nobs);
+        Assert.Equal(double.NaN, v1.Value);
     }
 }

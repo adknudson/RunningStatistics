@@ -26,8 +26,8 @@ public partial class TestMoments
         m.Fit(1);
         
         Assert.Equal(1, m.Mean);
-        Assert.Equal(0, m.Variance);
-        Assert.Equal(0, m.StandardDeviation);
+        Assert.Equal(double.NaN, m.Variance);
+        Assert.Equal(double.NaN, m.StandardDeviation);
         Assert.Equal(double.NaN, m.Skewness);
         Assert.Equal(double.NaN, m.Kurtosis);
         Assert.Equal(double.NaN, m.ExcessKurtosis);
@@ -42,7 +42,7 @@ public partial class TestMoments
         
         Assert.Equal(1.5, m.Mean);
         Assert.Equal(0.5, m.Variance);
-        Assert.Equal(0.707, m.StandardDeviation, 3);
+        Assert.Equal(0.7071067811865476, m.StandardDeviation, 10);
         Assert.Equal(0, m.Skewness);
         Assert.Equal(1, m.Kurtosis);
         Assert.Equal(-2, m.ExcessKurtosis);

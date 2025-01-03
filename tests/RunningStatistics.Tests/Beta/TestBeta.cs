@@ -10,7 +10,7 @@ public partial class TestBeta()
         () => new RunningStatistics.Beta())
 {
     [Fact]
-    public void DefaultConstructor_InitializesParametersCorrectly()
+    public void ParameterlessConstructor_InitializesParametersCorrectly()
     {
         RunningStatistics.Beta beta = new();
         Assert.Equal(0, beta.Successes);

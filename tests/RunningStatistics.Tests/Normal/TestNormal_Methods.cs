@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using System;
+using Xunit;
 
 namespace RunningStatistics.Tests.Normal;
 
@@ -27,19 +28,15 @@ public partial class TestNormal
         x.Fit(10);
         Assert.Equal(1, x.Nobs);
         Assert.Equal(10, x.Mean);
-        Assert.Equal(0, x.Variance);
-        Assert.Equal(0, x.StandardDeviation);
+        Assert.Equal(double.NaN, x.Variance);
+        Assert.Equal(double.NaN, x.StandardDeviation);
     }
     
     [Fact]
-    public void SingleInfiniteObservation()
+    public void SingleInfiniteObservation_Throws()
     {
         var x = new RunningStatistics.Normal();
-        x.Fit(double.PositiveInfinity);
-        Assert.Equal(1, x.Nobs);
-        Assert.Equal(double.PositiveInfinity, x.Mean);
-        Assert.Equal(double.NaN, x.Variance);
-        Assert.Equal(double.NaN, x.StandardDeviation);
+        Assert.Throws<ArgumentException>(() => x.Fit(double.PositiveInfinity));
     }
     
     [Theory]
@@ -47,7 +44,7 @@ public partial class TestNormal
     [InlineData(0, 2)]
     [InlineData(0, 5)]
     [InlineData(0, 10)]
-    public void TestPdf(double mean, double std)
+    public void Pdf_ReturnsCorrectValues(double mean, double std)
     {
         const int n = 10_000_000;
         var dist = new MathNet.Numerics.Distributions.Normal(mean, std);
@@ -74,7 +71,7 @@ public partial class TestNormal
     [InlineData(0, 2)]
     [InlineData(0, 5)]
     [InlineData(0, 10)]
-    public void TestCdf(double mean, double std)
+    public void Cdf_ReturnsCorrectValues(double mean, double std)
     {
         const int n = 10_000_000;
         var dist = new MathNet.Numerics.Distributions.Normal(mean, std);
@@ -101,7 +98,7 @@ public partial class TestNormal
     [InlineData(0, 2, 0.01)]
     [InlineData(0, 5, 0.01)]
     [InlineData(0, 10, 0.1)]
-    public void TestQuantile(double mean, double std, double tol)
+    public void Quantile_ReturnsCorrectValues(double mean, double std, double tol)
     {
         const int n = 10_000_000;
         var dist = new MathNet.Numerics.Distributions.Normal(mean, std);
