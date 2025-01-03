@@ -39,7 +39,18 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
         Require.Finite(value);
         Require.NonNegative(count);
         if (count == 0) return;
-        
+        UncheckedFit(value, count);
+    }
+
+    public override void Fit(IEnumerable<double> values)
+    {
+        var ys = values.ToList();
+        ys.ForEach(Require.Finite);
+        UncheckedFit(ys);
+    }
+
+    internal void UncheckedFit(double value, long count)
+    {
         _nobs += count;
         
         var mu = _mean;
@@ -49,16 +60,13 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
         _variance = Utils.Smooth(_variance, (value - _mean) * (value - mu), g);
     }
 
-    public override void Fit(IEnumerable<double> values)
+    internal void UncheckedFit(List<double> values)
     {
-        var ys = values.ToList();
-        ys.ForEach(Require.Finite);
-        
-        _nobs += ys.Count;
+        _nobs += values.Count;
 
-        var mean = ys.Average();
-        var variance = Utils.Variance(ys, mean);
-        var g = (double) ys.Count / Nobs;
+        var mean = values.Average();
+        var variance = Utils.Variance(values, mean);
+        var g = (double) values.Count / Nobs;
         var delta = _mean - mean;
 
         _mean = Utils.Smooth(_mean, mean, g);
