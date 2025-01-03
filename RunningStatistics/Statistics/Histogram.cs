@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 
-// ReSharper disable MemberCanBePrivate.Global
-
 namespace RunningStatistics;
 
+/// <summary>
+/// Represents a histogram for running statistics. The histogram is defined by a set of edges,
+/// which define the boundaries of the bins. The bins can be open or closed on the left and right ends.
+/// </summary>
 public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumerable<HistogramBin>
 {
     private HistogramOutOfBounds _outOfBounds;
@@ -14,6 +16,13 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     private long _nobs;
     
     
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Histogram"/> class.
+    /// </summary>
+    /// <param name="edges">The edges of the histogram bins.</param>
+    /// <param name="leftClosed">Indicates if the bins are closed on the left side. If true, the
+    /// left side of the bin is closed, otherwise the right side is closed.</param>
+    /// <param name="endsClosed">Indicates if the end bins are closed on the outside.</param>
     public Histogram(IEnumerable<double> edges, bool leftClosed = true, bool endsClosed = true)
     {
         _edges = edges.OrderBy(e => e).ToList();
@@ -24,10 +33,19 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     }
     
 
+    /// <summary>
+    /// Gets the counts of values that are outside the bounds of the histogram bins.
+    /// </summary>
     public (long Lower, long Upper) OutOfBoundsCounts => _outOfBounds.Counts;
     
+    /// <summary>
+    /// The number of bins in the histogram.
+    /// </summary>
     private int NumBins => Bins.Count;
 
+    /// <summary>
+    /// Gets the list of histogram bins.
+    /// </summary>
     private List<HistogramBin> Bins { get; } = [];
 
     /// <summary>
@@ -40,8 +58,8 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     /// </summary>
     /// <example>
     /// <code>
-    /// LeftClosed= true: [a, b), [b, c)
-    /// LeftClosed=false: (a, b], (b, c]
+    /// LeftClosed =  true: [a, b), [b, c)
+    /// LeftClosed = false: (a, b], (b, c]
     /// </code>
     /// </example>
     public bool LeftClosed { get; }
@@ -187,9 +205,14 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
         }
     }
 
-    private bool BinsAreMatching(ICollection<HistogramBin> other)
+    /// <summary>
+    /// Checks if the bins of another histogram match this histogram.
+    /// </summary>
+    /// <param name="other">The other histogram bins to check.</param>
+    /// <returns>True if the bins match, otherwise false.</returns>
+    private bool BinsAreMatching(List<HistogramBin> other)
     {
-        return Bins.Count == other.Count && Bins.Zip(other, (bin1, bin2) => (bin1, bin2)).All(z => z.bin1.Equals(z.bin2));
+        return Bins.Count == other.Count && this.Zip(other).All(z => z.First.Equals(z.Second));
     }
     
     public IEnumerator<HistogramBin> GetEnumerator() => Bins.GetEnumerator();
