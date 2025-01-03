@@ -27,7 +27,6 @@ public class TestHistogramBin
         Assert.Equal(0, bin.Nobs);
         Assert.True(bin.ClosedLeft);
         Assert.False(bin.ClosedRight);
-        Assert.Equal("[0.00, 10.00)", bin.BinName);
     }
     
     [Fact]

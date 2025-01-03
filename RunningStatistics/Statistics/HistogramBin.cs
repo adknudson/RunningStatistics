@@ -4,8 +4,20 @@
 
 namespace RunningStatistics;
 
+/// <summary>
+/// Represents a bin in a histogram.
+/// </summary>
 public sealed class HistogramBin : IEquatable<HistogramBin>
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HistogramBin"/> class.
+    /// </summary>
+    /// <param name="lower">The lower bound of the bin.</param>
+    /// <param name="upper">The upper bound of the bin.</param>
+    /// <param name="closedLeft">Indicates if the bin is closed on the left side.</param>
+    /// <param name="closedRight">Indicates if the bin is closed on the right side.</param>
+    /// <exception cref="ArgumentException">Thrown when the lower bound is not strictly less than
+    /// the upper bound or both bounds are infinite.</exception>
     public HistogramBin(double lower, double upper, bool closedLeft, bool closedRight)
     {
         if (lower >= upper)
@@ -26,25 +38,47 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
 
         var leftBrace = ClosedLeft ? '[' : '(';
         var rightBrace = ClosedRight ? ']' : ')';
-        BinName = $"{leftBrace}{Lower:F2}, {Upper:F2}{rightBrace}";
+        BinRep = $"{leftBrace}{Lower}, {Upper}{rightBrace}";
 
         Nobs = 0;
     }
 
     
+    /// <summary>
+    /// Gets the number of observations in the bin.
+    /// </summary>
     public long Nobs { get; private set; }
 
-    public string BinName { get; }
+    /// <summary>
+    /// Gets the representation of the bin. For example, a bin with lower bound 0 and upper bound 1
+    /// with closed left and open right would be represented as "[0.00, 1.00)".
+    /// </summary>
+    private string BinRep { get; }
 
+    /// <summary>
+    /// Gets the lower bound of the bin.
+    /// </summary>
     public double Lower { get; }
 
+    /// <summary>
+    /// Gets the upper bound of the bin.
+    /// </summary>
     public double Upper { get; }
 
+    /// <summary>
+    /// Gets a value indicating whether the bin is closed on the left side.
+    /// </summary>
     public bool ClosedLeft { get; }
 
+    /// <summary>
+    /// Gets a value indicating whether the bin is closed on the right side.
+    /// </summary>
     public bool ClosedRight { get; }
 
-    // Midpoint is allowed to be +/- infinity
+    /// <summary>
+    /// Gets the midpoint of the bin. If either the lower or upper bound is infinite, then midpoint
+    /// is set to the infinite bound.
+    /// </summary>
     public double Midpoint
     {
         get
@@ -55,6 +89,13 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
         }
     }
 
+
+    /// <summary>
+    /// Determines whether the specified value falls within the bin.
+    /// </summary>
+    /// <param name="value">The value to check.</param>
+    /// <returns>True if the bin contains the value, otherwise false.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an unexpected state is encountered.</exception>
 
     public bool Contains(double value)
     {
@@ -71,22 +112,34 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
         throw new InvalidOperationException("Unexpected state");
     }
 
+    /// <summary>
+    /// Resets the number of observations in the bin.
+    /// </summary>
     public void Reset()
     {
         Nobs = 0;
     }
 
+    /// <summary>
+    /// Merges another bin into this bin.
+    /// </summary>
+    /// <param name="other">The other bin to merge.</param>
     public void Merge(HistogramBin other)
     {
         Nobs += other.Nobs;
     }
 
+    /// <summary>
+    /// Increments the number of observations in the bin by the specified count.
+    /// </summary>
+    /// <param name="count">The count to increment by.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the count is negative.</exception>
     public void Increment(long count)
     {
         Require.NonNegative(count);
         Nobs += count;
     }
-
+    
     public bool Equals(HistogramBin? other)
     {
         if (ReferenceEquals(null, other)) return false;
@@ -120,6 +173,6 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
 
     public override string ToString()
     {
-        return $"{typeof(HistogramBin)} Nobs={Nobs} | Bin={BinName}";
+        return $"{typeof(HistogramBin)} Nobs={Nobs} | Bin={BinRep}";
     }
 }
