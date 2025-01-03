@@ -2,7 +2,7 @@
 
 namespace RunningStatistics.Examples;
 
-public static class ExtensionExamples
+public static class UsingStatsExtensions
 {
     public static void CountMapExample()
     {

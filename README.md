@@ -37,8 +37,12 @@ public interface IRunningStatistic<TObs>
     public long Nobs { get; }
     
     public void Fit(TObs value);
+    
+    public void Fit(TObs value, long count);
 
     public void Fit(IEnumerable<TObs> values);
+    
+    public void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs);
 
     public void Reset();
     
@@ -46,7 +50,7 @@ public interface IRunningStatistic<TObs>
     
     public IRunningStatistic<TObs> Clone();
     
-    public void Merge(IRunningStatistic<TObs> other);
+    public void UnsafeMerge(IRunningStatistic<TObs> other);
 }
 
 public interface IRunningStatistic<TObs, TSelf> : IRunningStatistic<TObs> 
@@ -64,6 +68,11 @@ The interface is split into a base interface `IRunningStatistic<TObs>` and a der
 `IRunningStatistic<TObs, TSelf>`. The base interface contains the generic methods, while the 
 derived interface contains more type information. The base interface allows for collections of 
 statistics that can be fit to the same observation type.
+
+### Abstract Base Class
+
+The abstract class `RunningStatisticBase` implements the `IRunningStatistic<TObs, TSelf>` interface
+and provides default implementations when possible.
 
 ## Examples
 

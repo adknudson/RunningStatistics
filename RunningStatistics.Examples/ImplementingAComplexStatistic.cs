@@ -3,7 +3,7 @@
 /// <summary>
 /// Example of a complex statistic that contains multiple other statistics.
 /// </summary>
-public class ComplexStat : RunningStatisticBase<double, ComplexStat>
+public class MyComplexStatistic : RunningStatisticBase<double, MyComplexStatistic>
 {
     private Mean Mean { get; } = new();
     
@@ -28,9 +28,9 @@ public class ComplexStat : RunningStatisticBase<double, ComplexStat>
         CountMap.Reset();
     }
 
-    public override ComplexStat CloneEmpty() => new();
+    public override MyComplexStatistic CloneEmpty() => new();
 
-    public override void Merge(ComplexStat other)
+    public override void Merge(MyComplexStatistic other)
     {
         Mean.Merge(other.Mean);
         Cdf.Merge(other.Cdf);

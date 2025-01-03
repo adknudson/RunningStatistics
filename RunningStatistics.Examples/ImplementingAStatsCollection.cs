@@ -3,13 +3,14 @@
 namespace RunningStatistics.Examples;
 
 /// <summary>
-/// Example of a collection of statistics that can be used to store multiple statistics at once.
+/// An example of implementing a collection of <see cref="IRunningStatistic{TObs}"/> objects.
 /// </summary>
-public class StatsCollection<TObs> : Collection<IRunningStatistic<TObs>>, IRunningStatistic<TObs, StatsCollection<TObs>>
+public sealed class StatsCollection<TObs> : Collection<IRunningStatistic<TObs>>,
+    IRunningStatistic<TObs, StatsCollection<TObs>>
 {
     public long Nobs { get; private set; }
-    
-    
+
+
     public void Fit(TObs value)
     {
         Fit(value, 1);
@@ -21,9 +22,9 @@ public class StatsCollection<TObs> : Collection<IRunningStatistic<TObs>>, IRunni
         {
             throw new ArgumentOutOfRangeException(nameof(count), "Count cannot be negative");
         }
-        
+
         Nobs += count;
-        
+
         foreach (var stat in Items)
         {
             stat.Fit(value, count);
@@ -52,7 +53,7 @@ public class StatsCollection<TObs> : Collection<IRunningStatistic<TObs>>, IRunni
     public void Reset()
     {
         Nobs = 0;
-        
+
         foreach (var stat in Items)
         {
             stat.Reset();
@@ -62,12 +63,12 @@ public class StatsCollection<TObs> : Collection<IRunningStatistic<TObs>>, IRunni
     public StatsCollection<TObs> CloneEmpty()
     {
         var clone = new StatsCollection<TObs>();
-        
+
         foreach (var stat in Items)
         {
             clone.Add(stat.CloneEmpty());
         }
-        
+
         return clone;
     }
 
@@ -82,7 +83,7 @@ public class StatsCollection<TObs> : Collection<IRunningStatistic<TObs>>, IRunni
         {
             clone.Add(stat.Clone());
         }
-        
+
         return clone;
     }
 
@@ -95,7 +96,7 @@ public class StatsCollection<TObs> : Collection<IRunningStatistic<TObs>>, IRunni
             {
                 throw new InvalidOperationException("Cannot merge different types of statistics");
             }
-            
+
             thisStat.UnsafeMerge(otherStat);
         }
     }
