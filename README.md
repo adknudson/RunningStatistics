@@ -2,6 +2,9 @@
 Online (single pass) algorithms for statistical measures based on the Julia package 
 [OnlineStats.jl](https://github.com/joshday/OnlineStats.jl) by [Josh Day](https://github.com/joshday). Useful for streaming and big data.
 
+This package is [available on NuGet](https://www.nuget.org/packages/RunningStatistics/)
+
+Supports .NET Standard 2.0
 
 ## List of Statistics
 
