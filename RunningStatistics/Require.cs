@@ -66,7 +66,11 @@ internal static class Require
     /// <typeparam name="T">The type to cast the object to.</typeparam>
     /// <returns>The object successfully cast as the specified type.</returns>
     /// <exception cref="InvalidCastException">When the object is not of the specified type.</exception>
+#if NETSTANDARD2_1
     public static void TypeToBe<T>(object? obj, [MaybeNullWhen(false)] out T value)
+#else
+    public static void TypeToBe<T>(object? obj, out T value)
+#endif
     {
         if (obj is not T typedValue)
         {

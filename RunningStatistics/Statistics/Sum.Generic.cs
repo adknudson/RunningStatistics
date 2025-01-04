@@ -1,4 +1,6 @@
-﻿using System.Numerics;
+﻿#if NET7_0_OR_GREATER
+
+using System.Numerics;
 
 namespace RunningStatistics;
 
@@ -55,3 +57,5 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
 
     protected override string GetStatsString() => $"Σ={Value}";
 }
+
+#endif

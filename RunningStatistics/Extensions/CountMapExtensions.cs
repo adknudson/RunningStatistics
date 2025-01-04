@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Linq;
+
+#if NET7_0_OR_GREATER
 using System.Numerics;
+#endif
+
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedMember.Global
 
@@ -58,6 +62,8 @@ public static class CountMapExtensions
         return countMap.Sum(kvp => kvp.Key * kvp.Value);
     }
 
+#if NET7_0_OR_GREATER
+
     /// <summary>
     /// Find the sum of all observations in a CountMap of any generic type that supports addition and
     /// multiplication by a <see cref="long"/>.
@@ -78,6 +84,8 @@ public static class CountMapExtensions
         return s;
     }
 
+#endif
+    
     /// <summary>
     /// Compute the mean of a CountMap of integers.
     /// </summary>
@@ -110,6 +118,8 @@ public static class CountMapExtensions
         return countMap.Sum(kvp => kvp.Key * kvp.Value / countMap.Nobs);
     }
 
+#if NET7_0_OR_GREATER
+    
     /// <summary>
     /// Compute the mean of a CountMap of any generic type that supports addition, multiplication by a <see cref="long"/>,
     /// and division by a <see cref="long"/>.
@@ -131,6 +141,8 @@ public static class CountMapExtensions
 
         return m;
     }
+
+#endif
     
     /// <summary>
     /// Compute the sample variance of a CountMap of integers.
@@ -399,6 +411,14 @@ public static class CountMapExtensions
         return countMap.ExcessKurtosis(mean, variance);
     }
     
+    /// <summary>
+    /// Compute the mode of a CountMap.
+    /// </summary>
+    /// <param name="countMap"></param>
+    /// <typeparam name="TObs"></typeparam>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    /// <exception cref="NullReferenceException"></exception>
     public static TObs Mode<TObs>(this CountMap<TObs> countMap) where TObs : notnull
     {
         if (countMap.Nobs == 0)
@@ -406,7 +426,21 @@ public static class CountMapExtensions
             throw new Exception("Nobs = 0. The mode does not exist.");
         }
 
+#if NET6_0_OR_GREATER
         return countMap.MaxBy(kvp => kvp.Value).Key;
+#else
+        TObs? mode = default;
+        var maxCount = 0L;
+
+        foreach (var kvp in countMap)
+        {
+            if (kvp.Value <= maxCount) continue;
+            mode = kvp.Key;
+            maxCount = kvp.Value;
+        }
+        
+        return mode ?? throw new NullReferenceException();
+#endif
     }
     
     public static TObs Median<TObs>(this CountMap<TObs> countMap) where TObs : notnull

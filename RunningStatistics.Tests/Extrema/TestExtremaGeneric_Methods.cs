@@ -193,4 +193,16 @@ public partial class TestExtremaGeneric
 
         Assert.Equal(4, a.Nobs);
     }
+    
+    [Fact]
+    public void RangeMethodReturnsCorrectValueForMyNum()
+    {
+        Extrema<MyNum> extrema = new();
+        extrema.Fit(new MyNum(1.0m));
+        extrema.Fit(new MyNum(3.0m));
+        
+        var range = extrema.Range();
+        
+        Assert.Equal(new MyNum(2.0m), range);
+    }
 }

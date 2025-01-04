@@ -170,7 +170,11 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         // if i is greater than NumBins, return the interpolation between V[^1] and max
         if (i >= NumBins)
         {
+#if NETSTANDARD2_1
             return Utils.Smooth(Values[^1], Max, r);
+#else
+            return Utils.Smooth(Values[Values.Length - 1], Max, r);
+#endif
         }
         
         // otherwise, return the interpolation between V[floor(i)] and V[ceil(i)]
@@ -205,7 +209,11 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         
         // set the min and max values. The rest are already set due to the Values span.
         _values[0] = Min;
+#if NETSTANDARD2_1
         _values[^1] = Max;
+#else
+        _values[_values.Length - 1] = Max;
+#endif
         
         // find the index of the first value greater than x
         // ___v[i]___x___v[i+1]___

@@ -60,12 +60,12 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
         
         _nobs += count;
         
-        if (value.CompareTo(_min) < 0)
+        if (value.CompareTo(_min!) < 0)
         {
             _min = value;
             _minCount = 0;
         }
-        else if (value.CompareTo(_max) > 0)
+        else if (value.CompareTo(_max!) > 0)
         {
             _max = value;
             _maxCount = 0;

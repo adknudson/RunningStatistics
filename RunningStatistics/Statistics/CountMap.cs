@@ -22,7 +22,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// <param name="key">The key whose count to get.</param>
     /// <returns>The count of the specified key.</returns>
     public long this[TObs key] => _dict.GetValueOrDefault(key, 0);
-    
+
     /// <summary>
     /// The number of unique observations that have been fitted. Observations with a count of zero
     /// are not included.

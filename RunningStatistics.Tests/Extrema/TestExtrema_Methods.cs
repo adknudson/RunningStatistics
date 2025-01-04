@@ -225,4 +225,14 @@ public partial class TestExtrema
         Assert.Equal(0, extrema.MaxCount);
         Assert.Equal(0, extrema.Nobs);
     }
+    
+    [Fact]
+    public void RangeMethodReturnsCorrectValue()
+    {
+        RunningStatistics.Extrema extrema = new();
+        extrema.Fit(1.0);
+        extrema.Fit(3.0);
+
+        Assert.Equal(2.0, extrema.Range());
+    }
 }

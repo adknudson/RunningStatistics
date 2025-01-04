@@ -212,7 +212,8 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     /// <returns>True if the bins match, otherwise false.</returns>
     private bool BinsAreMatching(List<HistogramBin> other)
     {
-        return Bins.Count == other.Count && this.Zip(other).All(z => z.First.Equals(z.Second));
+        return Bins.Count == other.Count
+               && this.Zip(other, (a, b) => (a, b)).All(z => z.a.Equals(z.b));
     }
     
     public IEnumerator<HistogramBin> GetEnumerator() => Bins.GetEnumerator();

@@ -30,9 +30,9 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
     
     public virtual void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs)
     {
-        foreach (var (value, count) in keyValuePairs)
+        foreach (var kvp in keyValuePairs)
         {
-            Fit(value, count);
+            Fit(kvp.Key, kvp.Value);
         }
     }
     
