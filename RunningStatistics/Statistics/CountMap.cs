@@ -1,5 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+#if NET5_0_OR_GREATER
+using System.Runtime.InteropServices;
+#endif
 
 namespace RunningStatistics;
 
@@ -49,6 +52,15 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
         UncheckedFit(value, count);
     }
     
+#if NET5_0_OR_GREATER
+    private void UncheckedFit(TObs value, long count)
+    {
+        _nobs += count;
+        ref var valueCount = ref CollectionsMarshal.GetValueRefOrAddDefault(_dict, value, out _);
+        // default value for 'long' is zero, so we are safe to just use += here
+        valueCount += count;
+    }
+#else
     private void UncheckedFit(TObs value, long count)
     {
         _nobs += count;
@@ -57,7 +69,8 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
         {
             _dict[value] += count;
         }
-    }
+    } 
+#endif
     
     public override void Merge(CountMap<TObs> countMap) => Fit(countMap);
     
