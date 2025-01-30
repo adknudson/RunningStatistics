@@ -4,8 +4,6 @@ namespace RunningStatistics.Tests.CountMap;
 
 public partial class TestCountMap
 {
-    // TODO: Tests involving extensions
-    
     [Fact]
     public void MinKey_ReturnsMinimumKeyForNumerics()
     {
