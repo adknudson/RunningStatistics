@@ -4,15 +4,15 @@ using System.Collections.Generic;
 
 namespace RunningStatistics;
 
-public static class NetStandard2Extensions
+internal static class NetStandard2Extensions
 {
-    public static TValue GetValueOrDefault<TKey, TValue>(
+    internal static TValue GetValueOrDefault<TKey, TValue>(
         this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue)
     {
         return dictionary.TryGetValue(key, out var value) ? value : defaultValue;
     }
     
-    public static bool TryAdd<TKey, TValue>(
+    internal static bool TryAdd<TKey, TValue>(
         this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
     {
         if (dictionary.ContainsKey(key)) return false;
