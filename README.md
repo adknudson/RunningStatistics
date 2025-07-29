@@ -35,42 +35,52 @@ Supports .NET Standard 2.0
 All running statistics implement the following interfaces:
 
 ```csharp
-public interface IRunningStatistic<TObs>
+public interface IRunningStatistic
 {
     public long Nobs { get; }
-    
+
+    public void Reset();
+
+    public IRunningStatistic CloneEmpty();
+
+    public IRunningStatistic Clone();
+
+    public void UnsafeMerge(IRunningStatistic other);
+}
+
+public interface IRunningStatistic<TObs> : IRunningStatistic
+{
     public void Fit(TObs value);
-    
+
     public void Fit(TObs value, long count);
 
     public void Fit(IEnumerable<TObs> values);
-    
+
     public void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs);
 
-    public void Reset();
-    
-    public IRunningStatistic<TObs> CloneEmpty();
-    
-    public IRunningStatistic<TObs> Clone();
-    
+    public new IRunningStatistic<TObs> CloneEmpty();
+
+    public new IRunningStatistic<TObs> Clone();
+
     public void UnsafeMerge(IRunningStatistic<TObs> other);
 }
 
-public interface IRunningStatistic<TObs, TSelf> : IRunningStatistic<TObs> 
+public interface IRunningStatistic<TObs, TSelf> : IRunningStatistic<TObs>
     where TSelf : IRunningStatistic<TObs, TSelf>
 {
-    public TSelf CloneEmpty();
+    public new TSelf CloneEmpty();
 
-    public TSelf Clone();
-    
+    public new TSelf Clone();
+
     public void Merge(TSelf other);
 }
 ```
 
-The interface is split into a base interface `IRunningStatistic<TObs>` and a derived interface 
-`IRunningStatistic<TObs, TSelf>`. The base interface contains the generic methods, while the 
-derived interface contains more type information. The base interface allows for collections of 
-statistics that can be fit to the same observation type.
+The interface is layered as three interfaces of increasing specificity. `IRunningStatistic` is the
+most generic and allows for mixed running statistics to be in a collection. `IRunningStatistic<TObs>`
+expands by adding information about the type of observations that the running statistic can fit.
+Finally `IRunningStatistic<TObs, TSelf>` adds information about the concrete type of the running
+statistic, and allows for precise cloning and merging.
 
 ### Abstract Base Class
 
