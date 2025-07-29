@@ -89,6 +89,6 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     public IEnumerator<KeyValuePair<TObs, long>> GetEnumerator() => _dict.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    
-    protected override string GetStatsString() => $"{Count} unique observations";
+
+    public override string ToString() => base.ToString() + $" | {Count:N0} unique observations";
 }

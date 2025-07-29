@@ -228,8 +228,5 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         return Utils.Smooth(i - 1, i, r) / _values.Length;
     }
 
-    protected override string GetStatsString()
-    {
-        return $"NumBins={NumBins}, Min={Min}, Max={Max}";
-    }
+    public override string ToString() => base.ToString() + $" | NumBins={NumBins}, Min={Min}, Max={Max}";
 }

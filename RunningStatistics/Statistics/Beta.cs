@@ -133,6 +133,6 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
             _b += other.Failures;
         }
     }
-    
-    protected override string GetStatsString() => $"α={Successes:N0}, β={Failures:N0}";
+
+    public override string ToString() => base.ToString() + $" | α={Successes:N0}, β={Failures:N0}";
 }

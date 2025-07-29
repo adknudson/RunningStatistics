@@ -48,6 +48,6 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
         _nobs += sum.Nobs;
         Value += sum.Value;
     }
-    
-    protected override string GetStatsString() => $"Σ={Value}";
+
+    public override string ToString() => base.ToString() + $" | Σ={Value}";
 }

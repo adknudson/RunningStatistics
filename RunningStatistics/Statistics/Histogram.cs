@@ -220,5 +220,5 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    protected override string GetStatsString() => $"NumBins={NumBins}";
+    public override string ToString() => base.ToString() + $" | NumBins={NumBins}";
 }

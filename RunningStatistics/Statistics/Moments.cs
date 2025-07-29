@@ -114,8 +114,5 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
         _kurtosis = Utils.Smooth(_kurtosis, other._kurtosis, g);
     }
 
-    protected override string GetStatsString()
-    {
-        return $"M1={Mean:F2}, M2={Variance:F2}, M3={Skewness:F2}, M4={Kurtosis:F2}";
-    }
+    public override string ToString() => base.ToString() + $" | M1={Mean:F2}, M2={Variance:F2}, M3={Skewness:F2}, M4={Kurtosis:F2}";
 }

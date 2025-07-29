@@ -89,12 +89,12 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     }
     
     public static explicit operator double(Variance variance) => variance.Value;
-
-    protected override string GetStatsString() => $"s²={Value}";
     
     private static double ComputeVariance(List<double> xs, double mean)
     {
         var meanSquare = xs.Average(s => s * s);
         return Math.Abs(meanSquare - mean * mean);
     }
+
+    public override string ToString() => base.ToString() + $" | s²={Value}";
 }

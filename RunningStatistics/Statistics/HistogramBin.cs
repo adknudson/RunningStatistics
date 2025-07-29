@@ -173,6 +173,6 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
 
     public override string ToString()
     {
-        return $"{typeof(HistogramBin)} Nobs={Nobs} | Bin={BinRep}";
+        return $"{nameof(HistogramBin)}(Nobs={Nobs:N0}) | Bin={BinRep}";
     }
 }

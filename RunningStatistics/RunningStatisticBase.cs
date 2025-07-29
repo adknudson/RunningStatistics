@@ -38,27 +38,37 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
     
     public abstract void Reset();
 
+    IRunningStatistic IRunningStatistic.CloneEmpty() => CloneEmpty();
+
+    IRunningStatistic IRunningStatistic.Clone() => Clone();
+
     IRunningStatistic<TObs> IRunningStatistic<TObs>.CloneEmpty() => CloneEmpty();
 
     IRunningStatistic<TObs> IRunningStatistic<TObs>.Clone() => Clone();
     
     public abstract TSelf CloneEmpty();
 
-    public TSelf Clone()
+    public virtual TSelf Clone()
     {
         var newStat = CloneEmpty();
         newStat.UnsafeMerge(this);
         return newStat;
     }
-    
-    public void UnsafeMerge(IRunningStatistic<TObs> other)
+
+    public virtual void UnsafeMerge(IRunningStatistic other)
+    {
+        Require.TypeToBe<TSelf>(other, out var typedOther);
+        Merge(typedOther);
+    }
+
+    public virtual void UnsafeMerge(IRunningStatistic<TObs> other)
     {
         Require.TypeToBe<TSelf>(other, out var typedOther);
         Merge(typedOther);
     }
     
     public abstract void Merge(TSelf other);
-    
+
     /// <summary>
     /// Merge one or more running statistics together into a new instance. If only a source statistic
     /// is supplied, then this is equivalent to creating a clone of the source statistic.
@@ -78,10 +88,5 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
         return newStat;
     }
 
-    public sealed override string ToString()
-    {
-        return $"{typeof(TSelf).Name}(Nobs={Nobs:N0}) | {GetStatsString()}";
-    }
-
-    protected abstract string GetStatsString();
+    public override string ToString() => $"{nameof(TSelf)}(Nobs={Nobs:N0})";
 }

@@ -61,5 +61,5 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
         _value = Nobs == 0 ? 0 : Utils.Smooth(_value, other._value, (double)other.Nobs / Nobs);
     }
 
-    protected override string GetStatsString() => $"μ={Value}";
+    public override string ToString() => base.ToString() + $" | μ={Value}";
 }

@@ -55,7 +55,7 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
 
     public static explicit operator TObs(Sum<TObs> sum) => sum.Value;
 
-    protected override string GetStatsString() => $"Σ={Value}";
+    public override string ToString() => base.ToString() + $" | Σ={Value}";
 }
 
 #endif
