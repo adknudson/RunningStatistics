@@ -4,6 +4,10 @@ using System.Numerics;
 
 namespace RunningStatistics.Tests;
 
+/// <summary>
+/// A number-like type for testing generic running statistics.
+/// </summary>
+/// <param name="value">The value of the number.</param>
 internal readonly struct MyNum(decimal value) :
     IComparable<MyNum>,
     IComparisonOperators<MyNum, MyNum, bool>,

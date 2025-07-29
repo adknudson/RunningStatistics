@@ -4,6 +4,13 @@ using Xunit;
 
 namespace RunningStatistics.Tests;
 
+/// <summary>
+/// Test the common properties of all running statistics.
+/// </summary>
+/// <param name="observationFactory">Method to generate an observation for the running statistic.</param>
+/// <param name="generateStatistic">Method to generate a new instance of the running statistic.</param>
+/// <typeparam name="TObs">The type of observations.</typeparam>
+/// <typeparam name="TSelf">The concrete type of the running statistic.</typeparam>
 public abstract class AbstractRunningStatsTest<TObs, TSelf>(
     Func<TObs> observationFactory,
     Func<TSelf> generateStatistic)
