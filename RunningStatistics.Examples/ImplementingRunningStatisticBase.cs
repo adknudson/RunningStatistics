@@ -49,8 +49,8 @@ public class UniqueObservations : RunningStatisticBase<int, UniqueObservations>
         _uniqueValues.UnionWith(other._uniqueValues);
     }
 
-    protected override string GetStatsString()
+    public override string ToString()
     {
-        return $"Unique Observations: {_uniqueValues.Count:N0}";
+        return $"{GetType().Name}(Nobs={Nobs:N0}) | Unique Observations: {_uniqueValues.Count:N0}";
     }
 }

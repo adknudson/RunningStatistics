@@ -37,8 +37,8 @@ public class MyComplexStatistic : RunningStatisticBase<double, MyComplexStatisti
         CountMap.Merge(other.CountMap);
     }
 
-    protected override string GetStatsString()
+    public override string ToString()
     {
-        return $"Mean: {Mean}, Cdf: {Cdf}, CountMap: {CountMap}";
+        return $"{GetType().Name}(Nobs={Nobs:N0}) | Mean: {Mean}, Cdf: {Cdf}, CountMap: {CountMap}";
     }
 }

@@ -59,7 +59,7 @@ public sealed class StatsCollection<TObs> : Collection<IRunningStatistic<TObs>>,
             stat.Reset();
         }
     }
-
+    
     public StatsCollection<TObs> CloneEmpty()
     {
         var clone = new StatsCollection<TObs>();
@@ -100,6 +100,12 @@ public sealed class StatsCollection<TObs> : Collection<IRunningStatistic<TObs>>,
             thisStat.UnsafeMerge(otherStat);
         }
     }
+    
+    IRunningStatistic IRunningStatistic.CloneEmpty() => CloneEmpty();
+    
+    IRunningStatistic IRunningStatistic.Clone() => Clone();
+    
+    public void UnsafeMerge(IRunningStatistic other) => Merge((StatsCollection<TObs>)other);
 
     IRunningStatistic<TObs> IRunningStatistic<TObs>.CloneEmpty() => CloneEmpty();
 
