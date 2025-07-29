@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Linq;
+// ReSharper disable MemberCanBePrivate.Global
 
 #if NET7_0_OR_GREATER
 using System.Numerics;
 #endif
-
-// ReSharper disable MemberCanBePrivate.Global
-// ReSharper disable UnusedMember.Global
 
 namespace RunningStatistics;
 
@@ -85,6 +83,14 @@ public static class CountMapExtensions
     }
 
 #endif
+    
+    /// <summary>
+    /// Count the number of observations in a count map that satisfy the predicate.
+    /// </summary>
+    public static long Nobs<T>(this CountMap<T> countMap, Func<T, bool> predicate) where T : notnull
+    {
+        return countMap.Where(pair => predicate(pair.Key)).Sum(pair => pair.Value);
+    }
     
     /// <summary>
     /// Compute the mean of a CountMap of integers.

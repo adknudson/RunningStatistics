@@ -60,6 +60,17 @@ public partial class TestCountMap
     }
 
     [Fact]
+    public void Nobs_ReturnsCorrectNobs()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
+        
+        Assert.Equal(5, countMap.Nobs(o => o < 3));
+    }
+
+    [Fact]
     public void Mean_ReturnsCorrectMean()
     {
         var countMap = new CountMap<int>();
@@ -82,7 +93,7 @@ public partial class TestCountMap
     }
 
     [Fact]
-    public void StdDev_ReturnsCorrectStandardDeviation()
+    public void StdDev_ReturnsCorrectStandardDeviation_Int()
     {
         var countMap = new CountMap<int>();
         countMap.Fit(1, 2);
@@ -90,6 +101,67 @@ public partial class TestCountMap
         countMap.Fit(3, 1);
 
         Assert.Equal(0.753, countMap.StandardDeviation(), 3);
+    }
+    
+    [Fact]
+    public void StdDev_ReturnsCorrectStandardDeviation_Long()
+    {
+        var countMap = new CountMap<long>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
+
+        Assert.Equal(0.753, countMap.StandardDeviation(), 3);
+    }
+    
+    [Fact]
+    public void StdDev_ReturnsCorrectStandardDeviation_Double()
+    {
+        var countMap = new CountMap<double>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
+
+        Assert.Equal(0.753, countMap.StandardDeviation(), 3);
+    }
+    
+    [Fact]
+    public void StdDev_ReturnsCorrectStandardDeviationWithMean_Int()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
+
+        var mean = countMap.Mean();
+
+        Assert.Equal(0.753, countMap.StandardDeviation(mean), 3);
+    }
+    
+    [Fact]
+    public void StdDev_ReturnsCorrectStandardDeviationWithMean_Long()
+    {
+        var countMap = new CountMap<long>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
+
+        var mean = countMap.Mean();
+
+        Assert.Equal(0.753, countMap.StandardDeviation(mean), 3);
+    }
+    
+    [Fact]
+    public void StdDev_ReturnsCorrectStandardDeviationWithMean_Double()
+    {
+        var countMap = new CountMap<double>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
+
+        var mean = countMap.Mean();
+
+        Assert.Equal(0.753, countMap.StandardDeviation(mean), 3);
     }
 
     [Fact]
