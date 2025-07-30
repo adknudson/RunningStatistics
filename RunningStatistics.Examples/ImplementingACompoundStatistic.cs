@@ -1,15 +1,15 @@
 ﻿namespace RunningStatistics.Examples;
 
 /// <summary>
-/// Example of a complex statistic that contains multiple other statistics.
+/// Example of a compound statistic that contains multiple other statistics.
 /// </summary>
-public class MyComplexStatistic : RunningStatisticBase<double, MyComplexStatistic>
+public class CompoundStatistic : RunningStatisticBase<double, CompoundStatistic>
 {
-    private Mean Mean { get; } = new();
+    public Mean Mean { get; } = new();
     
-    private EmpiricalCdf Cdf { get; } = new();
+    public EmpiricalCdf Cdf { get; } = new();
     
-    private CountMap<double> CountMap { get; } = new();
+    public CountMap<double> CountMap { get; } = new();
     
     
     protected override long GetNobs() => Mean.Nobs;
@@ -28,9 +28,9 @@ public class MyComplexStatistic : RunningStatisticBase<double, MyComplexStatisti
         CountMap.Reset();
     }
 
-    public override MyComplexStatistic CloneEmpty() => new();
+    public override CompoundStatistic CloneEmpty() => new();
 
-    public override void Merge(MyComplexStatistic other)
+    public override void Merge(CompoundStatistic other)
     {
         Mean.Merge(other.Mean);
         Cdf.Merge(other.Cdf);
@@ -39,6 +39,6 @@ public class MyComplexStatistic : RunningStatisticBase<double, MyComplexStatisti
 
     public override string ToString()
     {
-        return $"{GetType().Name}(Nobs={Nobs:N0}) | Mean: {Mean}, Cdf: {Cdf}, CountMap: {CountMap}";
+        return base.ToString() + " | (Mean, CDF, CountMap)";
     }
 }

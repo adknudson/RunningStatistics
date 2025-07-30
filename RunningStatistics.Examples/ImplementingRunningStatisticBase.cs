@@ -51,6 +51,6 @@ public class UniqueObservations : RunningStatisticBase<int, UniqueObservations>
 
     public override string ToString()
     {
-        return $"{GetType().Name}(Nobs={Nobs:N0}) | Unique Observations: {_uniqueValues.Count:N0}";
+        return base.ToString() + $" | Unique Observations: {Count:N0}";
     }
 }
