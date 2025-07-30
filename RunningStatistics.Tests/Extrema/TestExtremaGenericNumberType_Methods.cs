@@ -3,7 +3,7 @@ using Xunit;
 
 namespace RunningStatistics.Tests.Extrema;
 
-public partial class TestExtremaGeneric
+public partial class TestExtremaGenericNumberType
 {
     [Fact]
     public void FitUpdatesMinAndMaxCorrectlyForMyNum()

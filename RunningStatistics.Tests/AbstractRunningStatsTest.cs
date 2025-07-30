@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace RunningStatistics.Tests;
@@ -124,12 +125,12 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         IRunningStatistic<TObs> stat = GenerateStatistic();
         
         // pre-condition
-        Assert.IsAssignableFrom<IRunningStatistic<TObs>>(stat);
+        Assert.IsType<IRunningStatistic<TObs>>(stat, exactMatch: false);
         
         var clone = stat.CloneEmpty();
         
         // post-condition
-        Assert.IsAssignableFrom<IRunningStatistic<TObs>>(clone);
+        Assert.IsType<IRunningStatistic<TObs>>(clone, exactMatch: false);
     }
     
     [Fact]
@@ -184,12 +185,12 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         IRunningStatistic<TObs> stat = GenerateStatistic();
         
         // pre-condition
-        Assert.IsAssignableFrom<IRunningStatistic<TObs>>(stat);
+        Assert.IsType<IRunningStatistic<TObs>>(stat, exactMatch: false);
         
         var clone = stat.Clone();
         
         // post-condition
-        Assert.IsAssignableFrom<IRunningStatistic<TObs>>(clone);
+        Assert.IsType<IRunningStatistic<TObs>>(clone, exactMatch: false);
     }
     
     [Fact]
@@ -293,12 +294,12 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         var stat = GenerateStatistic();
         
         // pre-condition
-        Assert.IsAssignableFrom<TSelf>(stat);
+        Assert.IsType<TSelf>(stat, exactMatch: false);
         
         var clone = stat.CloneEmpty();
         
         // post-condition
-        Assert.IsAssignableFrom<TSelf>(clone);
+        Assert.IsType<TSelf>(clone, exactMatch: false);
     }
     
     [Fact]
@@ -307,12 +308,12 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         var stat = GenerateStatistic();
         
         // pre-condition
-        Assert.IsAssignableFrom<TSelf>(stat);
+        Assert.IsType<TSelf>(stat, exactMatch: false);
         
         var clone = stat.Clone();
         
         // post-condition
-        Assert.IsAssignableFrom<TSelf>(clone);
+        Assert.IsType<TSelf>(clone, exactMatch: false);
     }
     
     [Fact]
@@ -322,9 +323,17 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         var other = GenerateStatistic();
         
         // pre-condition
-        Assert.IsAssignableFrom<TSelf>(stat);
-        Assert.IsAssignableFrom<TSelf>(other);
+        Assert.IsType<TSelf>(stat, exactMatch: false);
+        Assert.IsType<TSelf>(other, exactMatch: false);
         
         stat.Merge(other);
+    }
+    
+    [Fact]
+    public void ToString_ReturnsCorrectValue()
+    {
+        var stat = GenerateStatistic();
+        var re = new Regex($@"^\S+{{{typeof(TObs).Name}}}\(Nobs=0\).*");
+        Assert.Matches(re, stat.ToString());
     }
 }
