@@ -3,12 +3,12 @@
 	<PropertyGroup>
 		<LangVersion>default</LangVersion>
 		<Nullable>enable</Nullable>
-		<TargetFrameworks>net6.0;net8.0;net9.0;netstandard2.0;netstandard2.1</TargetFrameworks>
+		<TargetFrameworks>net8.0;net9.0;netstandard2.0;netstandard2.1</TargetFrameworks>
 	</PropertyGroup>
 	
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageVersion>2.0.1</PackageVersion>
+		<PackageVersion>3.0.0</PackageVersion>
 		<Authors>Alex Knudson</Authors>
 		<Title>Running Statistics</Title>
 		<Description>A library of single pass algorithms for statistical measures.</Description>
@@ -19,7 +19,13 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Use CollectionsMarshal in CountMap to get rid of double dictionary access on update operation.</PackageReleaseNotes>
+		<PackageReleaseNotes>
+			Split the interface once more to have an observation-agnostic interface.
+			This allows for collections of running statistics that can have mixed 
+			observation types and mixed concrete types.
+			
+			Removed support for .NET 6.0 since it has reached EOL.
+		</PackageReleaseNotes>
 	</PropertyGroup>
 	
 	<ItemGroup>
@@ -30,7 +36,7 @@
 	</ItemGroup>
 	
 	<ItemGroup>
-	  <PackageReference Include="System.Memory" Version="4.6.0" />
+	  <PackageReference Include="System.Memory" Version="4.6.3" />
 	</ItemGroup>
 	
 </Project>
