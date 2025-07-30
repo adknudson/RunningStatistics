@@ -114,3 +114,20 @@ for (var i = 0; i < 1000; i++)
 mean1.Merge(mean2);
 var q1 = ecdf.Quantile(0.25);
 ```
+
+## Upgrading from v2 to v3
+
+If you are inheriting from `RunningStatisticBase`, the biggest change should be the removal of the
+`GetStatsString` method. Now you should just override the `ToString` method.
+
+Before:
+
+```csharp
+protected override string GetStatsString() => $"μ={Mean}, σ²={Variance}";
+```
+
+After:
+
+```csharp
+public override string ToString() => base.ToString() + $" | μ={Mean}, σ²={Variance}";
+```
