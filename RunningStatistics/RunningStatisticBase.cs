@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace RunningStatistics;
 
@@ -88,5 +89,7 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
         return newStat;
     }
 
-    public override string ToString() => $"{nameof(TSelf)}(Nobs={Nobs:N0})";
+    public override string ToString() => $"{TypeWithObs()}(Nobs={Nobs:N0})";
+
+    private static string TypeWithObs() => $"{typeof(TSelf).Name.Split('`').First()}{{{typeof(TObs).Name}}}";
 }
