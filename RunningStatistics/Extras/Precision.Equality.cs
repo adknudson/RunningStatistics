@@ -66,7 +66,7 @@ internal static partial class Precision
             return Math.Abs(diff) < maximumError;
         }
 
-        if ((a == 0 && Math.Abs(b) < maximumError) || (b == 0 && Math.Abs(a) < maximumError))
+        if (a == 0 && Math.Abs(b) < maximumError || b == 0 && Math.Abs(a) < maximumError)
         {
             return true;
         }

@@ -679,40 +679,6 @@ internal static partial class SpecialFunctions
         0.231558608310259605225e-11
     ];
 
-    /// <summary>Calculates the error function.</summary>
-    /// <param name="x">The value to evaluate.</param>
-    /// <returns>the error function evaluated at given value.</returns>
-    /// <remarks>
-    ///     <list type="bullet">
-    ///         <item>returns 1 if <c>x == double.PositiveInfinity</c>.</item>
-    ///         <item>returns -1 if <c>x == double.NegativeInfinity</c>.</item>
-    ///     </list>
-    /// </remarks>
-    public static double Erf(double x)
-    {
-        if (x == 0)
-        {
-            return 0;
-        }
-
-        if (double.IsPositiveInfinity(x))
-        {
-            return 1;
-        }
-
-        if (double.IsNegativeInfinity(x))
-        {
-            return -1;
-        }
-
-        if (double.IsNaN(x))
-        {
-            return double.NaN;
-        }
-
-        return ErfImp(x, false);
-    }
-
     /// <summary>Calculates the complementary error function.</summary>
     /// <param name="x">The value to evaluate.</param>
     /// <returns>the complementary error function evaluated at given value.</returns>
@@ -745,51 +711,6 @@ internal static partial class SpecialFunctions
         }
 
         return ErfImp(x, true);
-    }
-
-    /// <summary>Calculates the inverse error function evaluated at z.</summary>
-    /// <returns>The inverse error function evaluated at given value.</returns>
-    /// <remarks>
-    ///   <list type="bullet">
-    ///     <item>returns double.PositiveInfinity if <c>z &gt;= 1.0</c>.</item>
-    ///     <item>returns double.NegativeInfinity if <c>z &lt;= -1.0</c>.</item>
-    ///   </list>
-    /// </remarks>
-    /// <summary>Calculates the inverse error function evaluated at z.</summary>
-    /// <param name="z">value to evaluate.</param>
-    /// <returns>the inverse error function evaluated at Z.</returns>
-    public static double ErfInv(double z)
-    {
-        if (z == 0.0)
-        {
-            return 0.0;
-        }
-
-        if (z >= 1.0)
-        {
-            return double.PositiveInfinity;
-        }
-
-        if (z <= -1.0)
-        {
-            return double.NegativeInfinity;
-        }
-
-        double p, q, s;
-        if (z < 0)
-        {
-            p = -z;
-            q = 1 - p;
-            s = -1;
-        }
-        else
-        {
-            p = z;
-            q = 1 - z;
-            s = 1;
-        }
-
-        return ErfInvImpl(p, q, s);
     }
 
     /// <summary>

@@ -160,9 +160,9 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
         unchecked
         {
             var hashCode = Lower.GetHashCode();
-            hashCode = (hashCode * 397) ^ Upper.GetHashCode();
-            hashCode = (hashCode * 397) ^ ClosedLeft.GetHashCode();
-            hashCode = (hashCode * 397) ^ ClosedRight.GetHashCode();
+            hashCode = hashCode * 397 ^ Upper.GetHashCode();
+            hashCode = hashCode * 397 ^ ClosedLeft.GetHashCode();
+            hashCode = hashCode * 397 ^ ClosedRight.GetHashCode();
             return hashCode;
         }
     }

@@ -38,26 +38,6 @@ namespace RunningStatistics;
 
 internal static partial class SpecialFunctions
 {
-    public static double BetaRegularized(double a, double b, double x)
-    {
-        if (a < 0.0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(a), "Value must be non-negative.");
-        }
-
-        if (b < 0.0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(b), "Value must be non-negative.");
-        }
-
-        if (x is < 0.0 or > 1.0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(x), "Value must be in the interval [0, 1].");
-        }
-
-        return UnsafeBetaRegularized(a, b, x);
-    }
-        
     public static double UnsafeBetaRegularized(double a, double b, double x)
     {
         var bt = x == 0 || x.AlmostEqualRelative(1)
