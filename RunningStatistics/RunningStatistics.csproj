@@ -20,11 +20,10 @@
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>
-			Split the interface once more to have an observation-agnostic interface.
-			This allows for collections of running statistics that can have mixed 
-			observation types and mixed concrete types.
-			
-			Removed support for .NET 6.0 since it has reached EOL.
+			- Split the interface once more to have an observation-agnostic interface. This allows for collections of running statistics that can have mixed observation types and mixed concrete types.
+			- Removed support for .NET 6.0 since it has reached EOL.
+			- Bug fixes for Extrema{T}.
+			- Improved test coverage.
 		</PackageReleaseNotes>
 	</PropertyGroup>
 	
