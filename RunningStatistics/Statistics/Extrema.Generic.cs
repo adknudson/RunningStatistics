@@ -1,5 +1,4 @@
 ﻿using System;
-// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
 
 namespace RunningStatistics;
 
@@ -12,7 +11,6 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     where TObs : IComparable<TObs>
 {
     private TObs? _min, _max;
-    private long _minCount, _maxCount;
     private long _nobs;
 
     /// <summary>
@@ -32,13 +30,13 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     /// <summary>
     /// Gets the count of observations that have the minimum value.
     /// </summary>
-    public long MinCount => _minCount;
+    public long MinCount { get; private set; }
 
     /// <summary>
     /// Gets the count of observations that have the maximum value.
     /// </summary>
-    public long MaxCount => _maxCount;
-    
+    public long MaxCount { get; private set; }
+
 
     protected override long GetNobs() => _nobs;
 
@@ -63,22 +61,22 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
         if (value.CompareTo(_min!) < 0)
         {
             _min = value;
-            _minCount = 0;
+            MinCount = 0;
         }
         else if (value.CompareTo(_max!) > 0)
         {
             _max = value;
-            _maxCount = 0;
+            MaxCount = 0;
         }
         
-        if (value.Equals(_min))
+        if (value.CompareTo(_min!) == 0)
         {
-            _minCount += count;
+            MinCount += count;
         }
         
-        if (value.Equals(_max))
+        if (value.CompareTo(_max!) == 0)
         {
-            _maxCount += count;
+            MaxCount += count;
         }
     }
 
@@ -86,8 +84,8 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     {
         _min = default;
         _max = default;
-        _minCount = 0;
-        _maxCount = 0;
+        MinCount = 0;
+        MaxCount = 0;
         _nobs = 0;
     }
 
@@ -103,8 +101,8 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
         {
             _min = other.Min;
             _max = other.Max;
-            _minCount = other._minCount;
-            _maxCount = other._maxCount;
+            MinCount = other.MinCount;
+            MaxCount = other.MaxCount;
             _nobs = other.Nobs;
             return;
         }
@@ -114,28 +112,31 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
         
         // if both are non-empty, merge
         
-        if (Min.Equals(other.Min))
+        if (Min.CompareTo(other.Min) == 0)
         {
-            _minCount += other._minCount;
+            MinCount += other.MinCount;
         }
         else if (other.Min.CompareTo(Min) < 0)
         {
             _min = other.Min;
-            _minCount = other._minCount;
+            MinCount = other.MinCount;
         }
         
-        if (Max.Equals(other.Max))
+        if (Max.CompareTo(other.Max) == 0)
         {
-            _maxCount += other._maxCount;
+            MaxCount += other.MaxCount;
         }
         else if (other.Max.CompareTo(Max) > 0)
         {
             _max = other.Max;
-            _maxCount = other._maxCount;
+            MaxCount = other.MaxCount;
         }
         
         _nobs += other.Nobs;
     }
 
-    public override string ToString() => base.ToString() + $" | Min={Min} (n={MinCount:N0}), Max={Max} (n={MaxCount:N0})";
+    public override string ToString()
+    {
+        return base.ToString() + $" | Min={_min} (n={MinCount:N0}), Max={_max} (n={MaxCount:N0})";
+    }
 }
