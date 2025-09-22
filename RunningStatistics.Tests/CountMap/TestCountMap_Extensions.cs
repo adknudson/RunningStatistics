@@ -208,7 +208,49 @@ public partial class TestCountMap
 
         Assert.Equal(2, countMap.Mode());
     }
+    
+    [Fact]
+    public void Quantile_ReturnsCorrectValues_EvenNumberOfUniqueObs()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 2);
+        countMap.Fit(3, 1);
+        countMap.Fit(4, 2);
+        
+        Assert.Equal(1, countMap.Quantile(0.0));
+        Assert.Equal(1, countMap.Quantile(0.1));
+        Assert.Equal(1, countMap.Quantile(0.2));
+        Assert.Equal(2, countMap.Quantile(0.3));
+        Assert.Equal(2, countMap.Quantile(0.4));
+        Assert.Equal(2, countMap.Quantile(0.5));
+        Assert.Equal(3, countMap.Quantile(0.6));
+        Assert.Equal(3, countMap.Quantile(0.7));
+        Assert.Equal(4, countMap.Quantile(0.8));
+        Assert.Equal(4, countMap.Quantile(0.9));
+        Assert.Equal(4, countMap.Quantile(1.0));
+    }
 
+    [Fact]
+    public void Quantile_ReturnsCorrectValues_OddNumberOfUniqueObs()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
+        
+        Assert.Equal(1, countMap.Quantile(0.00));
+        Assert.Equal(1, countMap.Quantile(0.10));
+        Assert.Equal(1, countMap.Quantile(0.25));
+        Assert.Equal(2, countMap.Quantile(0.35));
+        Assert.Equal(2, countMap.Quantile(0.50));
+        Assert.Equal(2, countMap.Quantile(0.75));
+        Assert.Equal(3, countMap.Quantile(0.85));
+        Assert.Equal(3, countMap.Quantile(0.90));
+        Assert.Equal(3, countMap.Quantile(0.95));
+        Assert.Equal(3, countMap.Quantile(1.00));
+    }
+    
     [Fact]
     public void Median_ReturnsCorrectMedianObservation()
     {
