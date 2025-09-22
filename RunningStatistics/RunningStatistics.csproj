@@ -8,7 +8,7 @@
 	
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageVersion>3.0.0</PackageVersion>
+		<PackageVersion>3.1.0</PackageVersion>
 		<Authors>Alex Knudson</Authors>
 		<Title>Running Statistics</Title>
 		<Description>A library of single pass algorithms for statistical measures.</Description>
@@ -20,10 +20,8 @@
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>
-			- Split the interface once more to have an observation-agnostic interface. This allows for collections of running statistics that can have mixed observation types and mixed concrete types.
-			- Removed support for .NET 6.0 since it has reached EOL.
-			- Bug fixes for Extrema{T}.
-			- Improved test coverage.
+            - Added overloads for CountMap.MinKey and CountMap.MaxKey that accept IComparer objects
+			- Added a Quantile method for CountMap
 		</PackageReleaseNotes>
 	</PropertyGroup>
 	
