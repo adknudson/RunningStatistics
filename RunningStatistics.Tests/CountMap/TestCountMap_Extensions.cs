@@ -5,50 +5,6 @@ namespace RunningStatistics.Tests.CountMap;
 public partial class TestCountMap
 {
     [Fact]
-    public void MinKey_ReturnsMinimumKeyForNumerics()
-    {
-        var countMap = new CountMap<int>();
-        countMap.Fit(1, 2);
-        countMap.Fit(2, 3);
-        countMap.Fit(3, 1);
-
-        Assert.Equal(1, countMap.MinKey());
-    }
-
-    [Fact]
-    public void MaxKey_ReturnsMaximumKeyForNumerics()
-    {
-        var countMap = new CountMap<int>();
-        countMap.Fit(1, 2);
-        countMap.Fit(2, 3);
-        countMap.Fit(3, 1);
-
-        Assert.Equal(3, countMap.MaxKey());
-    }
-    
-    [Fact]
-    public void MinKey_ReturnsMinimumKeyForStrings()
-    {
-        var countMap = new CountMap<string>();
-        countMap.Fit("a", 2);
-        countMap.Fit("b", 3);
-        countMap.Fit("c", 1);
-
-        Assert.Equal("a", countMap.MinKey());
-    }
-
-    [Fact]
-    public void MaxKey_ReturnsMaximumKeyForStrings()
-    {
-        var countMap = new CountMap<string>();
-        countMap.Fit("a", 2);
-        countMap.Fit("b", 3);
-        countMap.Fit("c", 1);
-
-        Assert.Equal("c", countMap.MaxKey());
-    }
-
-    [Fact]
     public void Sum_ReturnsCorrectSum()
     {
         var countMap = new CountMap<int>();

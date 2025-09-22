@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -10,24 +11,6 @@ namespace RunningStatistics;
 
 public static class CountMapExtensions
 {
-    /// <summary>
-    /// Find the minimum key in a CountMap.
-    /// </summary>
-    public static T MinKey<T>(this CountMap<T> countMap) where T : notnull
-    {
-        var minKey = countMap.Keys.Min();
-        return minKey ?? throw new NullReferenceException();
-    }
-    
-    /// <summary>
-    /// Find the maximum key in a CountMap.
-    /// </summary>
-    public static T MaxKey<T>(this CountMap<T> countMap) where T : notnull
-    {
-        var maxKey = countMap.Keys.Max();
-        return maxKey ?? throw new NullReferenceException();
-    }
-    
     /// <summary>
     /// Find the sum of all observations in a CountMap of integers.
     /// </summary>
