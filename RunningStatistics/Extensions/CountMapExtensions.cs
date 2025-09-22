@@ -431,36 +431,99 @@ public static class CountMapExtensions
         return mode ?? throw new NullReferenceException();
 #endif
     }
-    
-    public static TObs Median<TObs>(this CountMap<TObs> countMap) where TObs : notnull
+
+    /// <summary>
+    /// Compute the p-th quantile of a CountMap.
+    /// If <c>p</c> is less than or equal to 0, then the minimum key is returned.
+    /// If <c>p</c> is greater than or equal to 1, then the maximum key is returned.
+    /// </summary>
+    /// <param name="countMap">The count map to compute the quantile for.</param>
+    /// <param name="p">The quantile to compute. Must be between 0 and 1.</param>
+    /// <param name="comparer">The comparer to use for ordering the keys.
+    /// If null, the default comparer is used.</param>
+    /// <typeparam name="TObs">The type of the observations in the count map.</typeparam>
+    /// <returns>The p-th quantile of the count map.</returns>
+    /// <exception cref="Exception">
+    /// Thrown if the count map is empty or if the quantile cannot be found.
+    /// </exception>
+    public static TObs Quantile<TObs>(this CountMap<TObs> countMap, double p, IComparer<TObs>? comparer) where TObs : notnull
     {
         if (countMap.Nobs == 0)
         {
-            throw new Exception("Nobs = 0. The median does not exist.");
+            throw new Exception("The count map is empty. The quantile does not exist.");
         }
 
+        if (p <= 0) return countMap.MinKey(comparer);
+        if (p >= 1) return countMap.MaxKey(comparer);
+        
+        var cdf = 0.0;
+        var nobs = (double)countMap.Nobs;
+        
         if (countMap.Count % 2 == 0)
         {
-            var cdf = 0.0;
-        
-            foreach (var kvp in countMap.OrderBy(kvp => kvp.Key)) 
+            foreach (var kvp in countMap.OrderBy(kvp => kvp.Key, comparer))
             {
-                cdf += (double)kvp.Value / countMap.Nobs;
-                if (cdf >= 0.5) return kvp.Key;
+                cdf += kvp.Value / nobs;
+                if (cdf >= p) return kvp.Key;
             }
         }
         else
         {
-            var cdf = 0.0;
-        
-            foreach (var kvp in countMap.OrderBy(kvp => kvp.Key))
+            foreach (var kvp in countMap.OrderBy(kvp => kvp.Key, comparer))
             {
-                cdf += (double)kvp.Value / countMap.Nobs;
-                if (cdf > 0.5) return kvp.Key;
+                cdf += kvp.Value / nobs;
+                if (cdf > p) return kvp.Key;
             }
-        } 
-
+        }
+        
         // This should be unreachable...
-        throw new Exception("Not able to find the median of the count map.");
+        throw new Exception($"Not able to find the {p} quantile of the count map.");
+    }
+    
+    /// <summary>
+    /// Compute the p-th quantile of a CountMap.
+    /// If <c>p</c> is less than or equal to 0, then the minimum key is returned.
+    /// If <c>p</c> is greater than or equal to 1, then the maximum key is returned.
+    /// </summary>
+    /// <param name="countMap">The count map to compute the quantile for.</param>
+    /// <param name="p">The quantile to compute. Must be between 0 and 1.</param>
+    /// <typeparam name="TObs">The type of the observations in the count map.</typeparam>
+    /// <returns>The p-th quantile of the count map.</returns>
+    /// <remarks>
+    /// This method uses the comparer associated with the CountMap. If no comparer
+    /// was specified when the CountMap was created, the default comparer is used instead.
+    /// </remarks>
+    public static TObs Quantile<TObs>(this CountMap<TObs> countMap, double p) where TObs : notnull
+    {
+        return countMap.Quantile(p, countMap.Comparer);
+    }
+    
+    /// <summary>
+    /// Compute the median of a CountMap using the specified comparer.
+    /// This is equivalent to calling <c>Quantile(0.5, comparer)</c>.
+    /// </summary>
+    /// <param name="countMap">The count map to compute the median for.</param>
+    /// <param name="comparer">The comparer to use for ordering the keys.
+    /// If null, the default comparer is used.</param>
+    /// <typeparam name="TObs">The type of the observations in the count map.</typeparam>
+    /// <returns>The median of the count map.</returns>
+    public static TObs Median<TObs>(this CountMap<TObs> countMap, IComparer<TObs>? comparer) where TObs : notnull
+    {
+        return countMap.Quantile(0.5, comparer);
+    }
+    
+    /// <summary>
+    /// Compute the median of a CountMap.
+    /// </summary>
+    /// <param name="countMap">The count map to compute the median for.</param>
+    /// <typeparam name="TObs">The type of the observations in the count map.</typeparam>
+    /// <returns>The median of the count map.</returns>
+    /// <remarks>
+    /// This method uses the comparer associated with the CountMap. If no comparer
+    /// was specified when the CountMap was created, the default comparer is used instead.
+    /// </remarks>
+    public static TObs Median<TObs>(this CountMap<TObs> countMap) where TObs : notnull
+    {
+        return countMap.Median(countMap.Comparer);
     }
 }
