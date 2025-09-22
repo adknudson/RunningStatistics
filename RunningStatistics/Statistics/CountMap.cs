@@ -17,6 +17,25 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
 {
     private readonly Dictionary<TObs, long> _dict = new();
     private long _nobs;
+
+
+    /// <summary>
+    /// Creates a CountMap object with the default observation comparer.
+    /// </summary>
+    public CountMap()
+    {
+        // leave Comparer as null to indicate default comparer is to be used,
+        // or to indicate that no ordering is possible
+        Comparer = null;
+    }
+
+    /// <summary>
+    /// Creates a CountMap object with the given observation comparer.
+    /// </summary>
+    public CountMap(IComparer<TObs>? comparer)
+    {
+        Comparer = comparer;
+    }
     
     
     /// <summary>
@@ -42,7 +61,12 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// </summary>
     public IEnumerable<long> Values => _dict.Values;
 
+    /// <summary>
+    /// Gets the value comparer used for ordering observations.
+    /// </summary>
+    public IComparer<TObs>? Comparer { get; }
 
+    
     protected override long GetNobs() => _nobs;
     
     public override void Fit(TObs value, long count)
@@ -85,6 +109,86 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     public bool ContainsKey(TObs key) => _dict.ContainsKey(key);
     
     public bool TryGetValue(TObs key, out long value) => _dict.TryGetValue(key, out value);
+
+    /// <summary>
+    /// Finds the minimum key in the count map.
+    /// </summary>
+    /// <param name="comparer">The comparer to use for finding the minimum key.
+    /// If null, the default comparer is used.</param>
+    /// <returns>The minimum key in the count map, if any exist.</returns>
+    /// <exception cref="KeyNotFoundException">
+    /// Thrown if the count map is empty and no minimum key exists.
+    /// </exception>
+    public TObs MinKey(IComparer<TObs>? comparer)
+    {
+        comparer ??= Comparer<TObs>.Default;
+
+        using var enumerator = _dict.Keys.GetEnumerator();
+        if (!enumerator.MoveNext())
+        {
+            throw new KeyNotFoundException("The minimum key does not exist.");
+        }
+
+        var min = enumerator.Current;
+        while (enumerator.MoveNext())
+        {
+            if (comparer.Compare(enumerator.Current, min) < 0)
+            {
+                min = enumerator.Current;
+            }
+        }
+
+        return min!;
+    }
+    
+    /// <summary>
+    /// Finds the minimum key in the count map.
+    /// </summary>
+    /// <returns>The minimum key in the count map, if any exist.</returns>
+    /// <exception cref="KeyNotFoundException">
+    /// Thrown if the count map is empty and no minimum key exists.
+    /// </exception>
+    public TObs MinKey() => MinKey(Comparer);
+    
+    /// <summary>
+    /// Finds the maximum key in the count map.
+    /// </summary>
+    /// <param name="comparer">The comparer to use for finding the maximum key.
+    /// If null, the default comparer is used.</param>
+    /// <returns>The maximum key in the count map, if any exist.</returns>
+    /// <exception cref="KeyNotFoundException">
+    /// Thrown if the count map is empty and no maximum key exists.
+    /// </exception>
+    public TObs MaxKey(IComparer<TObs>? comparer)
+    {
+        comparer ??= Comparer<TObs>.Default;
+        
+        using var enumerator = _dict.Keys.GetEnumerator();
+        if (!enumerator.MoveNext())
+        {
+            throw new KeyNotFoundException("The maximum key does not exist.");
+        }
+        
+        var max = enumerator.Current;
+        while (enumerator.MoveNext())
+        {
+            if (comparer.Compare(enumerator.Current, max) > 0)
+            {
+                max = enumerator.Current;
+            }
+        }
+        
+        return max!;
+    }
+    
+    /// <summary>
+    /// Finds the maximum key in the count map.
+    /// </summary>
+    /// <returns>The maximum key in the count map, if any exist.</returns>
+    /// <exception cref="KeyNotFoundException">
+    /// Thrown if the count map is empty and no maximum key exists.
+    /// </exception>
+    public TObs MaxKey() => MaxKey(Comparer);
     
     public IEnumerator<KeyValuePair<TObs, long>> GetEnumerator() => _dict.GetEnumerator();
 
