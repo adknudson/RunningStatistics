@@ -49,5 +49,10 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
         Value += sum.Value;
     }
 
+    public double Mean()
+    {
+        return Nobs > 0 ? Value / Nobs : double.NaN;
+    }
+    
     public override string ToString() => base.ToString() + $" | Σ={Value}";
 }
