@@ -1,22 +1,12 @@
 ﻿#if NET7_0_OR_GREATER
+
 using System;
 using System.Numerics;
-#endif
 
 namespace RunningStatistics;
 
 public static class GenericSumExtensions
 {
-    /// <summary>
-    /// Calculate the average of the observations.
-    /// </summary>
-    public static double Mean(this Sum sum)
-    {
-        return sum.Nobs > 0 ? sum.Value / sum.Nobs : double.NaN;
-    }
-
-#if NET7_0_OR_GREATER
-    
     /// <summary>
     /// Calculate the average of the sum of <see cref="int"/>s.
     /// </summary>
@@ -40,7 +30,6 @@ public static class GenericSumExtensions
     {
         return sum.Nobs > 0 ? sum.Value / sum.Nobs : double.NaN;
     }
-    
     
     /// <summary>
     /// Calculate the average of the sum of <see cref="decimal"/>s.
@@ -70,6 +59,6 @@ public static class GenericSumExtensions
         
         throw new DivideByZeroException("Average is undefined when the number of observations is zero.");
     }
-    
-#endif
 }
+
+#endif

@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-// ReSharper disable MemberCanBePrivate.Global
-
-#if NET7_0_OR_GREATER
-using System.Numerics;
-#endif
 
 namespace RunningStatistics;
 
-public static class CountMapExtensions
+public static partial class CountMapExtensions
 {
     /// <summary>
     /// Find the sum of all observations in a CountMap of integers.
@@ -43,30 +38,6 @@ public static class CountMapExtensions
         return countMap.Sum(kvp => kvp.Key * kvp.Value);
     }
 
-#if NET7_0_OR_GREATER
-
-    /// <summary>
-    /// Find the sum of all observations in a CountMap of any generic type that supports addition and
-    /// multiplication by a <see cref="long"/>.
-    /// </summary>
-    public static T Sum<T>(this CountMap<T> countMap) 
-        where T : 
-        IAdditionOperators<T, T, T>,
-        IAdditiveIdentity<T, T>,
-        IMultiplyOperators<T, long, T>
-    {
-        var s = T.AdditiveIdentity;
-
-        foreach (var (x, k) in countMap)
-        {
-            s += x * k;
-        }
-
-        return s;
-    }
-
-#endif
-    
     /// <summary>
     /// Count the number of observations in a count map that satisfy the predicate.
     /// </summary>
@@ -106,32 +77,6 @@ public static class CountMapExtensions
     {
         return countMap.Sum(kvp => kvp.Key * kvp.Value / countMap.Nobs);
     }
-
-#if NET7_0_OR_GREATER
-    
-    /// <summary>
-    /// Compute the mean of a CountMap of any generic type that supports addition, multiplication by a <see cref="long"/>,
-    /// and division by a <see cref="long"/>.
-    /// </summary>
-    public static T Mean<T>(this CountMap<T> countMap) 
-        where T : 
-        IAdditionOperators<T, T, T>, 
-        IAdditiveIdentity<T, T>, 
-        IMultiplyOperators<T, long, T>, 
-        IDivisionOperators<T, long, T>
-    {
-        var m = T.AdditiveIdentity;
-        var n = countMap.Nobs;
-
-        foreach (var (x, k) in countMap)
-        {
-            m += x * k / n;
-        }
-
-        return m;
-    }
-
-#endif
     
     /// <summary>
     /// Compute the sample variance of a CountMap of integers.
@@ -414,10 +359,7 @@ public static class CountMapExtensions
         {
             throw new Exception("Nobs = 0. The mode does not exist.");
         }
-
-#if NET6_0_OR_GREATER
-        return countMap.MaxBy(kvp => kvp.Value).Key;
-#else
+        
         TObs? mode = default;
         var maxCount = 0L;
 
@@ -429,7 +371,6 @@ public static class CountMapExtensions
         }
         
         return mode ?? throw new NullReferenceException();
-#endif
     }
 
     /// <summary>
