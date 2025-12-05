@@ -43,7 +43,8 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// </summary>
     /// <param name="key">The key whose count to get.</param>
     /// <returns>The count of the specified key.</returns>
-    public long this[TObs key] => _dict.GetValueOrDefault(key, 0);
+    // ReSharper disable once CanSimplifyDictionaryTryGetValueWithGetValueOrDefault
+    public long this[TObs key] => _dict.TryGetValue(key, out var value) ? value : 0;
 
     /// <summary>
     /// The number of unique observations that have been fitted. Observations with a count of zero
@@ -76,25 +77,24 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
         UncheckedFit(value, count);
     }
     
+    private void UncheckedFit(TObs value, long count)
+    {
+        _nobs += count;
+        
 #if NET5_0_OR_GREATER
-    private void UncheckedFit(TObs value, long count)
-    {
-        _nobs += count;
         ref var valueCount = ref CollectionsMarshal.GetValueRefOrAddDefault(_dict, value, out _);
-        // default value for 'long' is zero, so we are safe to just use += here
         valueCount += count;
-    }
 #else
-    private void UncheckedFit(TObs value, long count)
-    {
-        _nobs += count;
-
-        if (!_dict.TryAdd(value, count))
+        if (_dict.TryGetValue(value, out var oldCount))
         {
-            _dict[value] += count;
+            _dict[value] = oldCount + count;
         }
-    } 
+        else
+        {
+            _dict[value] = count;
+        }
 #endif
+    } 
     
     public override void Merge(CountMap<TObs> countMap) => Fit(countMap);
     

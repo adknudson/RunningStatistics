@@ -6,15 +6,10 @@ internal static class Polynomial
 {
     public static double Evaluate(double z, params double[] coefficients)
     {
-
-#if NET7_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(coefficients);
-#else
         if (coefficients is null)
         {
             throw new ArgumentNullException(nameof(coefficients));
         }
-#endif
         
         var n = coefficients.Length;
         if (n == 0)
