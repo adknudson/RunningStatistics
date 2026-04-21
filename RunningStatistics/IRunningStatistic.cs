@@ -27,10 +27,14 @@ public interface IRunningStatistic
     public IRunningStatistic Clone();
 
     /// <summary>
-    /// Merge the values from another running statistic without the guarantee of
-    /// the types being the same, nor the guarantee of the observation types
-    /// being the same.
+    /// Merge the values from another running statistic. This method performs a runtime type check and
+    /// will throw an <see cref="System.InvalidCastException"/> if <paramref name="other"/> cannot be
+    /// cast to the concrete type of this instance. For a type-safe alternative, use
+    /// <see cref="IRunningStatistic{TObs, TSelf}.Merge"/> when the concrete type is known.
     /// </summary>
+    /// <exception cref="System.InvalidCastException">
+    /// Thrown when <paramref name="other"/> is not the same concrete type as this instance.
+    /// </exception>
     public void UnsafeMerge(IRunningStatistic other);
 }
 
@@ -46,7 +50,8 @@ public interface IRunningStatistic<TObs> : IRunningStatistic
     public void Fit(TObs value);
 
     /// <summary>
-    /// Fit a single observation with an associated count.
+    /// Fit a single observation with an associated count. A <paramref name="count"/> greater than one
+    /// is equivalent to fitting <paramref name="value"/> that many times individually.
     /// </summary>
     public void Fit(TObs value, long count);
 
@@ -56,7 +61,9 @@ public interface IRunningStatistic<TObs> : IRunningStatistic
     public void Fit(IEnumerable<TObs> values);
 
     /// <summary>
-    /// Fit a list of observations with associated counts.
+    /// Fit a list of observations with associated counts. Each key-value pair represents an observation
+    /// and the number of times it should be fitted; the count is equivalent to fitting the key that many
+    /// times individually.
     /// </summary>
     public void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs);
 
@@ -73,8 +80,14 @@ public interface IRunningStatistic<TObs> : IRunningStatistic
     public new IRunningStatistic<TObs> Clone();
 
     /// <summary>
-    /// Merge the values from another running statistic without the guarantee of the types being the same.
+    /// Merge the values from another running statistic of the same observation type. This method
+    /// performs a runtime type check and will throw an <see cref="System.InvalidCastException"/> if
+    /// <paramref name="other"/> cannot be cast to the concrete type of this instance. For a type-safe
+    /// alternative, use <see cref="IRunningStatistic{TObs, TSelf}.Merge"/> when the concrete type is known.
     /// </summary>
+    /// <exception cref="System.InvalidCastException">
+    /// Thrown when <paramref name="other"/> is not the same concrete type as this instance.
+    /// </exception>
     public void UnsafeMerge(IRunningStatistic<TObs> other);
 }
 
@@ -94,13 +107,18 @@ public interface IRunningStatistic<TObs, TSelf> : IRunningStatistic<TObs>
     public new TSelf CloneEmpty();
 
     /// <summary>
-    /// Create a deep copy of the running statistic.
+    /// Create a deep copy of the running statistic. The default implementation in
+    /// <see cref="RunningStatisticBase{TObs,TSelf}"/> calls <see cref="CloneEmpty"/> followed by
+    /// <see cref="Merge"/>, so both of those members must be correctly implemented for
+    /// <c>Clone</c> to behave correctly.
     /// </summary>
     /// <returns>A copy with the same concrete type.</returns>
     public new TSelf Clone();
 
     /// <summary>
-    /// Merge the values from another running statistic of the same concrete type.
+    /// Merge the values from another running statistic of the same concrete type into this instance.
+    /// This is the type-safe counterpart to <c>UnsafeMerge</c> and is also used internally by the
+    /// default <see cref="Clone"/> implementation.
     /// </summary>
     public void Merge(TSelf other);
 }
