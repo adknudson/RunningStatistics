@@ -20,8 +20,7 @@
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>
-            - Added overloads for CountMap.MinKey and CountMap.MaxKey that accept IComparer objects
-			- Added a Quantile method for CountMap
+            - Updated support to .NET 10
 		</PackageReleaseNotes>
 	</PropertyGroup>
 	
