@@ -52,7 +52,7 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
     public virtual TSelf Clone()
     {
         var newStat = CloneEmpty();
-        newStat.UnsafeMerge(this);
+        newStat.Merge((TSelf)(IRunningStatistic<TObs, TSelf>)this);
         return newStat;
     }
 
