@@ -58,13 +58,13 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
     /// The median of the Beta distribution. Exists when there is at least one observed success
     /// and at least one observed failure.
     /// </summary>
-    public double Median => _a > 1 && _b > 1 
+    public double Median => _a > 0 && _b > 0 
         ? this.Quantile(0.5)
         : double.NaN;
 
     /// <summary>
-    /// The mode of the Beta distribution. Exists when there is at least one observed success
-    /// and at least one observed failure.
+    /// The mode of the Beta distribution. Exists when there are <c>>1</c> observed successes and
+    /// <c>>1</c> observed failures.
     /// </summary>
     public double Mode => _a > 1 && _b > 1
         ? (double)(_a - 1) / (_a + _b - 2)

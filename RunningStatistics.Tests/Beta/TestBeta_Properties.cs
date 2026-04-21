@@ -91,7 +91,7 @@ public partial class TestBeta
         Assert.Equal(1, beta.Failures);
         
         Assert.Equal(0.5, beta.Mean);
-        Assert.Equal(double.NaN, beta.Median);
+        Assert.Equal(0.5, beta.Median);
         Assert.Equal(double.NaN, beta.Mode);
         Assert.Equal(0.08333333333333333, beta.Variance, 10);
     }
