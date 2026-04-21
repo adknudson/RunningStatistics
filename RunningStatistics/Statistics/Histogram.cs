@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -26,6 +27,13 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     public Histogram(IEnumerable<double> edges, bool leftClosed = true, bool endsClosed = true)
     {
         _edges = edges.OrderBy(e => e).ToList();
+        
+        if (_edges.Count < 2)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(edges), _edges.Count, "At least 2 edges are required to define histogram bins.");
+        }
+        
         LeftClosed = leftClosed;
         EndsClosed = endsClosed;
         
