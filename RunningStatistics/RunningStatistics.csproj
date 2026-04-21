@@ -8,7 +8,7 @@
 	
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageVersion>3.2.0</PackageVersion>
+		<PackageVersion>3.2.1</PackageVersion>
 		<Authors>Alex Knudson</Authors>
 		<Title>Running Statistics</Title>
 		<Description>A library of single pass algorithms for statistical measures.</Description>
@@ -20,7 +20,8 @@
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>
-            - Updated support to .NET 10
+            - Fixed bug in `CountMap.CloneEmpty`
+			- Relaxed conditions for `Beta.Median`
 		</PackageReleaseNotes>
 	</PropertyGroup>
 	
@@ -33,6 +34,10 @@
 	
 	<ItemGroup>
 	  <PackageReference Include="System.Memory" Version="4.6.3" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<InternalsVisibleTo Include="RunningStatistics.Tests" />
 	</ItemGroup>
 	
 </Project>
