@@ -104,7 +104,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
         _nobs = 0;
     }
     
-    public override CountMap<TObs> CloneEmpty() => new();
+    public override CountMap<TObs> CloneEmpty() => new(Comparer);
     
     public bool ContainsKey(TObs key) => _dict.ContainsKey(key);
     
