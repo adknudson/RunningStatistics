@@ -3,12 +3,12 @@
 	<PropertyGroup>
 		<LangVersion>default</LangVersion>
 		<Nullable>enable</Nullable>
-		<TargetFrameworks>net8.0;net9.0;netstandard2.0;netstandard2.1</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;netstandard2.1;net8.0;net9.0;net10.0</TargetFrameworks>
 	</PropertyGroup>
 	
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageVersion>3.1.0</PackageVersion>
+		<PackageVersion>3.2.0</PackageVersion>
 		<Authors>Alex Knudson</Authors>
 		<Title>Running Statistics</Title>
 		<Description>A library of single pass algorithms for statistical measures.</Description>
@@ -20,8 +20,7 @@
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>
-            - Added overloads for CountMap.MinKey and CountMap.MaxKey that accept IComparer objects
-			- Added a Quantile method for CountMap
+            - Updated support to .NET 10
 		</PackageReleaseNotes>
 	</PropertyGroup>
 	

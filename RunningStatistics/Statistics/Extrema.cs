@@ -130,5 +130,10 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
         _nobs += other.Nobs;
     }
 
+    public double Range()
+    {
+        return Max - Min;
+    }
+
     public override string ToString() => base.ToString() + $" | Min={Min} (n={MinCount:N0}), Max={Max} (n={MaxCount:N0})";
 }
