@@ -31,6 +31,7 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
     public override void Fit(IEnumerable<double> values)
     {
         var ys = values.ToList();
+        if (ys.Count == 0) return;
         ys.ForEach(Require.Finite);
         UncheckedFit(ys);
     }
