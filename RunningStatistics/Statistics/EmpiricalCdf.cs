@@ -120,6 +120,10 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
                                 $"Got {NumBins} and {empiricalCdf.NumBins}.");
         }
 
+        // NOTE: Any observations held in empiricalCdf's internal buffer that have not yet been
+        // flushed into its quantile values (i.e. when empiricalCdf.Nobs % NumBins != 0) are not
+        // transferred by this merge. This is a known approximation inherent to the streaming
+        // algorithm — the merged result reflects only the fully processed batches from the source.
         _extrema.Merge(empiricalCdf._extrema);
 
         if (Nobs == 0) return;
