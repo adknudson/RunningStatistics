@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using MathNet.Numerics.Distributions;
 using Xunit;
 
@@ -628,5 +629,14 @@ public partial class TestEmpiricalCdf
         Utils.AssertIsApproximate(0.0, cdf.Cdf(0.4), 0);
         Utils.AssertIsApproximate(1.0, cdf.Cdf(10.5), 0);
         Utils.AssertIsApproximate(1.0, cdf.Cdf(11.0), 0);
+    }
+
+    // Commit 24: null iterable Fit contract — EmpiricalCdf has no iterable Fit override.
+    [Fact]
+    public void Fit_RejectsNullIterable()
+    {
+        RunningStatistics.EmpiricalCdf cdf = new(10);
+        Assert.Throws<ArgumentNullException>(() => cdf.Fit((IEnumerable<double>?)null));
+        Assert.Equal(0, cdf.Nobs);
     }
 }

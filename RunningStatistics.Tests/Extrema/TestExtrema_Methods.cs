@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace RunningStatistics.Tests.Extrema;
@@ -640,6 +641,15 @@ public partial class TestExtrema
         Assert.Equal(new MyComparable(4.0m), g.Max);
         Assert.Equal(3, g.MinCount);
         Assert.Equal(3, g.MaxCount);
+    }
+
+    // Commit 24: null iterable Fit contract — Extrema (double) has no iterable Fit override.
+    [Fact]
+    public void Fit_RejectsNullIterable()
+    {
+        var extrema = new RunningStatistics.Extrema();
+        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<double>?)null));
+        Assert.Equal(0, extrema.Nobs);
     }
 
     /// <summary>

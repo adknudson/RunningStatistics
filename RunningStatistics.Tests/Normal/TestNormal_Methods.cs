@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace RunningStatistics.Tests.Normal;
@@ -289,5 +290,14 @@ public partial class TestNormal
         fresh.Fit(new double[0]);
         Assert.Equal(0, fresh.Nobs);
         Assert.Equal(double.NaN, fresh.Mean);
+    }
+
+    // Commit 24: null iterable Fit contract.
+    [Fact]
+    public void Fit_RejectsNullIterable()
+    {
+        var normal = new RunningStatistics.Normal();
+        Assert.Throws<ArgumentNullException>(() => normal.Fit((IEnumerable<double>?)null));
+        Assert.Equal(0, normal.Nobs);
     }
 }

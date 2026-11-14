@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace RunningStatistics.Tests.Extrema;
@@ -202,5 +203,16 @@ public partial class TestExtremaGenericComparableType
         a.Merge(b);
 
         Assert.Equal(4, a.Nobs);
+    }
+
+    // Commit 24: null iterable Fit contract — Extrema<TObs> has no iterable Fit override
+    // (only the value overloads got Require.NotNull in Commit 3), so the iterable call
+    // resolves to the base RunningStatisticBase.Fit(IEnumerable<TObs>).
+    [Fact]
+    public void Fit_RejectsNullIterable()
+    {
+        Extrema<MyComparable> extrema = new();
+        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<MyComparable>?)null));
+        Assert.Equal(0, extrema.Nobs);
     }
 }

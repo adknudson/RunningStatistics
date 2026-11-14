@@ -286,4 +286,14 @@ public partial class TestMean
         Assert.Equal(4, filled.Nobs);
         Assert.Equal(2.5, filled.Value);
     }
+
+    // Commit 24: null iterable Fit contract — a null IEnumerable reference must be
+    // rejected with ArgumentNullException, and state stays untouched.
+    [Fact]
+    public void Fit_RejectsNullIterable()
+    {
+        var mean = new RunningStatistics.Mean();
+        Assert.Throws<ArgumentNullException>(() => mean.Fit((IEnumerable<double>?)null));
+        Assert.Equal(0, mean.Nobs);
+    }
 }

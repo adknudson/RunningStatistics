@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using MathNet.Numerics.Distributions;
 using Xunit;
 
@@ -302,5 +303,15 @@ public partial class TestMoments
         Utils.AssertIsApproximate(dist.Variance, moments.Variance, 0.01);
         Utils.AssertIsApproximate(dist.Skewness, moments.Skewness, 0.01);
         Utils.AssertIsApproximate(excessKurtosis, moments.ExcessKurtosis, 0.1);
+    }
+
+    // Commit 24: null iterable Fit contract — Moments has no iterable Fit override;
+    // the call resolves to the base RunningStatisticBase.Fit(IEnumerable<double>).
+    [Fact]
+    public void Fit_RejectsNullIterable()
+    {
+        var moments = new RunningStatistics.Moments();
+        Assert.Throws<ArgumentNullException>(() => moments.Fit((IEnumerable<double>?)null));
+        Assert.Equal(0, moments.Nobs);
     }
 }

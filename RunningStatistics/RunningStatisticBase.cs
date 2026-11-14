@@ -23,6 +23,7 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
     
     public virtual void Fit(IEnumerable<TObs> values)
     {
+        Require.NotNull(values);
         foreach (var value in values)
         {
             Fit(value);
@@ -31,6 +32,7 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
     
     public virtual void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs)
     {
+        Require.NotNull(keyValuePairs);
         foreach (var kvp in keyValuePairs)
         {
             Fit(kvp.Key, kvp.Value);

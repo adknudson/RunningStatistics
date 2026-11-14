@@ -270,6 +270,15 @@ public partial class TestBeta()
         Assert.Equal(ctor.Variance, batch.Variance);
     }
 
+    // Commit 24: null iterable Fit contract — bool iterables.
+    [Fact]
+    public void Fit_RejectsNullIterable()
+    {
+        var beta = new RunningStatistics.Beta();
+        Assert.Throws<ArgumentNullException>(() => beta.Fit((IEnumerable<bool>?)null));
+        Assert.Equal(0, beta.Nobs);
+    }
+
     private static List<bool> SeededBooleans()
     {
         var values = new List<bool>();

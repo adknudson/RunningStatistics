@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Numerics;
 using Xunit;
 
@@ -52,6 +53,16 @@ public abstract class TestSumGenericMethods<TObs>
         sum.Fit(From(-20));
         sum.Fit(From(30));
         Assert.Equal(From(20), sum.Value);
+    }
+
+    // Commit 24: null iterable Fit contract — Sum<TObs> has no iterable Fit override,
+    // so the call resolves to the base RunningStatisticBase.Fit(IEnumerable<TObs>).
+    [Fact]
+    public void Fit_RejectsNullIterable()
+    {
+        var sum = new Sum<TObs>();
+        Assert.Throws<ArgumentNullException>(() => sum.Fit((IEnumerable<TObs>?)null));
+        Assert.Equal(0L, sum.Nobs);
     }
 }
 

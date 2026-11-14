@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace RunningStatistics.Tests.Extrema;
@@ -213,5 +214,14 @@ public partial class TestExtremaGenericNumberType
         var range = extrema.Range();
         
         Assert.Equal(new MyNum(2.0m), range);
+    }
+
+    // Commit 24: null iterable Fit contract — see the comparable-type twin above.
+    [Fact]
+    public void Fit_RejectsNullIterable()
+    {
+        Extrema<MyNum> extrema = new();
+        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<MyNum>?)null));
+        Assert.Equal(0, extrema.Nobs);
     }
 }

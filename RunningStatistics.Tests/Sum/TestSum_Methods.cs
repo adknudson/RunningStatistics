@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace RunningStatistics.Tests.Sum;
@@ -203,5 +204,14 @@ public partial class TestSum
         fitSaturated.Fit(1.7e308, 2);
         Assert.Equal(2, fitSaturated.Nobs);
         Assert.Equal(double.PositiveInfinity, fitSaturated.Value);
+    }
+
+    // Commit 24: null iterable Fit contract.
+    [Fact]
+    public void Fit_RejectsNullIterable()
+    {
+        var sum = new RunningStatistics.Sum();
+        Assert.Throws<ArgumentNullException>(() => sum.Fit((IEnumerable<double>?)null));
+        Assert.Equal(0, sum.Nobs);
     }
 }
