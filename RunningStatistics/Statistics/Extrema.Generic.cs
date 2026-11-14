@@ -40,10 +40,15 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
 
     protected override long GetNobs() => _nobs;
 
-    public override void Fit(TObs value) => UncheckedFit(value, 1);
+    public override void Fit(TObs value)
+    {
+        Require.NotNull(value);
+        UncheckedFit(value, 1);
+    }
 
     public override void Fit(TObs value, long count)
     {
+        Require.NotNull(value);
         Require.NonNegative(count);
         if (count == 0) return;
         UncheckedFit(value, count);

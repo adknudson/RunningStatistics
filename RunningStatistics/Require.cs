@@ -31,6 +31,18 @@ internal static class Require
     }
 
     /// <summary>
+    /// Requires that the value is not null.
+    /// </summary>
+    /// <exception cref="System.ArgumentNullException">When the value is null.</exception>
+    public static void NotNull(object? value)
+    {
+        if (value is null)
+        {
+            throw new ArgumentNullException("value", "Value must not be null");
+        }
+    }
+    
+    /// <summary>
     /// Requires that the value is non-negative (must be greater than or equal to zero).
     /// </summary>
     /// <param name="value">The value to check.</param>
