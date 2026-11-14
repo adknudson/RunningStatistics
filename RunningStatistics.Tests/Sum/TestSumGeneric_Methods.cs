@@ -221,5 +221,36 @@ public class TestSumGenericMethods_MyAddOnlyNum : TestSumGenericMethods<MyAddOnl
 {
     // MyAddOnlyNum has no Mean() extension — only Sum/Value tests from the base apply.
     protected override MyAddOnlyNum From(int value) => new(value);
+
+    [Fact] public void FallbackFit_ModerateCount_ExactSum()
+    {
+        // 1_000_003 is odd with an interesting bit pattern (bits 19,18,17,16,14,9,6,1,0 set):
+        // the O(log count) doubling fallback must produce exactly count * value for the
+        // integer-backed helper. int backing: 3 * 1_000_003 = 3_000_009 fits exactly.
+        const long count = 1_000_003L;
+        var sum = new Sum<MyAddOnlyNum>();
+        sum.Fit(From(3), count);
+        Assert.Equal(count, sum.Nobs);
+        Assert.Equal(3L * count, (long)sum.Value.Value);
+    }
+}
+
+public class TestSumGenericMethods_MyBigAddOnlyNum : TestSumGenericMethods<MyBigAddOnlyNum>
+{
+    // MyBigAddOnlyNum has no Mean() extension — only Sum/Value tests from the base apply.
+    // long-backed (unlike int-backed MyAddOnlyNum) so count * value is exactly representable
+    // even at count = long.MaxValue with value = 1.
+    protected override MyBigAddOnlyNum From(int value) => new(value);
+
+    [Fact] public void FallbackFit_HugeCountCompletes()
+    {
+        // The fallback (no IMultiplyOperators delegate) must handle huge counts without
+        // iterating count times: this completes fast with the exact value count * value
+        // (v = 1, long-backed so 1 * long.MaxValue is exact) and Nobs == long.MaxValue.
+        var sum = new Sum<MyBigAddOnlyNum>();
+        sum.Fit(From(1), long.MaxValue);
+        Assert.Equal(long.MaxValue, sum.Nobs);
+        Assert.Equal(long.MaxValue, sum.Value.Value);
+    }
 }
 
