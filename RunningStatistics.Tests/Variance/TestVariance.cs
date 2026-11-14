@@ -97,6 +97,43 @@ public partial class TestVariance()
     }
 
     [Fact]
+    public void BatchFit_AccurateNear1e9()
+    {
+        var offset = 1e9;
+        var rng = new Random(42);
+        var values = new List<double>();
+        for (var i = 0; i < 100; i++)
+        {
+            values.Add(offset + rng.NextDouble());
+        }
+        
+        var batch = new RunningStatistics.Variance();
+        batch.Fit(values);
+        
+        var mean = 0.0;
+        foreach (var v in values)
+        {
+            mean += v;
+        }
+        mean /= values.Count;
+        var sumSquaredDeviation = 0.0;
+        foreach (var v in values)
+        {
+            sumSquaredDeviation += (v - mean) * (v - mean);
+        }
+        var expected = sumSquaredDeviation / (values.Count - 1);
+        
+        Utils.AssertIsApproximate(expected, batch.Value, 0);
+        
+        var incremental = new RunningStatistics.Variance();
+        foreach (var v in values)
+        {
+            incremental.Fit(v);
+        }
+        Utils.AssertIsApproximate(expected, incremental.Value, 0);
+    }
+    
+    [Fact]
     public void ConstantStream_VarianceNeverNegative()
     {
         var v1 = new RunningStatistics.Variance();

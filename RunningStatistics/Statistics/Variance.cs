@@ -93,8 +93,7 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     
     private static double ComputeVariance(List<double> xs, double mean)
     {
-        var meanSquare = xs.Average(s => s * s);
-        return Math.Abs(meanSquare - mean * mean);
+        return xs.Average(s => (s - mean) * (s - mean));
     }
 
     public override string ToString() => base.ToString() + $" | s²={Value}";
