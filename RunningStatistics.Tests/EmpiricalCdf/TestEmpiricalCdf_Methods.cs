@@ -366,4 +366,99 @@ public partial class TestEmpiricalCdf
         Utils.AssertIsApproximate(dist.CumulativeDistribution(1.1), cdf.Cdf(1.1), 0.25);
         Utils.AssertIsApproximate(dist.CumulativeDistribution(1.2), cdf.Cdf(1.2), 0.25);
     }
+
+    [Fact]
+    public void Quantile_DuplicateOrderStatsInterpolatesHonestly()
+    {
+        // Exact duplicates in the sample; Nobs == NumBins, so the single flush (alpha = 1)
+        // writes Values = the sorted sample exactly: V = [1,2,2,2] with Min = 1, Max = 2.
+        // The interpolation window is [Min, V0..V3, Max] = [1,1,2,2,2,2] and Quantile(p)
+        // interpolates at index (NumBins + 1) * p in that window.
+        RunningStatistics.EmpiricalCdf cdf = new(4);
+        foreach (var v in new[] { 1.0, 2.0, 2.0, 2.0 })
+        {
+            cdf.Fit(v);
+        }
+
+        // Index 2.5 lies between the EQUAL adjacent order stats V[1] = V[2] = 2: the honest
+        // answer of any interpolation between equal values is that value.
+        Utils.AssertIsApproximate(2.0, cdf.Quantile(0.5), 0);
+        Utils.AssertIsApproximate(2.0, cdf.Quantile(0.7), 0);
+        // Index 4.5 lies between V[3] = 2 and Max = 2 — also equal neighbors.
+        Utils.AssertIsApproximate(2.0, cdf.Quantile(0.9), 0);
+        // Index 0.5 lies between Min = 1 and V[0] = 1 — equal neighbors at the head.
+        Utils.AssertIsApproximate(1.0, cdf.Quantile(0.1), 0);
+        // Non-degenerate interior span between V[0] = 1 and V[1] = 2 at index 1.5.
+        Utils.AssertIsApproximate(1.5, cdf.Quantile(0.3), 0);
+        // Exact whole window index (p = 0.2, index 1.0, r = 0) must take V[0] as-is.
+        Utils.AssertIsApproximate(1.0, cdf.Quantile(0.2), 0);
+
+        // All-equal sample: every order stat, Min and Max are the constant.
+        RunningStatistics.EmpiricalCdf flat = new(4);
+        for (var i = 0; i < 4; i++)
+        {
+            flat.Fit(5.0);
+        }
+
+        Utils.AssertIsApproximate(5.0, flat.Median, 0);
+    }
+
+    [Fact]
+    public void Cdf_DuplicatesAndBoundaryValuesHonest()
+    {
+        // _values after the flush: [Min, V0..V3, Max] = [1,1,2,2,2,2] (length 6).
+        RunningStatistics.EmpiricalCdf cdf = new(4);
+        foreach (var v in new[] { 1.0, 2.0, 2.0, 2.0 })
+        {
+            cdf.Fit(v);
+        }
+
+        // Outside the range: 0 below Min, 1 at/above Max.
+        Utils.AssertIsApproximate(0.0, cdf.Cdf(0.5), 0);
+        Utils.AssertIsApproximate(1.0, cdf.Cdf(2.0), 0);
+        Utils.AssertIsApproximate(1.0, cdf.Cdf(10.0), 0);
+
+        // x equal to Min, which also sits duplicated at window slot 1: the first value
+        // greater than x is at index 2 with a POSITIVE span (the run of duplicated 2s is
+        // skipped by the first-match scan), so r = 0 and the answer is slot index 1/6.
+        Utils.AssertIsApproximate(1.0 / 6.0, cdf.Cdf(1.0), 0);
+
+        // x strictly inside the only positive-span gap (between window slot 1 = 1 and the
+        // run of 2s): positional interpolation, e.g. (1 + 0.5) / 6 at x = 1.5.
+        Utils.AssertIsApproximate(0.25, cdf.Cdf(1.5), 0);
+        Utils.AssertIsApproximate(1.99 / 6.0, cdf.Cdf(1.99), 0);
+
+        // All-equal sample: Min == Max, so every query must fall in a range guard — no
+        // 0/0 interpolation is reachable and no index is ever used out of bounds.
+        RunningStatistics.EmpiricalCdf flat = new(4);
+        for (var i = 0; i < 4; i++)
+        {
+            flat.Fit(5.0);
+        }
+
+        Utils.AssertIsApproximate(0.0, flat.Cdf(4.99), 0);
+        Utils.AssertIsApproximate(1.0, flat.Cdf(5.0), 0);
+        Utils.AssertIsApproximate(1.0, flat.Cdf(5.01), 0);
+    }
+
+    [Fact]
+    public void Quantile_ZeroAndOneBounds()
+    {
+        RunningStatistics.EmpiricalCdf cdf = new(4);
+        foreach (var v in new[] { 1.0, 2.0, 2.0, 2.0 })
+        {
+            cdf.Fit(v);
+        }
+
+        // p exactly 0 and 1 must return Min and Max exactly (and -0.0 must count as 0).
+        Utils.AssertIsApproximate(cdf.Min, cdf.Quantile(0.0), 0);
+        Utils.AssertIsApproximate(cdf.Max, cdf.Quantile(1.0), 0);
+        Utils.AssertIsApproximate(cdf.Min, cdf.Quantile(-0.0), 0);
+
+        // Just inside the bounds: after a flush Min == V[0] and V[last] == Max, so the
+        // head/tail interpolation spans have zero WIDTH and the honest answer is the
+        // endpoint value itself, never NaN.
+        Utils.AssertIsApproximate(1.0, cdf.Quantile(0.002), 0);
+        Utils.AssertIsApproximate(2.0, cdf.Quantile(0.998), 0);
+    }
 }
