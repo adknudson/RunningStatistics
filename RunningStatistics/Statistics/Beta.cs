@@ -75,7 +75,7 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
     /// and at least one observed failure.
     /// </summary>
     public double Variance => _a > 0 && _b > 0
-        ? _a * _b / (Math.Pow(_a + _b, 2) * (_a + _b + 1))
+        ? (double)_a * _b / (Math.Pow(_a + _b, 2) * (_a + _b + 1)) 
         : double.NaN;
 
 
