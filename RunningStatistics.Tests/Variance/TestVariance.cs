@@ -97,6 +97,32 @@ public partial class TestVariance()
     }
 
     [Fact]
+    public void ConstantStream_VarianceNeverNegative()
+    {
+        var v1 = new RunningStatistics.Variance();
+        for (var i = 0; i < 20; i++)
+        {
+            v1.Fit(7.0);
+        }
+        
+        var v2 = new RunningStatistics.Variance();
+        for (var i = 0; i < 5; i++)
+        {
+            v2.Fit(7.0);
+        }
+        
+        var v3 = new RunningStatistics.Variance();
+        v3.Fit([7.0, 7.0, 7.0]);
+        v2.Merge(v3);
+        
+        v1.Merge(v2);
+        
+        Assert.Equal(28, v1.Nobs);
+        Assert.Equal(0, v1.Value);
+        Assert.Equal(0, v1.StandardDeviation);
+    }
+    
+    [Fact]
     public void Fit_NobsOverflowThrows()
     {
         var v = new RunningStatistics.Variance();
