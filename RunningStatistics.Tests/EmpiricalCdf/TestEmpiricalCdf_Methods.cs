@@ -143,6 +143,103 @@ public partial class TestEmpiricalCdf
     }
 
     [Fact]
+    public void Merge_NoPhantomZeroBias()
+    {
+        const int bins = 10;
+        Random rng = new(1811);
+
+        // Scenario 1: the merge source has only an unflushed partial buffer (9 < bins
+        // observations), so its Values slots are all still zero while its Nobs already
+        // counts those values. The merge must not weight those phantom zeros.
+        RunningStatistics.EmpiricalCdf a = new(bins);
+        double[] values = new double[109];
+        var count = 0;
+        for (var i = 0; i < 100; i++)
+        {
+            var v = 50.0 + 10.0 * rng.NextDouble();
+            a.Fit(v);
+            values[count++] = v;
+        }
+
+        RunningStatistics.EmpiricalCdf partial = new(bins);
+        for (var i = 0; i < 9; i++)
+        {
+            var v = 50.0 + 10.0 * rng.NextDouble();
+            partial.Fit(v);
+            values[count++] = v;
+        }
+
+        Assert.Equal(100, a.Nobs);
+        Assert.Equal(9, partial.Nobs);
+
+        a.Merge(partial);
+
+        Assert.Equal(109, a.Nobs);
+        Assert.Equal(9, partial.Nobs);
+
+        // Every observation lies in [50, 60), so an honest merge's quantiles must match
+        // the interpolated order statistics of the full combined sample. The buggy merge
+        // instead blends the source's all-zero Values, pulling quantiles toward 0.
+        foreach (var p in new[] { 0.25, 0.5, 0.75 })
+        {
+            Utils.AssertIsApproximate(HonestQuantile(values, count, p), a.Quantile(p), 1.0);
+        }
+
+        // Scenario 2: the merge source has one flushed block plus an unflushed tail of 5,
+        // and all values share one support — the unflushed tail must be replayed into the
+        // merged stat without corrupting either side's state.
+        RunningStatistics.EmpiricalCdf a2 = new(bins);
+        double[] values2 = new double[115];
+        var count2 = 0;
+        for (var i = 0; i < 100; i++)
+        {
+            var v = 50.0 + 10.0 * rng.NextDouble();
+            a2.Fit(v);
+            values2[count2++] = v;
+        }
+
+        RunningStatistics.EmpiricalCdf tail = new(bins);
+        for (var i = 0; i < 15; i++)
+        {
+            var v = 50.0 + 10.0 * rng.NextDouble();
+            tail.Fit(v);
+            values2[count2++] = v;
+        }
+
+        var tailQuantileBefore = tail.Quantile(0.5);
+
+        Assert.Equal(100, a2.Nobs);
+        Assert.Equal(15, tail.Nobs);
+
+        a2.Merge(tail);
+
+        Assert.Equal(115, a2.Nobs);
+        Assert.Equal(15, tail.Nobs);
+        Assert.Equal(tailQuantileBefore, tail.Quantile(0.5));
+
+        foreach (var p in new[] { 0.25, 0.5, 0.75 })
+        {
+            Utils.AssertIsApproximate(HonestQuantile(values2, count2, p), a2.Quantile(p), 1.0);
+        }
+    }
+
+    private static double HonestQuantile(double[] values, int count, double p)
+    {
+        var sorted = new double[count];
+        for (var i = 0; i < count; i++)
+        {
+            sorted[i] = values[i];
+        }
+
+        Array.Sort(sorted);
+
+        var h = (count - 1) * p;
+        var lo = (int)Math.Floor(h);
+        var hi = Math.Min(lo + 1, count - 1);
+        return sorted[lo] + (h - lo) * (sorted[hi] - sorted[lo]);
+    }
+
+    [Fact]
     public void CdfEdgeCases()
     {
         RunningStatistics.EmpiricalCdf cdf = new(20);

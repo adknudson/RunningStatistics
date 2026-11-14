@@ -120,17 +120,43 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
                                 $"Got {NumBins} and {empiricalCdf.NumBins}.");
         }
 
-        // NOTE: Any observations held in empiricalCdf's internal buffer that have not yet been
-        // flushed into its quantile values (i.e. when empiricalCdf.Nobs % NumBins != 0) are not
-        // transferred by this merge. This is a known approximation inherent to the streaming
-        // algorithm — the merged result reflects only the fully processed batches from the source.
+        // Only observations fully flushed into each object's Values array may carry weight in
+        // the blend: slots of empiricalCdf beyond its flushed region are stale (zeros until its
+        // first flush), and observations still sitting in its buffer have to be replayed into
+        // this object instead of being represented by those slots.
+        var otherPartial = empiricalCdf.Nobs % NumBins;
+        var thisFlushed = Nobs - (Nobs % NumBins);
+        var otherFlushed = empiricalCdf.Nobs - otherPartial;
+
+        var flushedTotal = thisFlushed + otherFlushed;
+        if (flushedTotal > 0)
+        {
+            var alpha = (double) otherFlushed / flushedTotal;
+            for (var k = 0; k < NumBins; k++)
+            {
+                Values[k] = Utils.Smooth(Values[k], empiricalCdf.Values[k], alpha);
+            }
+        }
+
+        // Counts, min and max for all of the source's observations, including its unflushed tail.
         _extrema.Merge(empiricalCdf._extrema);
 
-        if (Nobs == 0) return;
-
-        for (var k = 0; k < NumBins; k++)
+        // Replay the source's not-yet-flushed buffer values through this object's buffer and
+        // quantile-value update (the buffer half of UncheckedFit): their counts and min/max are
+        // already accounted for by the extrema merge above, so they must not be fitted to the
+        // extrema again. They belong at the tail positions of the merged observation stream.
+        for (var r = 0; r < otherPartial; r++)
         {
-            Values[k] = Utils.Smooth(Values[k], empiricalCdf.Values[k], (double) empiricalCdf.Nobs / Nobs);
+            var i = (int) ((Nobs - otherPartial + r) % NumBins);
+            _buffer[i] = empiricalCdf._buffer[r];
+
+            if (i + 1 < NumBins) continue;
+
+            Array.Sort(_buffer);
+            for (var k = 0; k < NumBins; k++)
+            {
+                Values[k] = Utils.Smooth(Values[k], _buffer[k], (double) NumBins / Nobs);
+            }
         }
     }
     
