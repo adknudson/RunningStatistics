@@ -15,6 +15,107 @@ public partial class TestMoments
         Assert.Equal(long.MaxValue / 2 + 1, m.Nobs);
     }
 
+    // Pins the ACCURACY (not exactness) of Moments on jittered 1e6-scale data against a two-pass
+    // reference (direct central sums). Moments accumulates raw power sums (M2 ~1e12, M3 ~1e18,
+    // M4 ~1e24), so forming central moments subtracts huge nearby quantities: at offset 1e6 the
+    // observed relative error is ~1.7e-4 for Variance (4.7e-3 merged), while Skewness (error
+    // ~4e4) and Kurtosis (error ~2.1e11) are outright garbage, not just imprecise. These pins
+    // document that current accuracy; they do NOT demand improvement. Tightening Skewness/Kurtosis
+    // belongs to the deferred recursive central-moment rework of Moments (see AGENT_PLAN.md).
+    [Fact]
+    public void Accuracy_PinRawMomentsNearOffset()
+    {
+        const int n = 150;
+        const double offset = 1e6;
+        var rng = new Random(20251114);
+
+        var values = new double[n];
+        for (var i = 0; i < n; i++) values[i] = offset + rng.NextDouble();
+
+        var moments = new RunningStatistics.Moments();
+        for (var i = 0; i < n; i++) moments.Fit(values[i]);
+
+        // Two-pass reference: simple mean, then central sums directly.
+        var sum = 0.0;
+        foreach (var v in values) sum += v;
+        var mean = sum / n;
+
+        var c2 = 0.0;
+        var c3 = 0.0;
+        var c4 = 0.0;
+        foreach (var v in values)
+        {
+            var d = v - mean;
+            var d2 = d * d;
+            c2 += d2;
+            c3 += d2 * d;
+            c4 += d2 * d2;
+        }
+
+        var refVariance = c2 / (n - 1);
+        var refStdDev = Math.Sqrt(refVariance);
+        var refSkewness = (c3 / n) / Math.Pow(c2 / n, 1.5);
+        var refKurtosis = (c4 / n) / ((c2 / n) * (c2 / n));
+
+        Utils.AssertIsApproximate(mean, moments.Mean, 0.0);
+        Utils.AssertIsApproximate(refVariance, moments.Variance, 1e-2 * refVariance);
+        Utils.AssertIsApproximate(refStdDev, moments.StandardDeviation, 1e-2 * refStdDev);
+        Utils.AssertIsApproximate(refSkewness, moments.Skewness, 1e5);
+        Utils.AssertIsApproximate(refKurtosis, moments.Kurtosis, 1e12);
+        Utils.AssertIsApproximate(refKurtosis - 3, moments.ExcessKurtosis, 1e12);
+    }
+
+    // Same pin as Accuracy_PinRawMomentsNearOffset, through the Merge path: the raw-power-sum
+    // cancellation is just as severe when two stats are merged (observed: Variance rel err
+    // ~4.7e-3, Skewness abs err ~4e4, Kurtosis abs err ~2.1e11).
+    [Fact]
+    public void Accuracy_PinMergedMomentsNearOffset()
+    {
+        const int n = 150;
+        const double offset = 1e6;
+        var rng = new Random(20251114);
+
+        var values = new double[n];
+        for (var i = 0; i < n; i++) values[i] = offset + rng.NextDouble();
+
+        var left = new RunningStatistics.Moments();
+        var right = new RunningStatistics.Moments();
+        for (var i = 0; i < n; i++)
+        {
+            if (i < n / 2) left.Fit(values[i]);
+            else right.Fit(values[i]);
+        }
+        left.Merge(right);
+
+        // Same two-pass reference as Accuracy_PinRawMomentsNearOffset.
+        var sum = 0.0;
+        foreach (var v in values) sum += v;
+        var mean = sum / n;
+
+        var c2 = 0.0;
+        var c3 = 0.0;
+        var c4 = 0.0;
+        foreach (var v in values)
+        {
+            var d = v - mean;
+            var d2 = d * d;
+            c2 += d2;
+            c3 += d2 * d;
+            c4 += d2 * d2;
+        }
+
+        var refVariance = c2 / (n - 1);
+        var refStdDev = Math.Sqrt(refVariance);
+        var refSkewness = (c3 / n) / Math.Pow(c2 / n, 1.5);
+        var refKurtosis = (c4 / n) / ((c2 / n) * (c2 / n));
+
+        Utils.AssertIsApproximate(mean, left.Mean, 0.0);
+        Utils.AssertIsApproximate(refVariance, left.Variance, 1e-2 * refVariance);
+        Utils.AssertIsApproximate(refStdDev, left.StandardDeviation, 1e-2 * refStdDev);
+        Utils.AssertIsApproximate(refSkewness, left.Skewness, 1e5);
+        Utils.AssertIsApproximate(refKurtosis, left.Kurtosis, 1e12);
+    }
+
     [Fact]
     public void EmptyMomentsAreNaN()
     {
