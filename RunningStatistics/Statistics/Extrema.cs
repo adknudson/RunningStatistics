@@ -51,7 +51,7 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
             _min = _max = value;
         }
         
-        _nobs += count;
+        checked { _nobs += count; }
         
         if (value < _min)
         {
@@ -107,6 +107,8 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
         
         // if both are non-empty, merge
         
+        checked { _nobs += other.Nobs; }
+        
         if (_min == other._min)
         {
             _minCount += other._minCount;
@@ -126,8 +128,6 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
             _max = other._max;
             _maxCount = other._maxCount;
         }
-        
-        _nobs += other.Nobs;
     }
 
     public double Range()

@@ -7,6 +7,15 @@ namespace RunningStatistics.Tests.Moments;
 public partial class TestMoments
 {
     [Fact]
+    public void Fit_NobsOverflowThrows()
+    {
+        var m = new RunningStatistics.Moments();
+        m.Fit(1.0, long.MaxValue / 2 + 1);
+        Assert.Throws<OverflowException>(() => m.Fit(1.0, long.MaxValue / 2 + 1));
+        Assert.Equal(long.MaxValue / 2 + 1, m.Nobs);
+    }
+
+    [Fact]
     public void EmptyMomentsAreNaN()
     {
         RunningStatistics.Moments m = new();

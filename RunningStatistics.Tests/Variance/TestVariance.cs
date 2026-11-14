@@ -97,6 +97,15 @@ public partial class TestVariance()
     }
 
     [Fact]
+    public void Fit_NobsOverflowThrows()
+    {
+        var v = new RunningStatistics.Variance();
+        v.Fit(1.0, long.MaxValue / 2 + 1);
+        Assert.Throws<OverflowException>(() => v.Fit(1.0, long.MaxValue / 2 + 1));
+        Assert.Equal(long.MaxValue / 2 + 1, v.Nobs);
+    }
+    
+    [Fact]
     public void Merge_DoesNotChangeOtherState()
     {
         var v1 = new RunningStatistics.Variance();

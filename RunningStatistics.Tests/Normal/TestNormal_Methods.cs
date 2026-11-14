@@ -6,6 +6,15 @@ namespace RunningStatistics.Tests.Normal;
 public partial class TestNormal
 {
     [Fact]
+    public void Fit_NobsOverflowThrows()
+    {
+        var normal = new RunningStatistics.Normal();
+        normal.Fit(1.0, long.MaxValue / 2 + 1);
+        Assert.Throws<OverflowException>(() => normal.Fit(1.0, long.MaxValue / 2 + 1));
+        Assert.Equal(long.MaxValue / 2 + 1, normal.Nobs);
+    }
+
+    [Fact]
     public void ShouldReturnNaN_WhenNoData()
     {
         var x = new RunningStatistics.Normal();

@@ -10,6 +10,15 @@ public partial class TestBeta()
         () => new RunningStatistics.Beta())
 {
     [Fact]
+    public void Fit_NobsOverflowThrows()
+    {
+        var beta = new RunningStatistics.Beta();
+        beta.Fit(true, long.MaxValue / 2 + 1);
+        Assert.Throws<OverflowException>(() => beta.Fit(true, long.MaxValue / 2 + 1));
+        Assert.Equal(long.MaxValue / 2 + 1, beta.Nobs);
+    }
+
+    [Fact]
     public void ParameterlessConstructor_InitializesParametersCorrectly()
     {
         RunningStatistics.Beta beta = new();

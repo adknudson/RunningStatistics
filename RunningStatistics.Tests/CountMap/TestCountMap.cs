@@ -10,6 +10,15 @@ public partial class TestCountMap()
         () => new CountMap<int>())
 {
     [Fact]
+    public void Fit_NobsOverflowThrows()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, long.MaxValue / 2 + 1);
+        Assert.Throws<OverflowException>(() => countMap.Fit(1, long.MaxValue / 2 + 1));
+        Assert.Equal(long.MaxValue / 2 + 1, countMap.Nobs);
+    }
+
+    [Fact]
     public void MinKey_ThrowsIfEmpty()
     {
         var countMap = new CountMap<int>();

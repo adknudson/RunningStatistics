@@ -79,7 +79,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     
     private void UncheckedFit(TObs value, long count)
     {
-        _nobs += count;
+        checked { _nobs += count; }
         
 #if NET5_0_OR_GREATER
         ref var valueCount = ref CollectionsMarshal.GetValueRefOrAddDefault(_dict, value, out _);

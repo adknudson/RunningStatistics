@@ -79,7 +79,7 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
 
     public override void Fit(TObs value)
     {
-        _nobs++;
+        checked { _nobs++; }
         Value += value;
     }
 
@@ -91,7 +91,7 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
         if (MultiplyDelegate is not null)
         {
             // O(1): TObs supports IMultiplyOperators<TObs, long, TObs>
-            _nobs += count;
+            checked { _nobs += count; }
             Value += MultiplyDelegate(value, count);
         }
         else
@@ -114,7 +114,7 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
     
     public override void Merge(Sum<TObs> sum)
     {
-        _nobs += sum.Nobs;
+        checked { _nobs += sum.Nobs; }
         Value += sum.Value;
     }
 

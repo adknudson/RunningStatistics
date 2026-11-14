@@ -6,6 +6,15 @@ namespace RunningStatistics.Tests.Extrema;
 public partial class TestExtremaGenericNumberType
 {
     [Fact]
+    public void Fit_NobsOverflowThrows()
+    {
+        Extrema<MyNum> extrema = new();
+        extrema.Fit(new MyNum(5), long.MaxValue / 2 + 1);
+        Assert.Throws<OverflowException>(() => extrema.Fit(new MyNum(5), long.MaxValue / 2 + 1));
+        Assert.Equal(long.MaxValue / 2 + 1, extrema.Nobs);
+    }
+
+    [Fact]
     public void FitUpdatesMinAndMaxCorrectlyForMyNum()
     {
         Extrema<MyNum> extrema = new();

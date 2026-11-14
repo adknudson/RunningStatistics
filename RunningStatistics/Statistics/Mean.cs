@@ -38,13 +38,13 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
     
     internal void UncheckedFit(List<double> values)
     {
-        _nobs += values.Count;
+        checked { _nobs += values.Count; }
         _value = Utils.Smooth(_value, values.Average(), (double)values.Count / Nobs);
     }
 
     internal void UncheckedFit(double value, long count)
     {
-        _nobs += count;
+        checked { _nobs += count; }
         _value = Utils.Smooth(_value, value, (double)count / Nobs);
     }
 
@@ -58,7 +58,7 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
 
     public override void Merge(Mean other)
     {
-        _nobs += other.Nobs;
+        checked { _nobs += other.Nobs; }
         _value = Nobs == 0 ? 0 : Utils.Smooth(_value, other._value, (double)other.Nobs / Nobs);
     }
 

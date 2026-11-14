@@ -56,7 +56,7 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
             _min = _max = value;
         }
         
-        _nobs += count;
+        checked { _nobs += count; }
         
         if (value.CompareTo(_min!) < 0)
         {
@@ -112,6 +112,8 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
         
         // if both are non-empty, merge
         
+        checked { _nobs += other.Nobs; }
+        
         if (Min.CompareTo(other.Min) == 0)
         {
             MinCount += other.MinCount;
@@ -131,8 +133,6 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
             _max = other.Max;
             MaxCount = other.MaxCount;
         }
-        
-        _nobs += other.Nobs;
     }
 
     public override string ToString()

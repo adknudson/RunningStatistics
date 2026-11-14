@@ -6,6 +6,15 @@ namespace RunningStatistics.Tests.Extrema;
 public partial class TestExtrema
 {
     [Fact]
+    public void Fit_NobsOverflowThrows()
+    {
+        var extrema = new RunningStatistics.Extrema();
+        extrema.Fit(1.0, long.MaxValue / 2 + 1);
+        Assert.Throws<OverflowException>(() => extrema.Fit(1.0, long.MaxValue / 2 + 1));
+        Assert.Equal(long.MaxValue / 2 + 1, extrema.Nobs);
+    }
+
+    [Fact]
     public void ConstructorInitializesProperties()
     {
         RunningStatistics.Extrema extrema = new();

@@ -7,6 +7,20 @@ namespace RunningStatistics.Tests.Mean;
 public partial class TestMean
 {
     [Fact]
+    public void Fit_NobsOverflowThrows()
+    {
+        var mean = new RunningStatistics.Mean();
+        mean.Fit(1.0, long.MaxValue / 2 + 1);
+        Assert.Throws<OverflowException>(() => mean.Fit(1.0, long.MaxValue / 2 + 1));
+        Assert.Equal(long.MaxValue / 2 + 1, mean.Nobs);
+
+        var other = new RunningStatistics.Mean();
+        other.Fit(2.0, long.MaxValue / 2 + 1);
+        Assert.Throws<OverflowException>(() => mean.Merge(other));
+        Assert.Equal(long.MaxValue / 2 + 1, mean.Nobs);
+    }
+
+    [Fact]
     public void Mean_ReturnsNaN_WhenNoNumbersAdded()
     {
         var mean = new RunningStatistics.Mean();

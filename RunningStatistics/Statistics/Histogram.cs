@@ -129,7 +129,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     
     private void UncheckedFit(double value, long count)
     {
-        _nobs += count;
+        checked { _nobs += count; }
         
         var firstBin = Bins.First();
         var lastBin = Bins.Last();
@@ -196,7 +196,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
         
         if (BinsAreMatching(histogram.Bins))
         {
-            _nobs += histogram.Nobs;
+            checked { _nobs += histogram.Nobs; }
 
             for (var j = 0; j < NumBins; j++)
             {

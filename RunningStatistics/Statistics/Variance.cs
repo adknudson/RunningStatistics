@@ -45,7 +45,7 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
 
     internal void UncheckedFit(double value, long count)
     {
-        _nobs += count;
+        checked { _nobs += count; }
         
         var mu = _mean;
         var g = (double) count / Nobs;
@@ -56,7 +56,7 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
 
     internal void UncheckedFit(List<double> values)
     {
-        _nobs += values.Count;
+        checked { _nobs += values.Count; }
 
         var mean = values.Average();
         var variance = ComputeVariance(values, mean);
@@ -78,7 +78,7 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     
     public override void Merge(Variance variance)
     {
-        _nobs += variance.Nobs;
+        checked { _nobs += variance.Nobs; }
 
         if (Nobs == 0) return;
 

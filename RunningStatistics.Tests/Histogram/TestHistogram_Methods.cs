@@ -10,6 +10,15 @@ public partial class TestHistogram
     private readonly double[] _edges = [double.NegativeInfinity, 0, 10, 100];
     
     [Fact]
+    public void Fit_NobsOverflowThrows()
+    {
+        var hist = new RunningStatistics.Histogram([0, 0.5, 1]);
+        hist.Fit(0.5, long.MaxValue / 2 + 1);
+        Assert.Throws<OverflowException>(() => hist.Fit(0.5, long.MaxValue / 2 + 1));
+        Assert.Equal(long.MaxValue / 2 + 1, hist.Nobs);
+    }
+    
+    [Fact]
     public void FitValueOutOfBoundsIncreasesOutOfBoundsCount()
     {
         RunningStatistics.Histogram h = new(_edges, false, false);

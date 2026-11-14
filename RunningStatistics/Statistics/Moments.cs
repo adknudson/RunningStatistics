@@ -79,7 +79,7 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     
     private void UncheckedFit(double value, long count)
     {
-        _nobs += count;
+        checked { _nobs += count; }
 
         var g = (double)count / Nobs;
         var y2 = value * value;
@@ -103,7 +103,7 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
 
     public override void Merge(Moments other)
     {
-        _nobs += other.Nobs;
+        checked { _nobs += other.Nobs; }
 
         if (Nobs == 0) return;
 
