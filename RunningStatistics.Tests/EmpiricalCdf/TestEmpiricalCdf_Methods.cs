@@ -461,4 +461,172 @@ public partial class TestEmpiricalCdf
         Utils.AssertIsApproximate(1.0, cdf.Quantile(0.002), 0);
         Utils.AssertIsApproximate(2.0, cdf.Quantile(0.998), 0);
     }
+
+    [Fact]
+    public void SmallBuffer_CdfThrowsContract()
+    {
+        // Nobs < NumBins: the under-filled buffer state. Cdf must throw System.InvalidOperationException
+        // for EVERY x, including x values that would otherwise be perfectly valid queries
+        // (below/at Min, interior, at/above Max) — the throw precedes the NotNaN and range guards.
+        RunningStatistics.EmpiricalCdf cdf = new(10);
+        for (var v = 1.0; v <= 9.0; v++)
+        {
+            cdf.Fit(v);
+        }
+
+        Assert.Equal(9, cdf.Nobs);
+        // Getters stay current even while the buffer is under-filled: Min/Max cover all
+        // observations, including ones no flush has ever blended into Values.
+        Utils.AssertIsApproximate(1.0, cdf.Min, 0);
+        Utils.AssertIsApproximate(9.0, cdf.Max, 0);
+
+        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(0.5));
+        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(1.0));
+        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(5.0));
+        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(9.0));
+        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(10.0));
+
+        // The Nobs guard precedes Require.NotNaN: even NaN gets the small-buffer
+        // InvalidOperationException, not the ArgumentException pinned by QuantileAndCdf_RejectNaN.
+        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(double.NaN));
+    }
+
+    [Fact]
+    public void SmallBuffer_QuantileThrowsContract()
+    {
+        RunningStatistics.EmpiricalCdf cdf = new(10);
+        for (var v = 1.0; v <= 9.0; v++)
+        {
+            cdf.Fit(v);
+        }
+
+        // Would-otherwise-be-valid probabilities, including the p == 0 / p == 1 fast paths
+        // that return Min / Max once the stat is filled. (Quantile_FewerObservationsThanNumberOfBinsThrows
+        // already pins p = 0.25 and Median.)
+        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(0.0));
+        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(0.75));
+        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(1.0));
+
+        // The Nobs guard precedes Require.ValidProbability: invalid p still yields
+        // InvalidOperationException rather than the ArgumentOutOfRangeException pinned
+        // for a filled stat in QuantileEdgeCases and QuantileAndCdf_RejectNaN.
+        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(-0.1));
+        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(1.1));
+        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(double.NaN));
+    }
+
+    [Fact]
+    public void SmallBuffer_ExactlyNumBinsSucceeds()
+    {
+        // The transition point: at Nobs == NumBins - 1 both methods still throw, and at
+        // Nobs == NumBins exactly the first flush (alpha = 1) lands and both succeed.
+        // Unsorted input so the flush's sort is exercised: the sample is {1, 2, 3, 4}.
+        RunningStatistics.EmpiricalCdf cdf = new(4);
+        foreach (var v in new[] { 3.0, 1.0, 4.0 })
+        {
+            cdf.Fit(v);
+        }
+
+        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(3.5));
+        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(0.5));
+
+        cdf.Fit(2.0);
+        Assert.Equal(4, cdf.Nobs);
+
+        Utils.AssertIsApproximate(cdf.Min, cdf.Quantile(0.0), 0);
+        Utils.AssertIsApproximate(cdf.Max, cdf.Quantile(1.0), 0);
+        // Values = sorted sample [1,2,3,4]; index (4 + 1) * 0.5 = 2.5 interpolates
+        // between V[1] = 2 and V[2] = 3.
+        Utils.AssertIsApproximate(2.5, cdf.Quantile(0.5), 0);
+
+        // Window [Min, V0..V3, Max] = [1,1,2,3,4,4] (length 6): Cdf at Min sits duplicated
+        // at slot 1, so the first greater value is slot 2 with r = 0 -> 1/6; interior x = 2.5
+        // is at fractional slot 2.5 -> 2.5/6; at/above Max -> 1, below Min -> 0.
+        Utils.AssertIsApproximate(0.0, cdf.Cdf(0.0), 0);
+        Utils.AssertIsApproximate(1.0 / 6.0, cdf.Cdf(1.0), 0);
+        Utils.AssertIsApproximate(2.5 / 6.0, cdf.Cdf(2.5), 0);
+        Utils.AssertIsApproximate(1.0, cdf.Cdf(4.0), 0);
+    }
+
+    [Fact]
+    public void SmallBuffer_MergeThresholdTransition()
+    {
+        // Merging small stats: the merged object's Nobs is the SUM, and the small-buffer
+        // throw depends on that SUM, not on either source having been flushed.
+        const int bins = 10;
+        RunningStatistics.EmpiricalCdf a = new(bins);
+        foreach (var v in new[] { 4.0, 3.0, 2.0, 1.0 })
+        {
+            a.Fit(v);
+        }
+
+        RunningStatistics.EmpiricalCdf b = new(bins);
+        foreach (var v in new[] { 9.0, 8.0, 7.0, 6.0, 5.0 })
+        {
+            b.Fit(v);
+        }
+
+        Assert.Throws<InvalidOperationException>(() => a.Cdf(5.0));
+        Assert.Throws<InvalidOperationException>(() => b.Quantile(0.5));
+
+        a.Merge(b);
+
+        Assert.Equal(9, a.Nobs);
+        Assert.Equal(5, b.Nobs);
+
+        // Combined 4 + 5 = 9 still < bins: the merged object keeps throwing, even for
+        // p / x that would otherwise be valid, and the source stays untouched and still
+        // small-buffered.
+        Assert.Throws<InvalidOperationException>(() => a.Cdf(1.0));
+        Assert.Throws<InvalidOperationException>(() => a.Quantile(0.0));
+        Assert.Throws<InvalidOperationException>(() => a.Quantile(1.0));
+        Assert.Throws<InvalidOperationException>(() => b.Cdf(7.0));
+
+        RunningStatistics.EmpiricalCdf c = new(bins);
+        c.Fit(10.0);
+
+        a.Merge(c);
+
+        // Combined Nobs now exactly == bins: the replayed tail observation (10.0) closes
+        // the buffer and triggers the flush, so the same queries that just threw succeed
+        // with the merged sample {1..10}.
+        Assert.Equal(10, a.Nobs);
+        Assert.Equal(1, c.Nobs);
+        Utils.AssertIsApproximate(1.0, a.Min, 0);
+        Utils.AssertIsApproximate(10.0, a.Max, 0);
+
+        Utils.AssertIsApproximate(a.Min, a.Quantile(0.0), 0);
+        Utils.AssertIsApproximate(a.Max, a.Quantile(1.0), 0);
+        Utils.AssertIsApproximate(5.5, a.Quantile(0.5), 0);
+        Utils.AssertIsApproximate(0.0, a.Cdf(0.0), 0);
+        Utils.AssertIsApproximate(1.0 / 12.0, a.Cdf(1.0), 0);
+        Utils.AssertIsApproximate(1.0, a.Cdf(10.0), 0);
+    }
+
+    [Fact]
+    public void SmallBuffer_NobsBeyondNumBinsRemainderSucceeds()
+    {
+        // The neighbouring state pinned for contrast: Nobs > NumBins with a partially
+        // filled buffer (Nobs % NumBins = 2 != 0). Only Nobs < NumBins throws, so the
+        // methods succeed, and Min/Max already cover the unflushed tail observations
+        // (0.5 and 10.5) even though Values lag the last completed flush.
+        RunningStatistics.EmpiricalCdf cdf = new(10);
+        for (var v = 10.0; v >= 1.0; v--)
+        {
+            cdf.Fit(v);
+        }
+
+        cdf.Fit(10.5);
+        cdf.Fit(0.5);
+
+        Assert.Equal(12, cdf.Nobs);
+        Utils.AssertIsApproximate(0.5, cdf.Min, 0);
+        Utils.AssertIsApproximate(10.5, cdf.Max, 0);
+
+        Utils.AssertIsApproximate(cdf.Min, cdf.Quantile(0.0), 0);
+        Utils.AssertIsApproximate(cdf.Max, cdf.Quantile(1.0), 0);
+        Utils.AssertIsApproximate(0.0, cdf.Cdf(0.4), 0);
+        Utils.AssertIsApproximate(1.0, cdf.Cdf(10.5), 0);
+        Utils.AssertIsApproximate(1.0, cdf.Cdf(11.0), 0);
+    }
 }
