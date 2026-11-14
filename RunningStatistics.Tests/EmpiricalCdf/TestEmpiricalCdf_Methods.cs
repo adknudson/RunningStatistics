@@ -177,6 +177,21 @@ public partial class TestEmpiricalCdf
     }
 
     [Fact]
+    public void QuantileAndCdf_RejectNaN()
+    {
+        RunningStatistics.EmpiricalCdf cdf = new(20);
+        Random rng = new();
+        
+        for (var _ = 0; _ < 1000; _++)
+        {
+            cdf.Fit(rng.NextDouble());
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => cdf.Quantile(double.NaN));
+        Assert.Throws<ArgumentException>(() => cdf.Cdf(double.NaN));
+    }
+
+    [Fact]
     public void TestUnitUniform()
     {
         const int n = 10_000_000;

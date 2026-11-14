@@ -50,7 +50,7 @@ internal static class Require
     /// <exception cref="ArgumentOutOfRangeException">When the value is not in the interval [0, 1].</exception>
     public static void ValidProbability(double p)
     {
-        if (p is < 0 or > 1)
+        if (p is not (>= 0 and <= 1))
         {
             throw new ArgumentOutOfRangeException(
                 nameof(p), p, "Value must be in the interval [0, 1]");

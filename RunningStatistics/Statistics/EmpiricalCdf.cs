@@ -198,6 +198,8 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
                 $"The number of observations must be at least {NumBins} to compute the CDF.");
         }
         
+        Require.NotNaN(x);
+        
         if (x < Min)
         {
             return 0;
