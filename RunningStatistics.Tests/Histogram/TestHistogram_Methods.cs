@@ -18,6 +18,111 @@ public partial class TestHistogram
         Assert.Equal(long.MaxValue / 2 + 1, hist.Nobs);
     }
     
+    // Commit 17: edge-validation guards in the constructor. Scenarios that silently
+    // constructed today (red): any NaN edge (any position), unsorted/non-monotonic edges
+    // (the ctor used to OrderBy-sort them), and (implicitly) duplicate edges. The ctor
+    // now requires finite-or-infinite (no NaN), strictly monotonically increasing edges.
+    [Fact]
+    public void Ctor_RejectsNaNEdges()
+    {
+        Assert.Throws<ArgumentException>(
+            () => new RunningStatistics.Histogram([0.0, double.NaN, 5.0]));
+        Assert.Throws<ArgumentException>(
+            () => new RunningStatistics.Histogram([double.NaN, 1.0, 2.0]));
+        Assert.Throws<ArgumentException>(
+            () => new RunningStatistics.Histogram([0.0, 1.0, double.NaN]));
+    }
+    
+    [Fact]
+    public void Ctor_RejectsDuplicateEdges()
+    {
+        Assert.Throws<ArgumentException>(
+            () => new RunningStatistics.Histogram([0.0, 1.0, 1.0]));
+        Assert.Throws<ArgumentException>(
+            () => new RunningStatistics.Histogram([0.0, 0.0, 1.0]));
+    }
+    
+    [Fact]
+    public void Ctor_RejectsUnsortedEdges()
+    {
+        Assert.Throws<ArgumentException>(
+            () => new RunningStatistics.Histogram([0.0, 1.0, 0.5]));
+        Assert.Throws<ArgumentException>(
+            () => new RunningStatistics.Histogram([2.0, 1.0, 0.0]));
+    }
+    
+    [Fact]
+    public void Ctor_RejectsTooFewEdges()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => new RunningStatistics.Histogram([0.5]));
+    }
+    
+    [Fact]
+    public void Ctor_AcceptsInfiniteEdges()
+    {
+        RunningStatistics.Histogram h = new([double.NegativeInfinity, 0, 10, 100]);
+        Assert.Equal([double.NegativeInfinity, 0, 10, 100], h.Edges);
+        Assert.Equal(0, h.Nobs);
+        
+        RunningStatistics.Histogram upperOpen = new([0.0, 10.0, double.PositiveInfinity]);
+        Assert.Equal([0.0, 10.0, double.PositiveInfinity], upperOpen.Edges);
+        Assert.Equal(0, upperOpen.Nobs);
+    }
+    
+    [Fact]
+    public void Ctor_AcceptsValidEdgesUnchanged()
+    {
+        RunningStatistics.Histogram hist = new([double.NegativeInfinity, 0, 10, 100],
+            leftClosed: false,
+            endsClosed: false);
+        Assert.Equal([double.NegativeInfinity, 0, 10, 100], hist.Edges);
+        Assert.False(hist.LeftClosed);
+        Assert.False(hist.EndsClosed);
+        
+        var numBins = 0;
+        foreach (var bin in hist)
+        {
+            numBins++;
+        }
+        Assert.Equal(3, numBins);
+    }
+    
+    [Fact]
+    public void Fit_RejectsNaNObservations()
+    {
+        RunningStatistics.Histogram h = new(_edges);
+        h.Fit(5);
+        Assert.Throws<ArgumentException>(() => h.Fit(double.NaN));
+        Assert.Throws<ArgumentException>(() => h.Fit(double.NaN, 3));
+        Assert.Equal(1, h.Nobs);
+    }
+    
+    [Fact]
+    public void Merge_MatchingEdgesSumsBinsDirectly()
+    {
+        RunningStatistics.Histogram a = new(_edges);
+        RunningStatistics.Histogram b = new(_edges);
+        a.Fit(-1);
+        a.Fit(5);
+        b.Fit(10);
+        b.Fit(1000);
+        
+        a.Merge(b);
+        
+        int[] expectedCounts = [1, 1, 1];
+        var i = 0;
+        foreach (var bin in a)
+        {
+            Assert.Equal(expectedCounts[i], bin.Nobs);
+            i++;
+        }
+        Assert.Equal(3, i);
+        Assert.Equal(4, a.Nobs);
+        Assert.Equal(0, a.OutOfBoundsCounts.Lower);
+        Assert.Equal(1, a.OutOfBoundsCounts.Upper);
+    }
+    
     [Fact]
     public void FitValueOutOfBoundsIncreasesOutOfBoundsCount()
     {

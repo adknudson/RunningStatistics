@@ -20,18 +20,43 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     /// <summary>
     /// Initializes a new instance of the <see cref="Histogram"/> class.
     /// </summary>
-    /// <param name="edges">The edges of the histogram bins.</param>
+    /// <param name="edges">The edges of the histogram bins. They must be strictly monotonically
+    /// increasing. Infinite edge values are allowed, but NaN edge values are not.</param>
     /// <param name="leftClosed">Indicates if the bins are closed on the left side. If true, the
     /// left side of the bin is closed, otherwise the right side is closed.</param>
     /// <param name="endsClosed">Indicates if the end bins are closed on the outside.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when fewer than 2 edges are provided.</exception>
+    /// <exception cref="ArgumentException">Thrown when an edge value is NaN or when the edges are
+    /// not strictly monotonically increasing (duplicate or decreasing edges are rejected).</exception>
     public Histogram(IEnumerable<double> edges, bool leftClosed = true, bool endsClosed = true)
     {
-        _edges = edges.OrderBy(e => e).ToList();
+        _edges = edges.ToList();
         
         if (_edges.Count < 2)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(edges), _edges.Count, "At least 2 edges are required to define histogram bins.");
+        }
+        
+        for (var i = 0; i < _edges.Count; i++)
+        {
+            if (double.IsNaN(_edges[i]))
+            {
+                throw new ArgumentException(
+                    $"Edge values must not be NaN. Got NaN at index {i}.",
+                    nameof(edges));
+            }
+        }
+        
+        for (var i = 1; i < _edges.Count; i++)
+        {
+            if (_edges[i - 1] >= _edges[i])
+            {
+                throw new ArgumentException(
+                    "Edges must be strictly monotonically increasing. " +
+                    $"Edge {_edges[i - 1]} at index {i - 1} is not less than edge {_edges[i]} at index {i}.",
+                    nameof(edges));
+            }
         }
         
         LeftClosed = leftClosed;
