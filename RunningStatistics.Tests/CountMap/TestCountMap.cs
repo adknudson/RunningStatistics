@@ -18,6 +18,53 @@ public partial class TestCountMap()
         Assert.Equal(long.MaxValue / 2 + 1, countMap.Nobs);
     }
 
+    // Pins for the per-key counter vs the checked _nobs: the per-key count is bounded by
+    // _nobs and the checked _nobs addition runs FIRST in UncheckedFit, so a per-key count
+    // can never wrap independently of Nobs. Pinned at the exact/edge boundaries:
+    [Fact]
+    public void PerKeyCount_MatchesNobsAtMaxBoundary()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, long.MaxValue);
+
+        Assert.Equal(long.MaxValue, countMap[1]);
+        Assert.Equal(long.MaxValue, countMap.Nobs);
+    }
+
+    [Fact]
+    public void PerKeyCount_ThrowsConsistentlyWhenSameKeyCrossesMax()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, long.MaxValue / 2 + 1);
+        Assert.Throws<OverflowException>(() => countMap.Fit(1, long.MaxValue / 2 + 1));
+
+        // the per-key counter did not wrap: it still equals _nobs
+        Assert.Equal(long.MaxValue / 2 + 1, countMap[1]);
+        Assert.Equal(countMap[1], countMap.Nobs);
+    }
+
+    [Fact]
+    public void PerKeyCount_MergeMatchesNobsNearMaxBoundary()
+    {
+        var a = new CountMap<int>();
+        a.Fit(1, long.MaxValue / 2);
+        var b = new CountMap<int>();
+        b.Fit(1, long.MaxValue / 2);
+
+        a.Merge(b);
+
+        Assert.Equal(long.MaxValue - 1, a.Nobs);
+        Assert.Equal(long.MaxValue - 1, a[1]);
+
+        var c = new CountMap<int>();
+        c.Fit(1, 2);
+        Assert.Throws<OverflowException>(() => a.Merge(c));
+
+        // crossing throws from _nobs before any per-key update: a is untouched
+        Assert.Equal(long.MaxValue - 1, a.Nobs);
+        Assert.Equal(long.MaxValue - 1, a[1]);
+    }
+
     [Fact]
     public void MinKey_ThrowsIfEmpty()
     {
