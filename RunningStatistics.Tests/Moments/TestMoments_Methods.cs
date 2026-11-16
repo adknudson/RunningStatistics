@@ -16,15 +16,15 @@ public partial class TestMoments
         Assert.Equal(long.MaxValue / 2 + 1, m.Nobs);
     }
 
-    // Pins the ACCURACY (not exactness) of Moments on jittered 1e6-scale data against a two-pass
-    // reference (direct central sums). Moments accumulates raw power sums (M2 ~1e12, M3 ~1e18,
-    // M4 ~1e24), so forming central moments subtracts huge nearby quantities: at offset 1e6 the
-    // observed relative error is ~1.7e-4 for Variance (4.7e-3 merged), while Skewness (error
-    // ~4e4) and Kurtosis (error ~2.1e11) are outright garbage, not just imprecise. These pins
-    // document that current accuracy; they do NOT demand improvement. Tightening Skewness/Kurtosis
-    // belongs to the deferred recursive central-moment rework of Moments (see AGENT_PLAN.md).
+    // Accuracy of the stable (Chan pairwise central-sum) Moments on jittered 1e6-scale data
+    // (κ=1e6) vs a two-pass reference: the stable update shows ~κ·ε relative on Variance/StdDev
+    // (~2e-10) and ~1e-9 absolute on Skewness/Kurtosis, so the tolerances below (~1e-6 abs on
+    // g1, ~1e-5 abs on g2) have ~100-1000x margin while the pre-swap raw-power-sums
+    // implementation could never come close (its observed errors: Variance rel ~1.7e-4,
+    // Skewness abs ~4e4, Kurtosis abs ~2.1e11 — the values the original 1e5/1e12 pins
+    // documented). Deterministic seed: these facts are the accuracy regression net.
     [Fact]
-    public void Accuracy_PinRawMomentsNearOffset()
+    public void Accuracy_StableMomentsNearOffset()
     {
         const int n = 150;
         const double offset = 1e6;
@@ -59,18 +59,18 @@ public partial class TestMoments
         var refKurtosis = (c4 / n) / ((c2 / n) * (c2 / n));
 
         Utils.AssertIsApproximate(mean, moments.Mean, 0.0);
-        Utils.AssertIsApproximate(refVariance, moments.Variance, 1e-2 * refVariance);
-        Utils.AssertIsApproximate(refStdDev, moments.StandardDeviation, 1e-2 * refStdDev);
-        Utils.AssertIsApproximate(refSkewness, moments.Skewness, 1e5);
-        Utils.AssertIsApproximate(refKurtosis, moments.Kurtosis, 1e12);
-        Utils.AssertIsApproximate(refKurtosis - 3, moments.ExcessKurtosis, 1e12);
+        Utils.AssertIsApproximate(refVariance, moments.Variance, 0.0);
+        Utils.AssertIsApproximate(refStdDev, moments.StandardDeviation, 0.0);
+        Utils.AssertIsApproximate(refSkewness, moments.Skewness, 1e-6);
+        Utils.AssertIsApproximate(refKurtosis, moments.Kurtosis, 1e-5);
+        Utils.AssertIsApproximate(refKurtosis - 3, moments.ExcessKurtosis, 1e-5);
     }
 
-    // Same pin as Accuracy_PinRawMomentsNearOffset, through the Merge path: the raw-power-sum
-    // cancellation is just as severe when two stats are merged (observed: Variance rel err
-    // ~4.7e-3, Skewness abs err ~4e4, Kurtosis abs err ~2.1e11).
+    // Same accuracy facts as Accuracy_StableMomentsNearOffset, through the Merge path: the
+    // stable merge must be as accurate as the stable stream (the pre-swap merge had the same
+    // raw-power-sums garbage: Variance rel err ~4.7e-3, Skewness abs ~4e4, Kurtosis abs ~2.1e11).
     [Fact]
-    public void Accuracy_PinMergedMomentsNearOffset()
+    public void Accuracy_StableMergedMomentsNearOffset()
     {
         const int n = 150;
         const double offset = 1e6;
@@ -88,7 +88,7 @@ public partial class TestMoments
         }
         left.Merge(right);
 
-        // Same two-pass reference as Accuracy_PinRawMomentsNearOffset.
+        // Same two-pass reference as Accuracy_StableMomentsNearOffset.
         var sum = 0.0;
         foreach (var v in values) sum += v;
         var mean = sum / n;
@@ -111,10 +111,10 @@ public partial class TestMoments
         var refKurtosis = (c4 / n) / ((c2 / n) * (c2 / n));
 
         Utils.AssertIsApproximate(mean, left.Mean, 0.0);
-        Utils.AssertIsApproximate(refVariance, left.Variance, 1e-2 * refVariance);
-        Utils.AssertIsApproximate(refStdDev, left.StandardDeviation, 1e-2 * refStdDev);
-        Utils.AssertIsApproximate(refSkewness, left.Skewness, 1e5);
-        Utils.AssertIsApproximate(refKurtosis, left.Kurtosis, 1e12);
+        Utils.AssertIsApproximate(refVariance, left.Variance, 0.0);
+        Utils.AssertIsApproximate(refStdDev, left.StandardDeviation, 0.0);
+        Utils.AssertIsApproximate(refSkewness, left.Skewness, 1e-6);
+        Utils.AssertIsApproximate(refKurtosis, left.Kurtosis, 1e-5);
     }
 
     [Fact]
@@ -237,12 +237,14 @@ public partial class TestMoments
         Assert.Equal(a.Nobs + b.Nobs + 1, c.Nobs);
     }
 
-    // Fits 10M samples of the distribution and compares the statistic against its known properties.
+    // Fits 10M samples of the distribution and compares the statistic against its known
+    // properties. SEEDED generator: an unseeded stream makes this fact flaky at the 0.01
+    // tolerances (the excess-kurtosis estimator alone has a ~3 sigma spread on a fresh stream).
     [Fact]
     public void UnitUniformSample_MomentsMatchTheory()
     {
         const int n = 10_000_000;
-        var rng = new Random();
+        var rng = new Random(20251117);
 
         var moments = new RunningStatistics.Moments();
 
@@ -273,9 +275,15 @@ public partial class TestMoments
 
         var moments = new RunningStatistics.Moments();
 
-        for (var i = 0; i < n; i++)
+        var rng = new Random(20251115);
+        for (var i = 0; i < n; i += 2)
         {
-            moments.Fit(dist.Sample());
+            var u = rng.NextDouble();
+            var v = rng.NextDouble();
+            if (u < 1e-300) u = 1e-300;
+            var r = Math.Sqrt(-2.0 * Math.Log(u));
+            moments.Fit(mean + stdDev * r * Math.Cos(2.0 * Math.PI * v));
+            moments.Fit(mean + stdDev * r * Math.Sin(2.0 * Math.PI * v));
         }
 
         const double excessKurtosis = 0.0;
@@ -298,9 +306,15 @@ public partial class TestMoments
 
         var moments = new RunningStatistics.Moments();
 
-        for (var i = 0; i < n; i++)
+        var rng = new Random(20251116);
+        for (var i = 0; i < n; i += 2)
         {
-            moments.Fit(dist.Sample());
+            var u = rng.NextDouble();
+            var v = rng.NextDouble();
+            if (u < 1e-300) u = 1e-300;
+            var r = Math.Sqrt(-2.0 * Math.Log(u));
+            moments.Fit(Math.Exp(mu + sd * r * Math.Cos(2.0 * Math.PI * v)));
+            moments.Fit(Math.Exp(mu + sd * r * Math.Sin(2.0 * Math.PI * v)));
         }
             
         var excessKurtosis = Math.Exp(4.0 * s2) + 2.0 * Math.Exp(3.0 * s2) + 3.0 * Math.Exp(2.0 * s2) - 6;

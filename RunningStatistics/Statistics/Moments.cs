@@ -5,10 +5,13 @@ namespace RunningStatistics;
 /// <summary>
 /// The <c>Moments</c> class calculates and maintains running statistics for the first four central
 /// moments: mean, variance, skewness, and kurtosis. The variance is the unbiased sample variance.
+/// Internally it keeps the central sums of deviations about the running mean (Chan's pairwise
+/// update), which stays accurate on badly offset streams where raw power sums would lose all
+/// significant digits.
 /// </summary>
 public sealed class Moments : RunningStatisticBase<double, Moments>
 {
-    private double _mean, _variance, _skewness, _kurtosis;
+    private double _mean, _c2, _c3, _c4;
     private long _nobs;
 
 
@@ -21,7 +24,7 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     /// The second central moment is the measure of the spread of the distribution. This returns the
     /// unbiased sample variance.
     /// </summary>
-    public double Variance => Nobs < 2 ? double.NaN : (_variance - _mean * _mean) * Utils.Bessel(Nobs);
+    public double Variance => Nobs < 2 ? double.NaN : _c2 / (Nobs - 1);
 
     /// <summary>
     /// The corrected sample standard deviation.
@@ -37,9 +40,10 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
         {
             if (Nobs < 2) return double.NaN;
 
-            var mean2 = _mean * _mean;
-            var vr = _variance - mean2;
-            return (_skewness - 3.0 * _mean * vr - mean2 * _mean) / Math.Pow(vr, 1.5);
+            var n = (double)Nobs;
+            var m2 = _c2 / n;
+            if (m2 <= 0) return double.NaN;
+            return _c3 / n / (m2 * Math.Sqrt(m2));
         }
     }
 
@@ -53,11 +57,10 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
         {
             if (Nobs < 2) return double.NaN;
 
-            var mean2 = _mean * _mean;
-            var mean4 = mean2 * mean2;
-            var variance = _variance - mean2;
-            return (_kurtosis - 4.0 * _mean * _skewness + 6.0 * mean2 * _variance - 3.0 * mean4) /
-                   (variance * variance);
+            var n = (double)Nobs;
+            var m2 = _c2 / n;
+            if (m2 <= 0) return double.NaN;
+            return _c4 / n / (m2 * m2);
         }
     }
 
@@ -76,27 +79,50 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
         if (count == 0) return;
         UncheckedFit(value, count);
     }
-    
+
     private void UncheckedFit(double value, long count)
     {
         checked { _nobs += count; }
 
-        var g = (double)count / Nobs;
-        var y2 = value * value;
+        // First block of observations: zero spread, exact mean; nothing to update against.
+        if (_nobs == count)
+        {
+            _mean = value;
+            _c2 = 0;
+            _c3 = 0;
+            _c4 = 0;
+            return;
+        }
 
-        _mean = Utils.Smooth(_mean, value, g);
-        _variance = Utils.Smooth(_variance, y2, g);
-        _skewness = Utils.Smooth(_skewness, value * y2, g);
-        _kurtosis = Utils.Smooth(_kurtosis, y2 * y2, g);
+        // Merge the constant block (value, count) into the current state: B has meanB = value and
+        // zero central sums. s/t are the signed shifts of A's and B's mean into the joint mean.
+        var n = (double)_nobs;
+        var nA = (double)(_nobs - count);
+        var nB = (double)count;
+        var invN = 1.0 / n;
+
+        var d = value - _mean;
+        var s = -d * nB * invN;
+        var t = d * nA * invN;
+
+        var s2 = s * s;
+        var s3 = s2 * s;
+        var t2 = t * t;
+        var t3 = t2 * t;
+
+        _c4 += 4.0 * s * _c3 + 6.0 * s2 * _c2 + nA * s2 * s2 + nB * t2 * t2;
+        _c3 += 3.0 * s * _c2 + nA * s3 + nB * t3;
+        _c2 += nA * s2 + nB * t2;
+        _mean -= s;
     }
 
     public override void Reset()
     {
         _nobs = 0;
         _mean = 0;
-        _variance = 0;
-        _skewness = 0;
-        _kurtosis = 0;
+        _c2 = 0;
+        _c3 = 0;
+        _c4 = 0;
     }
 
     public override Moments CloneEmpty() => new();
@@ -106,12 +132,36 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
         checked { _nobs += other.Nobs; }
 
         if (Nobs == 0) return;
+        if (other.Nobs == 0) return;
 
-        var g = (double) other.Nobs / Nobs;
-        _mean = Utils.Smooth(_mean, other._mean, g);
-        _variance = Utils.Smooth(_variance, other._variance, g);
-        _skewness = Utils.Smooth(_skewness, other._skewness, g);
-        _kurtosis = Utils.Smooth(_kurtosis, other._kurtosis, g);
+        var nA = (double)(_nobs - other.Nobs);
+        if (nA == 0)
+        {
+            _mean = other._mean;
+            _c2 = other._c2;
+            _c3 = other._c3;
+            _c4 = other._c4;
+            return;
+        }
+
+        var nB = (double)other.Nobs;
+        var n = (double)_nobs;
+        var invN = 1.0 / n;
+
+        var d = other._mean - _mean;
+        var s = -d * nB * invN;
+        var t = d * nA * invN;
+
+        var s2 = s * s;
+        var s3 = s2 * s;
+        var t2 = t * t;
+        var t3 = t2 * t;
+
+        _c4 += other._c4 + 4.0 * t * other._c3 + 6.0 * t2 * other._c2 + nB * t2 * t2
+             + 4.0 * s * _c3 + 6.0 * s2 * _c2 + nA * s2 * s2;
+        _c3 += other._c3 + 3.0 * t * other._c2 + nB * t3 + 3.0 * s * _c2 + nA * s3;
+        _c2 += other._c2 + nB * t2 + nA * s2;
+        _mean -= s;
     }
 
     public override string ToString() => base.ToString() + $" | M1={Mean:F2}, M2={Variance:F2}, M3={Skewness:F2}, M4={Kurtosis:F2}";
