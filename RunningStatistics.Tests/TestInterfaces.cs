@@ -5,10 +5,13 @@ using Xunit;
 namespace RunningStatistics.Tests;
 
 [SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance")]
+/// Verifies the IRunningStatistic interface members through each of its type-parameter
+/// shapes: the bare interface, IRunningStatistic<double> (TObs) and IRunningStatistic<double,
+/// RunningStatistics.Mean> (TObs and TSelf).
 public class TestInterfaces
 {
     [Fact]
-    public void IRunningStatistic_Nobs_Works()
+    public void Nobs_ViaBareInterface()
     {
         var mean = new RunningStatistics.Mean();
         IRunningStatistic stat = mean;
@@ -18,7 +21,7 @@ public class TestInterfaces
     }
 
     [Fact]
-    public void IRunningStatistic_Reset_Works()
+    public void Reset_ViaBareInterface()
     {
         var mean = new RunningStatistics.Mean();
         IRunningStatistic stat = mean;
@@ -30,7 +33,7 @@ public class TestInterfaces
     }
 
     [Fact]
-    public void IRunningStatistic_CloneEmpty_Works()
+    public void CloneEmpty_ViaBareInterface()
     {
         var mean = new RunningStatistics.Mean();
         mean.Fit([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -43,7 +46,7 @@ public class TestInterfaces
     }
 
     [Fact]
-    public void IRunningStatistic_Clone_Works()
+    public void Clone_ViaBareInterface()
     {
         var mean = new RunningStatistics.Mean();
         mean.Fit([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -56,7 +59,7 @@ public class TestInterfaces
     }
 
     [Fact]
-    public void IRunningStatistic_UnsafeMerge_Works()
+    public void UnsafeMerge_ViaBareInterface()
     {
         var m1 = new RunningStatistics.Mean();
         var m2 = new RunningStatistics.Mean();
@@ -80,7 +83,7 @@ public class TestInterfaces
     }
 
     [Fact]
-    public void IRunningStatisticTObs_CloneEmpty_Works()
+    public void CloneEmpty_ViaTObsInterface()
     {
         var mean = new RunningStatistics.Mean();
         mean.Fit([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -94,7 +97,7 @@ public class TestInterfaces
     }
     
     [Fact]
-    public void IRunningStatisticTObs_Clone_Works()
+    public void Clone_ViaTObsInterface()
     {
         var mean = new RunningStatistics.Mean();
         mean.Fit([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -108,7 +111,7 @@ public class TestInterfaces
     }
     
     [Fact]
-    public void IRunningStatisticTObs_UnsafeMerge_Works()
+    public void UnsafeMerge_ViaTObsInterface()
     {
         var m1 = new RunningStatistics.Mean();
         var m2 = new RunningStatistics.Mean();
@@ -132,7 +135,7 @@ public class TestInterfaces
     }
     
     [Fact]
-    public void IRunningStatisticTObsTSelf_CloneEmpty_Works()
+    public void CloneEmpty_ViaTObsTSelfInterface()
     {
         var mean = new RunningStatistics.Mean();
         mean.Fit([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -146,7 +149,7 @@ public class TestInterfaces
     }
     
     [Fact]
-    public void IRunningStatisticTObsTSelf_Clone_Works()
+    public void Clone_ViaTObsTSelfInterface()
     {
         var mean = new RunningStatistics.Mean();
         mean.Fit([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -161,7 +164,7 @@ public class TestInterfaces
     }
     
     [Fact]
-    public void IRunningStatisticTObsTSelf_Merge_Works()
+    public void Merge_ViaTObsTSelfInterface()
     {
         var m1 = new RunningStatistics.Mean();
         var m2 = new RunningStatistics.Mean();

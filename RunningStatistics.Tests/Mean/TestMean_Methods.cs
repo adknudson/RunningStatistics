@@ -99,7 +99,7 @@ public partial class TestMean
     }
     
     [Fact]
-    public void MergeEmptyDoesNotPropagateNaNs()
+    public void MergeEmpty_DoesNotPropagateNaNs()
     {
         var a = new RunningStatistics.Mean();
         a.Fit(3.14159);

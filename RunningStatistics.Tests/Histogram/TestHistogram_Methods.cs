@@ -125,7 +125,7 @@ public partial class TestHistogram
     }
     
     [Fact]
-    public void FitValueOutOfBoundsIncreasesOutOfBoundsCount()
+    public void Fit_OutOfBoundsValueIncreasesOobCount()
     {
         RunningStatistics.Histogram h = new(_edges, false, false);
         h.Fit(200);
@@ -133,7 +133,7 @@ public partial class TestHistogram
     }
 
     [Fact]
-    public void ResetClearsAllCounts()
+    public void Reset_ClearsAllCounts()
     {
         RunningStatistics.Histogram h = new(_edges, false, false);
         h.Fit(5);
@@ -147,7 +147,7 @@ public partial class TestHistogram
     }
     
     [Fact]
-    public void EmptyHistIsZero()
+    public void FreshHistogram_NobsAndBinsAreZero()
     {
         // (-inf, 0], (0, 10], (10, 100]
         RunningStatistics.Histogram h = new(_edges, false, false);
@@ -160,8 +160,10 @@ public partial class TestHistogram
         }
     }
 
+    // Merging two stats fitted with the first and second halves of the same data must match
+    // a stat fitted with all of the data at once.
     [Fact]
-    public void MergePartsEqualsMergeAll()
+    public void Merge_PartsEqualsAll()
     {
         const int n = 2000;
         var rng = new Random();
@@ -192,8 +194,10 @@ public partial class TestHistogram
         }
     }
 
+    // Which bins values land in, for the bin-closure configuration given by the constructor
+    // arguments (see the edge notation in the body).
     [Fact]
-    public void LeftClosed()
+    public void Fit_LeftClosedBins()
     {
         // [-inf, 0), [0, 10), [10, 100]
         RunningStatistics.Histogram h = new(_edges);
@@ -213,8 +217,10 @@ public partial class TestHistogram
         }
     }
 
+    // Which bins values land in, for the bin-closure configuration given by the constructor
+    // arguments (see the edge notation in the body).
     [Fact]
-    public void LeftOpen()
+    public void Fit_LeftOpenBins()
     {
         // [-inf, 0), [0, 10), [10, 100)
         RunningStatistics.Histogram h = new(_edges, true, false);
@@ -234,8 +240,10 @@ public partial class TestHistogram
         }
     }
 
+    // Which bins values land in, for the bin-closure configuration given by the constructor
+    // arguments (see the edge notation in the body).
     [Fact]
-    public void RightClosed()
+    public void Fit_RightClosedBins()
     {
         // [-inf, 0], (0, 10], (10, 100]
         RunningStatistics.Histogram h = new(_edges, false);
@@ -255,8 +263,10 @@ public partial class TestHistogram
         }
     }
 
+    // Which bins values land in, for the bin-closure configuration given by the constructor
+    // arguments (see the edge notation in the body).
     [Fact]
-    public void RightOpen()
+    public void Fit_RightOpenBins()
     {
         // (-inf, 0], (0, 10], (10, 100]
         RunningStatistics.Histogram h = new(_edges, false, false);
@@ -277,8 +287,9 @@ public partial class TestHistogram
         }
     }
 
+    // The static Type.Merge(a, b) returns a new stat; a and b keep their own state.
     [Fact]
-    public void StaticMergeDoesNotAffectOriginals()
+    public void StaticMerge_DoesNotAffectOriginals()
     {
         // (0, 0.1], (0.1, 0.5], (0.5, 0.9]
         RunningStatistics.Histogram a = new([0, 0.1, 0.5, 0.9], leftClosed: false, endsClosed: false);

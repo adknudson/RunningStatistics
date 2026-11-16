@@ -17,7 +17,7 @@ public partial class TestExtremaGenericComparableType
     }
 
     [Fact]
-    public void FitUpdatesMinAndMaxCorrectlyForMyComparable()
+    public void FitUpdates_MinAndMaxCorrectlyForMyComparable()
     {
         Extrema<MyComparable> extrema = new();
         extrema.Fit(new MyComparable(5.0m));
@@ -29,7 +29,7 @@ public partial class TestExtremaGenericComparableType
     }
 
     [Fact]
-    public void FitUpdatesMinCountAndMaxCountCorrectlyForMyComparable()
+    public void FitUpdates_MinCountAndMaxCountCorrectlyForMyComparable()
     {
         Extrema<MyComparable> extrema = new();
         extrema.Fit(new MyComparable(5.0m));
@@ -44,7 +44,7 @@ public partial class TestExtremaGenericComparableType
     }
 
     [Fact]
-    public void FitUpdatesNobsCorrectlyForMyComparable()
+    public void FitUpdates_NobsCorrectlyForMyComparable()
     {
         Extrema<MyComparable> extrema = new();
         extrema.Fit(new MyComparable(5.0m));
@@ -55,7 +55,7 @@ public partial class TestExtremaGenericComparableType
     }
         
     [Fact]
-    public void FitHandlesExtremeValuesForMyComparable()
+    public void Fit_ExtremeValuesForMyComparable()
     {
         Extrema<MyComparable> extrema = new();
         extrema.Fit(new MyComparable(decimal.MaxValue));
@@ -154,7 +154,7 @@ public partial class TestExtremaGenericComparableType
     }
 
     [Fact]
-    public void MergeCombinesMinAndMaxCorrectlyForMyComparable()
+    public void Merge_CombinesMinAndMaxCorrectlyForMyComparable()
     {
         Extrema<MyComparable> a = new();
         a.Fit(new MyComparable(1.0m));
@@ -171,7 +171,7 @@ public partial class TestExtremaGenericComparableType
     }
 
     [Fact]
-    public void MergeCombinesMinCountAndMaxCountCorrectlyForMyComparable()
+    public void Merge_CombinesMinCountAndMaxCountCorrectlyForMyComparable()
     {
         Extrema<MyComparable> a = new();
         a.Fit(new MyComparable(1.0m));
@@ -190,7 +190,7 @@ public partial class TestExtremaGenericComparableType
     }
 
     [Fact]
-    public void MergeCombinesNobsCorrectlyForMyComparable()
+    public void Merge_CombinesNobsCorrectlyForMyComparable()
     {
         Extrema<MyComparable> a = new();
         a.Fit(new MyComparable(1.0m));

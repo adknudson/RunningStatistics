@@ -118,7 +118,7 @@ public partial class TestMoments
     }
 
     [Fact]
-    public void EmptyMomentsAreNaN()
+    public void EmptyMoments_AreNaN()
     {
         RunningStatistics.Moments m = new();
 
@@ -131,7 +131,7 @@ public partial class TestMoments
     }
 
     [Fact]
-    public void SingleFiniteObservation()
+    public void Fit_SingleFiniteObservation()
     {
         RunningStatistics.Moments m = new();
         m.Fit(1);
@@ -145,7 +145,7 @@ public partial class TestMoments
     }
     
     [Fact]
-    public void TwoFiniteObservations()
+    public void Fit_TwoFiniteObservations()
     {
         RunningStatistics.Moments m = new();
         m.Fit(1);
@@ -160,7 +160,7 @@ public partial class TestMoments
     }
     
     [Fact]
-    public void ThrowsExceptionOnNonFiniteNumber()
+    public void Fit_RejectsNaNAndInfinity()
     {
         RunningStatistics.Moments m = new();
         Assert.Throws<ArgumentException>(() => m.Fit(double.NaN));
@@ -169,7 +169,7 @@ public partial class TestMoments
     }
 
     [Fact]
-    public void MergeEmptyAreNaN()
+    public void MergeEmpty_AreNaN()
     {
         RunningStatistics.Moments a = new(); 
         RunningStatistics.Moments b = new(); 
@@ -181,8 +181,10 @@ public partial class TestMoments
         Assert.Equal(double.NaN, a.Kurtosis);
     }
 
+    // Merging two stats fitted with the first and second halves of the same data must match
+    // a stat fitted with all of the data at once.
     [Fact]
-    public void MergePartsEqualsMergeAll()
+    public void Merge_PartsEqualsAll()
     {
         const int n = 2000;
         var rng = new Random();
@@ -214,8 +216,9 @@ public partial class TestMoments
         Assert.Equal(a.Kurtosis, c.Kurtosis, 2);
     }
 
+    // The static Type.Merge(a, b) returns a new stat; a and b keep their own state.
     [Fact]
-    public void StaticMergeDoesNotAffectOriginals()
+    public void StaticMerge_DoesNotAffectOriginals()
     {
         RunningStatistics.Moments a = new();
         RunningStatistics.Moments b = new();
@@ -234,8 +237,9 @@ public partial class TestMoments
         Assert.Equal(a.Nobs + b.Nobs + 1, c.Nobs);
     }
 
+    // Fits 10M samples of the distribution and compares the statistic against its known properties.
     [Fact]
-    public void TestUnitUniform()
+    public void UnitUniformSample_MomentsMatchTheory()
     {
         const int n = 10_000_000;
         var rng = new Random();
@@ -258,10 +262,11 @@ public partial class TestMoments
         Utils.AssertIsApproximate(excessKurtosis, moments.ExcessKurtosis, 0.01);
     }
 
+    // Fits 10M samples of the distribution and compares the statistic against its known properties.
     [Theory]
     [InlineData(2.0, 1.0)]
     [InlineData(2.0, 10.0)]
-    public void TestNormal(double mean, double stdDev)
+    public void NormalSample_MomentsMatchTheory(double mean, double stdDev)
     {
         const int n = 10_000_000;
         var dist = new MathNet.Numerics.Distributions.Normal(mean, stdDev);
@@ -281,8 +286,9 @@ public partial class TestMoments
         Utils.AssertIsApproximate(excessKurtosis, moments.ExcessKurtosis, 0.01);
     }
 
+    // Fits 10M samples of the distribution and compares the statistic against its known properties.
     [Fact]
-    public void TestLogNormal()
+    public void LogNormalSample_MomentsMatchTheory()
     {
         const int n = 10_000_000;
         const double mu = 0.0;

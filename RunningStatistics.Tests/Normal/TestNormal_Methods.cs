@@ -16,7 +16,7 @@ public partial class TestNormal
     }
 
     [Fact]
-    public void ShouldReturnNaN_WhenNoData()
+    public void NoData_MomentsAreNaN()
     {
         var x = new RunningStatistics.Normal();
         Assert.Equal(double.NaN, x.Mean);
@@ -25,14 +25,14 @@ public partial class TestNormal
     }
     
     [Fact]
-    public void ShouldHaveZeroObservations_WhenNoData()
+    public void NoData_NobsIsZero()
     {
         var x = new RunningStatistics.Normal();
         Assert.Equal(0, x.Nobs);
     }
     
     [Fact]
-    public void SingleFiniteObservation()
+    public void Fit_SingleFiniteObservation()
     {
         var x = new RunningStatistics.Normal();
         x.Fit(10);

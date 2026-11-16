@@ -8,7 +8,7 @@ namespace RunningStatistics.Tests.EmpiricalCdf;
 public partial class TestEmpiricalCdf
 {
     [Fact]
-    public void ConstructorThrowsOnInvalidBins()
+    public void Constructor_ThrowsOnInvalidBins()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new RunningStatistics.EmpiricalCdf(-1));
         Assert.Throws<ArgumentOutOfRangeException>(() => new RunningStatistics.EmpiricalCdf(0));
@@ -16,21 +16,21 @@ public partial class TestEmpiricalCdf
     }
     
     [Fact]
-    public void FitThrowsOnNaN()
+    public void Fit_RejectsNaN()
     {
         RunningStatistics.EmpiricalCdf cdf = new(20);
         Assert.Throws<ArgumentException>(() => cdf.Fit(double.NaN));
     }
     
     [Fact]
-    public void FitThrowsOnInfinity()
+    public void Fit_RejectsInfinity()
     {
         RunningStatistics.EmpiricalCdf cdf = new(20);
         Assert.Throws<ArgumentException>(() => cdf.Fit(double.PositiveInfinity));
     }
     
     [Fact]
-    public void Quantile_FewerObservationsThanNumberOfBinsThrows()
+    public void Quantile_ThrowsWhenFewerObservationsThanBins()
     {
         RunningStatistics.EmpiricalCdf cdf = new(20);
         var rng = new Random();
@@ -45,7 +45,7 @@ public partial class TestEmpiricalCdf
     }
 
     [Fact]
-    public void Quantile_NumObservationsEqualToNumberOfBins()
+    public void Quantile_ExactlyNumBinsSucceeds()
     {
         RunningStatistics.EmpiricalCdf cdf = new(20);
         var rng = new Random();
@@ -63,7 +63,7 @@ public partial class TestEmpiricalCdf
     }
 
     [Fact]
-    public void MergeDifferentBuffersThrowsException()
+    public void Merge_ThrowsOnDifferentNumBins()
     {
         RunningStatistics.EmpiricalCdf a = new(10);
         RunningStatistics.EmpiricalCdf b = new(20);
@@ -71,7 +71,7 @@ public partial class TestEmpiricalCdf
     }
 
     [Fact]
-    public void ResetWorksAsExpected()
+    public void Reset_ClearsObservations()
     {
         RunningStatistics.EmpiricalCdf cdf = new(10);
         Random rng = new();
@@ -87,7 +87,7 @@ public partial class TestEmpiricalCdf
     }
 
     [Fact]
-    public void MergingWhereOneIsEmptyEqualsNonEmptyInstance()
+    public void Merge_WithEmptyOtherEqualsPopulated()
     {
         RunningStatistics.EmpiricalCdf a = new(20), b = new(20);
         Random rng = new();
@@ -112,8 +112,10 @@ public partial class TestEmpiricalCdf
         Assert.Equal(b.Quantile(0.75), bMergeA.Quantile(0.75));
     }
 
+    // Merging two stats fitted with the first and second halves of the same data must match
+    // a stat fitted with all of the data at once.
     [Fact]
-    public void MergePartsEqualsMergeAll()
+    public void Merge_PartsEqualsAll()
     {
         const int n = 50_000;
         Random rng = new();
@@ -241,7 +243,7 @@ public partial class TestEmpiricalCdf
     }
 
     [Fact]
-    public void CdfEdgeCases()
+    public void Cdf_EdgeCases()
     {
         RunningStatistics.EmpiricalCdf cdf = new(20);
         Random rng = new();
@@ -258,7 +260,7 @@ public partial class TestEmpiricalCdf
     }
     
     [Fact]
-    public void QuantileEdgeCases()
+    public void Quantile_EdgeCases()
     {
         RunningStatistics.EmpiricalCdf cdf = new(20);
         Random rng = new();
@@ -289,8 +291,9 @@ public partial class TestEmpiricalCdf
         Assert.Throws<ArgumentException>(() => cdf.Cdf(double.NaN));
     }
 
+    // Fits 10M samples of the distribution and compares Cdf and Quantile against its known values.
     [Fact]
-    public void TestUnitUniform()
+    public void UnitUniformSample_CdfAndQuantileMatch()
     {
         const int n = 10_000_000;
 
@@ -311,8 +314,9 @@ public partial class TestEmpiricalCdf
         }
     }
 
+    // Fits 10M samples of the distribution and compares Cdf and Quantile against its known values.
     [Fact]
-    public void TestStandardNormal()
+    public void StandardNormalSample_CdfAndQuantileMatch()
     {
         const int n = 10_000_000;
         var dist = new MathNet.Numerics.Distributions.Normal(0, 1);
@@ -339,8 +343,9 @@ public partial class TestEmpiricalCdf
         Utils.AssertIsApproximate(dist.CumulativeDistribution( 2), cdf.Cdf( 2), 0.25);
     }
 
+    // Fits 10M samples of the distribution and compares Cdf and Quantile against its known values.
     [Fact]
-    public void TestLogNormal()
+    public void LogNormalSample_CdfAndQuantileMatch()
     {
         const int n = 10_000_000;
         var dist = new LogNormal(0.0, 0.1);
@@ -502,7 +507,7 @@ public partial class TestEmpiricalCdf
         }
 
         // Would-otherwise-be-valid probabilities, including the p == 0 / p == 1 fast paths
-        // that return Min / Max once the stat is filled. (Quantile_FewerObservationsThanNumberOfBinsThrows
+        // that return Min / Max once the stat is filled. (Quantile_ThrowsWhenFewerObservationsThanBins
         // already pins p = 0.25 and Median.)
         Assert.Throws<InvalidOperationException>(() => cdf.Quantile(0.0));
         Assert.Throws<InvalidOperationException>(() => cdf.Quantile(0.75));
@@ -510,7 +515,7 @@ public partial class TestEmpiricalCdf
 
         // The Nobs guard precedes Require.ValidProbability: invalid p still yields
         // InvalidOperationException rather than the ArgumentOutOfRangeException pinned
-        // for a filled stat in QuantileEdgeCases and QuantileAndCdf_RejectNaN.
+        // for a filled stat in Quantile_EdgeCases and QuantileAndCdf_RejectNaN.
         Assert.Throws<InvalidOperationException>(() => cdf.Quantile(-0.1));
         Assert.Throws<InvalidOperationException>(() => cdf.Quantile(1.1));
         Assert.Throws<InvalidOperationException>(() => cdf.Quantile(double.NaN));

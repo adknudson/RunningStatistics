@@ -289,7 +289,7 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
     }
     
     [Fact]
-    public void CLoneEmpty_ConcreteTypeIsSame()
+    public void CloneEmpty_ConcreteTypeIsSame()
     {
         var stat = GenerateStatistic();
         

@@ -239,7 +239,7 @@ public partial class TestCountMap()
         Assert.Equal(11, a.Nobs);
         
         // other's state is untouched after the merge
-        Assert.Equal(1, b.Count);
+        Assert.Single(b);
         Assert.Equal(4, b.Nobs);
         Assert.Equal(4, b[7]);
         Assert.False(b.ContainsKey(1));
@@ -248,12 +248,12 @@ public partial class TestCountMap()
         // merging into a fresh copy copies exactly b's one key {7:4} and leaves b untouched
         var fresh = new CountMap<int>();
         fresh.Merge(b);
-        Assert.Equal(1, fresh.Count);
+        Assert.Single(fresh);
         Assert.Equal(4, fresh[7]);
         Assert.Equal(4, fresh.Nobs);
         Assert.False(fresh.ContainsKey(1));
         Assert.False(fresh.ContainsKey(3));
-        Assert.Equal(1, b.Count);
+        Assert.Single(b);
         Assert.Equal(4, b.Nobs);
     }
     
@@ -351,7 +351,7 @@ public partial class TestCountMap()
         stat.Fit(3, 5);
         
         var clone = stat.CloneEmpty();
-        Assert.Equal(0, clone.Count);
+        Assert.Empty(clone);
         Assert.Equal(0, clone.Nobs);
         
         // fitting the clone never touches the original map

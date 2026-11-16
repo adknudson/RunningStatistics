@@ -16,7 +16,7 @@ public partial class TestExtrema
     }
 
     [Fact]
-    public void ConstructorInitializesProperties()
+    public void Constructor_InitializesPropertiesCorrectly()
     {
         RunningStatistics.Extrema extrema = new();
 
@@ -28,7 +28,7 @@ public partial class TestExtrema
     }
     
     [Fact]
-    public void FittingSingleValue()
+    public void Fit_SingleValueSetsMinAndMax()
     {
         RunningStatistics.Extrema extrema = new();
 
@@ -41,7 +41,7 @@ public partial class TestExtrema
     }
     
     [Fact]
-    public void FitUpdatesMinAndMaxCorrectly()
+    public void FitUpdates_MinAndMaxCorrectly()
     {
         RunningStatistics.Extrema extrema = new();
         extrema.Fit(5.0);
@@ -53,7 +53,7 @@ public partial class TestExtrema
     }
 
     [Fact]
-    public void FitUpdatesMinCountAndMaxCountCorrectly()
+    public void FitUpdates_MinCountAndMaxCountCorrectly()
     {
         RunningStatistics.Extrema extrema = new();
         extrema.Fit(5.0);
@@ -68,7 +68,7 @@ public partial class TestExtrema
     }
 
     [Fact]
-    public void FitUpdatesNobsCorrectly()
+    public void FitUpdates_NobsCorrectly()
     {
         RunningStatistics.Extrema extrema = new();
         extrema.Fit(5.0);
@@ -79,14 +79,14 @@ public partial class TestExtrema
     }
     
     [Fact]
-    public void FitHandlesNaNValues()
+    public void Fit_RejectsNaN()
     {
         RunningStatistics.Extrema extrema = new();
         Assert.Throws<ArgumentException>(() => extrema.Fit(double.NaN));
     }
 
     [Fact]
-    public void FitHandlesExtremeValues()
+    public void Fit_ExtremeValues()
     {
         RunningStatistics.Extrema extrema = new();
         extrema.Fit(double.MinValue);
@@ -101,7 +101,7 @@ public partial class TestExtrema
     }
     
     [Fact]
-    public void MergeCombinesMinAndMaxCorrectly()
+    public void Merge_CombinesMinAndMaxCorrectly()
     {
         RunningStatistics.Extrema a = new();
         a.Fit(1.0);
@@ -118,7 +118,7 @@ public partial class TestExtrema
     }
 
     [Fact]
-    public void MergeCombinesMinCountAndMaxCountCorrectly()
+    public void Merge_CombinesMinCountAndMaxCountCorrectly()
     {
         RunningStatistics.Extrema a = new();
         a.Fit(1.0);
@@ -137,7 +137,7 @@ public partial class TestExtrema
     }
 
     [Fact]
-    public void MergeCombinesNobsCorrectly()
+    public void Merge_CombinesNobsCorrectly()
     {
         RunningStatistics.Extrema a = new();
         a.Fit(1.0);
@@ -167,8 +167,10 @@ public partial class TestExtrema
     }
 
 
+    // Merging two stats fitted with the first and second halves of the same data must match
+    // a stat fitted with all of the data at once.
     [Fact]
-    public void MergePartsEqualsMergeAll()
+    public void Merge_PartsEqualsAll()
     {
         const int n = 2000;
         var rng = new Random();
@@ -198,8 +200,9 @@ public partial class TestExtrema
         Assert.Equal(a.MaxCount, c.MaxCount);
     }
 
+    // The static Type.Merge(a, b) returns a new stat; a and b keep their own state.
     [Fact]
-    public void StaticMergeDoesNotAffectOriginals()
+    public void StaticMerge_DoesNotAffectOriginals()
     {
         RunningStatistics.Extrema a = new();
         a.Fit([1, 1, 2, 3, 5, 8, 13, 21, 34, 55]);
@@ -220,7 +223,7 @@ public partial class TestExtrema
     }
     
     [Fact]
-    public void ResetMethodResetsProperties()
+    public void Reset_ClearsState()
     {
         RunningStatistics.Extrema extrema = new();
         extrema.Fit(1.0);
@@ -237,7 +240,7 @@ public partial class TestExtrema
     }
     
     [Fact]
-    public void RangeMethodReturnsCorrectValue()
+    public void Range_ReturnsCorrectValue()
     {
         RunningStatistics.Extrema extrema = new();
         extrema.Fit(1.0);

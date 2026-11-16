@@ -16,14 +16,14 @@ public partial class TestSum
     }
 
     [Fact]
-    public void SumWithNoNumbers()
+    public void SumWith_NoNumbers()
     {
         var sum = new RunningStatistics.Sum();
         Assert.Equal(0, sum.Value);
     }
 
     [Fact]
-    public void SumWithSingleNumber()
+    public void SumWith_SingleNumber()
     {
         var sum = new RunningStatistics.Sum();
         sum.Fit(42);
@@ -31,7 +31,7 @@ public partial class TestSum
     }
     
     [Fact]
-    public void SumOfPositiveNumbers()
+    public void SumOf_PositiveNumbers()
     {
         var sum = new RunningStatistics.Sum();
         sum.Fit(10);
@@ -41,7 +41,7 @@ public partial class TestSum
     }
 
     [Fact]
-    public void SumOfNegativeNumbers()
+    public void SumOf_NegativeNumbers()
     {
         var sum = new RunningStatistics.Sum();
         sum.Fit(-10);
@@ -51,7 +51,7 @@ public partial class TestSum
     }
 
     [Fact]
-    public void SumOfMixedNumbers()
+    public void SumOf_MixedNumbers()
     {
         var sum = new RunningStatistics.Sum();
         sum.Fit(10);
@@ -61,14 +61,14 @@ public partial class TestSum
     }
     
     [Fact]
-    public void MeanWithNoNumbers()
+    public void Mean_NoNumbers_IsNaN()
     {
         var sum = new RunningStatistics.Sum();
         Assert.Equal(double.NaN, sum.Mean());
     }
 
     [Fact]
-    public void MeanWithSingleNumber()
+    public void Mean_SingleNumber()
     {
         var sum = new RunningStatistics.Sum();
         sum.Fit(42);
@@ -76,7 +76,7 @@ public partial class TestSum
     }
 
     [Fact]
-    public void MeanOfPositiveNumbers()
+    public void Mean_PositiveNumbers()
     {
         var sum = new RunningStatistics.Sum();
         sum.Fit(10);
@@ -86,7 +86,7 @@ public partial class TestSum
     }
 
     [Fact]
-    public void MeanOfNegativeNumbers()
+    public void Mean_NegativeNumbers()
     {
         var sum = new RunningStatistics.Sum();
         sum.Fit(-10);
@@ -96,7 +96,7 @@ public partial class TestSum
     }
 
     [Fact]
-    public void MeanOfMixedNumbers()
+    public void Mean_MixedNumbers()
     {
         var sum = new RunningStatistics.Sum();
         sum.Fit(10);
