@@ -20,7 +20,7 @@
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>
-			Changes since 3.2.0 (includes the never-released 3.2.1):
+			Changes since 3.2.0:
 			- `CountMap`: `CloneEmpty` now propagates the map's comparer (previously the clone dropped a custom comparer and fell back to the default one, so `MinKey`/`MaxKey` and merging on a cloned map used wrong key order — issue #6)
 			- `Beta`: `Median` existence relaxed from `Successes` > 1 and `Failures` > 1 to at least one success and at least one failure (`Quantile(0.5)` now defined for e.g. 1/1 fits instead of returning NaN); `Mode` still requires > 1 of each
 			- `Moments`: replaced raw power-sum accumulation with a numerically stable Chan/Welford central-moment update; Skewness/Kurtosis near large offsets are now accurate (~1e-12 relative to spread-scaled tolerance) instead of garbage, and fitting is ~1.6x faster (same public surface)
