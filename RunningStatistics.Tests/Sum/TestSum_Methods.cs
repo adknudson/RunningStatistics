@@ -105,7 +105,7 @@ public partial class TestSum
         Assert.Equal(6.67, sum.Mean(), 2);
     }
 
-    // PIN (commit 16): the non-finite contract of double Sum, documented exactly as the code
+    // PIN: the non-finite contract of double Sum, documented exactly as the code
     // behaves today: Fit's first guard is Require.Finite (ArgumentException), the count guard
     // Require.NonNegative (ArgumentOutOfRangeException) comes second, and both the scalar and
     // batch paths validate before touching state. No library change.
@@ -206,7 +206,6 @@ public partial class TestSum
         Assert.Equal(double.PositiveInfinity, fitSaturated.Value);
     }
 
-    // Commit 24: null iterable Fit contract.
     [Fact]
     public void Fit_RejectsNullIterable()
     {

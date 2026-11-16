@@ -215,7 +215,7 @@ public partial class TestCountMap()
         Assert.Equal(3, countMap.MaxKey(null));
     }
     
-    // Commit-22 pins: the Merge contract (per-key sums via the counts accessor) and MinKey/
+    // Pinned: the Merge contract (per-key sums via the counts accessor) and MinKey/
     // MaxKey selection. Merge(CountMap) delegates to the base Fit(IEnumerable<KeyValuePair<TObs,long>>)
     // which foreaches other's entries and calls Fit(key, count), so every key present in either
     // side ends with the SUM of its counts and Nobs is the sum of all counts.
@@ -399,7 +399,7 @@ public partial class TestCountMap()
         Assert.Equal(14, a.Nobs);
     }
 
-    // Commit 24: null iterable Fit contract — CountMap has no iterable Fit override:
+    // Null iterable Fit contract — CountMap has no iterable Fit override:
     // both the KeyValuePairs overload (the one Merge uses) and the plain-iterable overload
     // resolve to the base RunningStatisticBase defaults.
     [Fact]

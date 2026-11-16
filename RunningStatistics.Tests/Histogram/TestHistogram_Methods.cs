@@ -19,7 +19,7 @@ public partial class TestHistogram
         Assert.Equal(long.MaxValue / 2 + 1, hist.Nobs);
     }
     
-    // Commit 17: edge-validation guards in the constructor. Scenarios that silently
+    // Edge-validation guards in the constructor. Scenarios that silently
     // constructed today (red): any NaN edge (any position), unsorted/non-monotonic edges
     // (the ctor used to OrderBy-sort them), and (implicitly) duplicate edges. The ctor
     // now requires finite-or-infinite (no NaN), strictly monotonically increasing edges.
@@ -312,7 +312,7 @@ public partial class TestHistogram
     }
 
     // -----------------------------------------------------------------------
-    // Commit 18: PIN — observation/bin MEMBERSHIP at edges for every
+    // PIN — observation/bin MEMBERSHIP at edges for every
     // (leftClosed, endsClosed) combination. Pins exactly what UncheckedFit +
     // HistogramBin.Contains do today. BinCounts(h) = the bin Nobs by bin index,
     // so the exact bin getting each edge observation is pinned. The conservation
@@ -591,7 +591,7 @@ public partial class TestHistogram
         }
     }
 
-    // Commit 24: null iterable Fit contract — Histogram has no iterable Fit override;
+    // Null iterable Fit contract — Histogram has no iterable Fit override;
     // the call resolves to the base RunningStatisticBase.Fit(IEnumerable<double>).
     [Fact]
     public void Fit_RejectsNullIterable()

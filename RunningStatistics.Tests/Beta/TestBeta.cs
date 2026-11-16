@@ -97,7 +97,7 @@ public partial class TestBeta()
         Utils.AssertIsApproximate(7.0 * 3.0 / (Math.Pow(7.0 + 3.0, 2) * (7.0 + 3.0 + 1)), beta.Variance, 0);
     }
 
-    // Commit 21 pins: the batch path Fit(IEnumerable<bool>) (values.ToList(), count the
+    // Pinned: the batch path Fit(IEnumerable<bool>) (values.ToList(), count the
     // trues, then Fit(s, n - s)) against hand-counted truths of the SAME iterable, batch-
     // after-batch and batch-vs-loop agreement, the empty-iterable outcome, and all-true/
     // all-false runs. Beta's counters are exact integers, so both paths produce identical
@@ -270,7 +270,7 @@ public partial class TestBeta()
         Assert.Equal(ctor.Variance, batch.Variance);
     }
 
-    // Commit 24: null iterable Fit contract — bool iterables.
+    // Null iterable Fit contract — bool iterables.
     [Fact]
     public void Fit_RejectsNullIterable()
     {

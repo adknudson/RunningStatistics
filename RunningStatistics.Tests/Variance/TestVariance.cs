@@ -235,7 +235,6 @@ public partial class TestVariance()
         Assert.Equal(double.NaN, v1.Value);
     }
 
-    // Commit 24: null iterable Fit contract.
     [Fact]
     public void Fit_RejectsNullIterable()
     {

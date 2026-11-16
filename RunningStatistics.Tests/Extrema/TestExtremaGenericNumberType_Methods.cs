@@ -216,7 +216,7 @@ public partial class TestExtremaGenericNumberType
         Assert.Equal(new MyNum(2.0m), range);
     }
 
-    // Commit 24: null iterable Fit contract — see the comparable-type twin above.
+    // Null iterable Fit contract — see the comparable-type twin above.
     [Fact]
     public void Fit_RejectsNullIterable()
     {

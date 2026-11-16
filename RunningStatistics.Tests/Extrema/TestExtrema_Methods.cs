@@ -646,7 +646,7 @@ public partial class TestExtrema
         Assert.Equal(3, g.MaxCount);
     }
 
-    // Commit 24: null iterable Fit contract — Extrema (double) has no iterable Fit override.
+    // Null iterable Fit contract — Extrema (double) has no iterable Fit override.
     [Fact]
     public void Fit_RejectsNullIterable()
     {

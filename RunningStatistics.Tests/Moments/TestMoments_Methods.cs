@@ -325,7 +325,7 @@ public partial class TestMoments
         Utils.AssertIsApproximate(excessKurtosis, moments.ExcessKurtosis, 0.1);
     }
 
-    // Commit 24: null iterable Fit contract — Moments has no iterable Fit override;
+    // Null iterable Fit contract — Moments has no iterable Fit override;
     // the call resolves to the base RunningStatisticBase.Fit(IEnumerable<double>).
     [Fact]
     public void Fit_RejectsNullIterable()

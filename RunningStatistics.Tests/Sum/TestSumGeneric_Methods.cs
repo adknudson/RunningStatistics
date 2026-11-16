@@ -55,7 +55,7 @@ public abstract class TestSumGenericMethods<TObs>
         Assert.Equal(From(20), sum.Value);
     }
 
-    // Commit 24: null iterable Fit contract — Sum<TObs> has no iterable Fit override,
+    // Null iterable Fit contract — Sum<TObs> has no iterable Fit override,
     // so the call resolves to the base RunningStatisticBase.Fit(IEnumerable<TObs>).
     [Fact]
     public void Fit_RejectsNullIterable()
@@ -227,7 +227,7 @@ public class TestSumGenericMethods_MyNum : TestSumGenericMethods<MyNum>
         Assert.Equal(6.67m, sum.Mean().Value, 2);
     }
 
-    // --- Commit 12 pins: the DELEGATE path (MyNum implements IMultiplyOperators<MyNum,long,MyNum>,
+    // --- Pinned: the DELEGATE path (MyNum implements IMultiplyOperators<MyNum,long,MyNum>,
     // so Fit(value,count) computes value * count in O(1) via the compiled multiply delegate).
     // MyNum is decimal-backed so exact-integer products must come out exact.
 
@@ -270,7 +270,7 @@ public class TestSumGenericMethods_MyNum : TestSumGenericMethods<MyNum>
         // exactly representable in all three backings. Compares the underlying .Value (decimal
         // vs (decimal)long/(decimal)int) and Nobs. Counts cover a power of two (2^20 — the
         // fallback adds a single doubled block), an odd mixed-bit count, and count = 1.
-        // (Not pinned bit-exact for floating-like types — associativity caveat, commit 11.)
+        // (Not pinned bit-exact for floating-like types — associativity caveat.)
         const long powerOfTwo = 1_048_576L;
         const long odd = 1_000_003L;
 
@@ -339,7 +339,7 @@ public class TestSumGenericMethods_MyBigAddOnlyNum : TestSumGenericMethods<MyBig
         Assert.Equal(long.MaxValue, sum.Value.Value);
     }
 
-    // --- Commit 12 pins: the FALLBACK path (no IMultiplyOperators -> O(log count) doubling).
+    // --- Pinned: the FALLBACK path (no IMultiplyOperators -> O(log count) doubling).
     // (MyAddOnlyNum's exact moderate-count product is already pinned by
     // FallbackFit_ModerateCount_ExactSum; the cross-agreement test adds it at -11 * odd.)
 

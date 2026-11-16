@@ -636,7 +636,7 @@ public partial class TestEmpiricalCdf
         Utils.AssertIsApproximate(1.0, cdf.Cdf(11.0), 0);
     }
 
-    // Commit 24: null iterable Fit contract — EmpiricalCdf has no iterable Fit override.
+    // Null iterable Fit contract — EmpiricalCdf has no iterable Fit override.
     [Fact]
     public void Fit_RejectsNullIterable()
     {

@@ -131,7 +131,7 @@ public partial class TestNormal
     }
     
     // --------------------------------------------------------------------
-    // Commit 19 pins: Normal's degenerate-spread behavior on current code.
+    // Pinned: Normal's degenerate-spread behavior on current code.
     // Normal = Mean + Variance; Utils.Smooth(a, b, p) = a + p*(b - a), so
     // smoothing equal values is exact and the variance terms collapse to
     // exact 0 on all-equal data. All values below are exact unless pinned
@@ -292,7 +292,6 @@ public partial class TestNormal
         Assert.Equal(double.NaN, fresh.Mean);
     }
 
-    // Commit 24: null iterable Fit contract.
     [Fact]
     public void Fit_RejectsNullIterable()
     {

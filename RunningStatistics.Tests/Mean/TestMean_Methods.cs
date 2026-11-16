@@ -122,7 +122,7 @@ public partial class TestMean
         Assert.Throws<ArgumentException>(() => a.Fit(double.NegativeInfinity));
     }
 
-    // Commit 15 pins: the batch path Fit(IEnumerable<double>) (values.Average() then
+    // Pinned: the batch path Fit(IEnumerable<double>) (values.Average() then
     // Utils.Smooth with weight count/Nobs) must agree with the incremental path of repeated
     // Fit(value) calls: same Nobs EXACTLY, Value within Utils.AssertIsApproximate(expected,
     // actual, 0) = 1e-8 relative. Seeded Random(20251114) only — no unseeded sampling.
@@ -287,7 +287,7 @@ public partial class TestMean
         Assert.Equal(2.5, filled.Value);
     }
 
-    // Commit 24: null iterable Fit contract — a null IEnumerable reference must be
+    // Null iterable Fit contract — a null IEnumerable reference must be
     // rejected with ArgumentNullException, and state stays untouched.
     [Fact]
     public void Fit_RejectsNullIterable()
