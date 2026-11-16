@@ -331,7 +331,7 @@ public partial class TestMoments
     public void Fit_RejectsNullIterable()
     {
         var moments = new RunningStatistics.Moments();
-        Assert.Throws<ArgumentNullException>(() => moments.Fit((IEnumerable<double>?)null));
+        Assert.Throws<ArgumentNullException>(() => moments.Fit((IEnumerable<double>)null));
         Assert.Equal(0, moments.Nobs);
     }
 }

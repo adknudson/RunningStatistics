@@ -561,7 +561,7 @@ public partial class TestExtrema
 
         // Same guard ORDER as the double type (whose Fit(NaN, 0) throws ArgumentException): the
         // value guard Require.NotNull runs BEFORE the count == 0 short-circuit -> ANE even at 0.
-        Assert.Throws<ArgumentNullException>(() => comparable.Fit((MyComparable?)null, 0));
+        Assert.Throws<ArgumentNullException>(() => comparable.Fit((MyComparable)null, 0));
 
         // On a NON-empty generic statistic, Fit(value, 0) leaves state untouched.
         var filled = new RunningStatistics.Extrema<MyComparable>();
@@ -651,7 +651,7 @@ public partial class TestExtrema
     public void Fit_RejectsNullIterable()
     {
         var extrema = new RunningStatistics.Extrema();
-        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<double>?)null));
+        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<double>)null));
         Assert.Equal(0, extrema.Nobs);
     }
 

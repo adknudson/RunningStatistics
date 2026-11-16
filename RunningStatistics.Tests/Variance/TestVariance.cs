@@ -239,7 +239,7 @@ public partial class TestVariance()
     public void Fit_RejectsNullIterable()
     {
         var variance = new RunningStatistics.Variance();
-        Assert.Throws<ArgumentNullException>(() => variance.Fit((IEnumerable<double>?)null));
+        Assert.Throws<ArgumentNullException>(() => variance.Fit((IEnumerable<double>)null));
         Assert.Equal(0, variance.Nobs);
     }
 }

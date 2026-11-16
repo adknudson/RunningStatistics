@@ -293,7 +293,7 @@ public partial class TestMean
     public void Fit_RejectsNullIterable()
     {
         var mean = new RunningStatistics.Mean();
-        Assert.Throws<ArgumentNullException>(() => mean.Fit((IEnumerable<double>?)null));
+        Assert.Throws<ArgumentNullException>(() => mean.Fit((IEnumerable<double>)null));
         Assert.Equal(0, mean.Nobs);
     }
 }

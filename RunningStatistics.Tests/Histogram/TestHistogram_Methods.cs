@@ -597,7 +597,7 @@ public partial class TestHistogram
     public void Fit_RejectsNullIterable()
     {
         RunningStatistics.Histogram h = new([0.0, 1.0, 2.0]);
-        Assert.Throws<ArgumentNullException>(() => h.Fit((IEnumerable<double>?)null));
+        Assert.Throws<ArgumentNullException>(() => h.Fit((IEnumerable<double>)null));
         Assert.Equal(0, h.Nobs);
     }
 }

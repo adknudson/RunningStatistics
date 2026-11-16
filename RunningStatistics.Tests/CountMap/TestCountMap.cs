@@ -406,8 +406,8 @@ public partial class TestCountMap()
     public void Fit_RejectsNullIterable()
     {
         var countMap = new CountMap<int>();
-        Assert.Throws<ArgumentNullException>(() => countMap.Fit((IEnumerable<KeyValuePair<int, long>>?)null));
-        Assert.Throws<ArgumentNullException>(() => countMap.Fit((IEnumerable<int>?)null));
+        Assert.Throws<ArgumentNullException>(() => countMap.Fit((IEnumerable<KeyValuePair<int, long>>)null));
+        Assert.Throws<ArgumentNullException>(() => countMap.Fit((IEnumerable<int>)null));
         Assert.Equal(0, countMap.Nobs);
     }
 }

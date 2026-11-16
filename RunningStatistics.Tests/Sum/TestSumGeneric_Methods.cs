@@ -61,7 +61,7 @@ public abstract class TestSumGenericMethods<TObs>
     public void Fit_RejectsNullIterable()
     {
         var sum = new Sum<TObs>();
-        Assert.Throws<ArgumentNullException>(() => sum.Fit((IEnumerable<TObs>?)null));
+        Assert.Throws<ArgumentNullException>(() => sum.Fit((IEnumerable<TObs>)null));
         Assert.Equal(0L, sum.Nobs);
     }
 }

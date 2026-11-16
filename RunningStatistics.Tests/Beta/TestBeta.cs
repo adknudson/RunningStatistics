@@ -275,7 +275,7 @@ public partial class TestBeta()
     public void Fit_RejectsNullIterable()
     {
         var beta = new RunningStatistics.Beta();
-        Assert.Throws<ArgumentNullException>(() => beta.Fit((IEnumerable<bool>?)null));
+        Assert.Throws<ArgumentNullException>(() => beta.Fit((IEnumerable<bool>)null));
         Assert.Equal(0, beta.Nobs);
     }
 

@@ -296,7 +296,7 @@ public partial class TestNormal
     public void Fit_RejectsNullIterable()
     {
         var normal = new RunningStatistics.Normal();
-        Assert.Throws<ArgumentNullException>(() => normal.Fit((IEnumerable<double>?)null));
+        Assert.Throws<ArgumentNullException>(() => normal.Fit((IEnumerable<double>)null));
         Assert.Equal(0, normal.Nobs);
     }
 }

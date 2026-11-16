@@ -10,7 +10,7 @@ public partial class TestExtremaGenericComparableType
     public void Fit_RejectsNullObservations()
     {
         Extrema<MyComparable> extrema = new();
-        var nullValue = (MyComparable?)null;
+        var nullValue = (MyComparable)null;
         Assert.Throws<ArgumentNullException>(() => extrema.Fit(nullValue));
         Assert.Throws<ArgumentNullException>(() => extrema.Fit(nullValue, 3));
         Assert.Equal(0, extrema.Nobs);
@@ -212,7 +212,7 @@ public partial class TestExtremaGenericComparableType
     public void Fit_RejectsNullIterable()
     {
         Extrema<MyComparable> extrema = new();
-        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<MyComparable>?)null));
+        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<MyComparable>)null));
         Assert.Equal(0, extrema.Nobs);
     }
 }

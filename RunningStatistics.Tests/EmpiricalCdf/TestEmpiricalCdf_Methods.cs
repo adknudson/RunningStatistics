@@ -641,7 +641,7 @@ public partial class TestEmpiricalCdf
     public void Fit_RejectsNullIterable()
     {
         RunningStatistics.EmpiricalCdf cdf = new(10);
-        Assert.Throws<ArgumentNullException>(() => cdf.Fit((IEnumerable<double>?)null));
+        Assert.Throws<ArgumentNullException>(() => cdf.Fit((IEnumerable<double>)null));
         Assert.Equal(0, cdf.Nobs);
     }
 }

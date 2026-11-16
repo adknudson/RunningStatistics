@@ -210,7 +210,7 @@ public partial class TestSum
     public void Fit_RejectsNullIterable()
     {
         var sum = new RunningStatistics.Sum();
-        Assert.Throws<ArgumentNullException>(() => sum.Fit((IEnumerable<double>?)null));
+        Assert.Throws<ArgumentNullException>(() => sum.Fit((IEnumerable<double>)null));
         Assert.Equal(0, sum.Nobs);
     }
 }

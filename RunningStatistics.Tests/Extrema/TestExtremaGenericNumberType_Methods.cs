@@ -221,7 +221,7 @@ public partial class TestExtremaGenericNumberType
     public void Fit_RejectsNullIterable()
     {
         Extrema<MyNum> extrema = new();
-        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<MyNum>?)null));
+        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<MyNum>)null));
         Assert.Equal(0, extrema.Nobs);
     }
 }
