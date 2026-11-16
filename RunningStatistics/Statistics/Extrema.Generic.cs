@@ -40,10 +40,15 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
 
     protected override long GetNobs() => _nobs;
 
-    public override void Fit(TObs value) => UncheckedFit(value, 1);
+    public override void Fit(TObs value)
+    {
+        Require.NotNull(value);
+        UncheckedFit(value, 1);
+    }
 
     public override void Fit(TObs value, long count)
     {
+        Require.NotNull(value);
         Require.NonNegative(count);
         if (count == 0) return;
         UncheckedFit(value, count);
@@ -56,7 +61,7 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
             _min = _max = value;
         }
         
-        _nobs += count;
+        checked { _nobs += count; }
         
         if (value.CompareTo(_min!) < 0)
         {
@@ -112,6 +117,8 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
         
         // if both are non-empty, merge
         
+        checked { _nobs += other.Nobs; }
+        
         if (Min.CompareTo(other.Min) == 0)
         {
             MinCount += other.MinCount;
@@ -131,8 +138,6 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
             _max = other.Max;
             MaxCount = other.MaxCount;
         }
-        
-        _nobs += other.Nobs;
     }
 
     public override string ToString()

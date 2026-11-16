@@ -23,7 +23,7 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
     {
         Require.Finite(value);
         Require.NonNegative(count);
-        _nobs += count;
+        checked { _nobs += count; }
         Value += value * count;
     }
 
@@ -31,7 +31,7 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
     {
         var xs = values.ToList();
         xs.ForEach(Require.Finite);
-        _nobs += xs.Count;
+        checked { _nobs += xs.Count; }
         Value += xs.Sum();
     }
 
@@ -45,7 +45,7 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
     
     public override void Merge(Sum sum)
     {
-        _nobs += sum.Nobs;
+        checked { _nobs += sum.Nobs; }
         Value += sum.Value;
     }
 

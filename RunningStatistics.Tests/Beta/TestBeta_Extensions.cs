@@ -170,7 +170,7 @@ public partial class TestBeta
     }
     
     [Fact]
-    public void QuantileEdgeCases()
+    public void Quantile_EdgeCases()
     {
         var beta = new RunningStatistics.Beta(100, 50);
 

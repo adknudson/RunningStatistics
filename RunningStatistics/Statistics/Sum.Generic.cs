@@ -19,7 +19,7 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
     /// for any <c>TMultiplier</c> in the set <c>{ long, double, decimal, float }</c>, this delegate
     /// is compiled once (per type instantiation) via an expression tree and used by
     /// <see cref="Fit(TObs,long)"/> to compute <c>value * count</c> in O(1). Otherwise it is
-    /// <c>null</c> and the method falls back to an O(count) addition loop.
+    /// <c>null</c> and the method falls back to an O(log count) doubling-accumulation loop.
     /// <para>
     /// Note: when <c>TMultiplier</c> is <c>float</c>, the <c>long</c> count is narrowed to
     /// <c>float</c> before the multiply, which loses precision for counts greater than ~16.7M
@@ -79,10 +79,28 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
 
     public override void Fit(TObs value)
     {
-        _nobs++;
+        checked { _nobs++; }
         Value += value;
     }
 
+    /// <summary>
+    /// Adds <paramref name="count"/> observations of <paramref name="value"/>, incrementing
+    /// the observation count in one <c>checked</c> step.
+    /// <para>
+    /// When <see cref="MultiplyDelegate"/> is non-null the contribution is <c>value * count</c>
+    /// in O(1). The fallback computes <c>value * count</c> in O(log count) by binary decomposition
+    /// of <paramref name="count"/>: doubling <c>value</c> to itself once per bit and adding the
+    /// blocks for the set bits into an accumulator, then combining the accumulator into the
+    /// running sum once.
+    /// <para>
+    /// Associativity caveat: for floating-point-like <typeparamref name="TObs"/> the doubling
+    /// path groups additions differently than <paramref name="count"/> repeated additions do, so
+    /// the result may differ in the low bits from the result of calling <see cref="Fit(TObs)"/>
+    /// <paramref name="count"/> times; do not test bit-exact equality against repeated addition
+    /// for non-exact types.
+    /// </para>
+    /// </para>
+    /// </summary>
     public override void Fit(TObs value, long count)
     {
         Require.NonNegative(count);
@@ -91,16 +109,25 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
         if (MultiplyDelegate is not null)
         {
             // O(1): TObs supports IMultiplyOperators<TObs, long, TObs>
-            _nobs += count;
+            checked { _nobs += count; }
             Value += MultiplyDelegate(value, count);
         }
         else
         {
-            // O(count) fallback: no multiply operator available for this type
-            for (var i = 0; i < count; i++)
+            // O(log count) fallback: no multiply operator available for this type.
+            // Binary decomposition of count: blocks of value doubled to self, one per bit;
+            // the final iteration's doubling is skipped (no higher bits remain — doubling
+            // there could overflow even when the exact count * value would fit).
+            var contribution = TObs.AdditiveIdentity;
+            var block = value;
+            for (var n = count; n > 0; n >>= 1)
             {
-                Fit(value);
+                if ((n & 1) != 0) contribution += block;
+                if (n > 1) block += block;
             }
+
+            checked { _nobs += count; }
+            Value += contribution;
         }
     }
 
@@ -114,7 +141,7 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
     
     public override void Merge(Sum<TObs> sum)
     {
-        _nobs += sum.Nobs;
+        checked { _nobs += sum.Nobs; }
         Value += sum.Value;
     }
 

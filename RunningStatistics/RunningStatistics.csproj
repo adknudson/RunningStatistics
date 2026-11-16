@@ -8,7 +8,7 @@
 	
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageVersion>3.2.1</PackageVersion>
+		<PackageVersion>3.3.0</PackageVersion>
 		<Authors>Alex Knudson</Authors>
 		<Title>Running Statistics</Title>
 		<Description>A library of single pass algorithms for statistical measures.</Description>
@@ -20,8 +20,17 @@
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>
-            - Fixed bug in `CountMap.CloneEmpty`
-			- Relaxed conditions for `Beta.Median`
+			Changes since 3.2.0 (includes the never-released 3.2.1):
+			- `CountMap`: `CloneEmpty` now propagates the map's comparer (previously the clone dropped a custom comparer and fell back to the default one, so `MinKey`/`MaxKey` and merging on a cloned map used wrong key order — issue #6)
+			- `Beta`: `Median` existence relaxed from `Successes` > 1 and `Failures` > 1 to at least one success and at least one failure (`Quantile(0.5)` now defined for e.g. 1/1 fits instead of returning NaN); `Mode` still requires > 1 of each
+			- `Moments`: replaced raw power-sum accumulation with a numerically stable Chan/Welford central-moment update; Skewness/Kurtosis near large offsets are now accurate (~1e-12 relative to spread-scaled tolerance) instead of garbage, and fitting is ~1.6x faster (same public surface)
+			- `Variance`: switched to a two-pass population variance, eliminating catastrophic cancellation for data at large offsets
+			- `EmpiricalCdf`: `Merge` no longer blends unflushed buffer slots as zeros (phantom-zero bias removed); `Quantile`/`Cdf` now reject NaN probabilities
+			- `Beta`: `Variance` getter computes its numerator in `double`, fixing `long` product wraparound at counts near 3.1e9
+			- `Sum` (generic): batch-fitting fallback now accumulates in O(log count) via doubling instead of a linear loop
+			- `Normal`: `Fit(iterable)` with an empty collection is now a clean no-op instead of throwing
+			- `Histogram`: the constructor now rejects NaN, duplicate and non-monotonic edge values with `ArgumentException` instead of silently sorting them
+			- Input-validation contract: `Fit(iterable)` throws `ArgumentNullException` for null collections (was `NullReferenceException` deep in the loop), `Extrema` rejects null observations, and observation counters are accumulated in checked blocks — `OverflowException` instead of silent wraparound
 		</PackageReleaseNotes>
 	</PropertyGroup>
 	

@@ -289,7 +289,7 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
     }
     
     [Fact]
-    public void CLoneEmpty_ConcreteTypeIsSame()
+    public void CloneEmpty_ConcreteTypeIsSame()
     {
         var stat = GenerateStatistic();
         
@@ -335,5 +335,150 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         var stat = GenerateStatistic();
         var re = new Regex($@"^\S+{{{typeof(TObs).Name}}}\(Nobs=0\).*");
         Assert.Matches(re, stat.ToString());
+    }
+    
+    // Algebraic identity properties at the Nobs level only (accessor exposure differs per stat),
+    // with small counts so stats whose Fit(value, count) loops per observation stay fast:
+    [Fact]
+    public void FitExistingState_WithZeroCount_NoOp()
+    {
+        IRunningStatistic<TObs> stat = GenerateStatistic();
+        
+        stat.Fit(GenerateObservation(), 3);
+        
+        // pre-condition
+        Assert.Equal(3, stat.Nobs);
+        
+        stat.Fit(GenerateObservation(), 0);
+        
+        // post-condition
+        Assert.Equal(3, stat.Nobs);
+    }
+    
+    [Fact]
+    public void FitWeightedOne_EqualsFitSingle_Nobs()
+    {
+        IRunningStatistic<TObs> single = GenerateStatistic();
+        IRunningStatistic<TObs> weighted = GenerateStatistic();
+        
+        var obs = GenerateObservation();
+        single.Fit(obs);
+        weighted.Fit(obs, 1);
+        
+        // post-condition
+        Assert.Equal(1, single.Nobs);
+        Assert.Equal(single.Nobs, weighted.Nobs);
+    }
+    
+    [Fact]
+    public void Merge_FreshWithPopulated_CopiesNobs()
+    {
+        var empty = GenerateStatistic();
+        var filled = GenerateStatistic();
+        
+        filled.Fit(GenerateObservation(), 3);
+        
+        // pre-conditions
+        Assert.Equal(0, empty.Nobs);
+        Assert.Equal(3, filled.Nobs);
+        
+        empty.Merge(filled);
+        
+        // post-conditions
+        Assert.Equal(3, empty.Nobs);
+        Assert.Equal(3, filled.Nobs);
+    }
+    
+    [Fact]
+    public void Merge_PopulatedWithFresh_LeavesNobs()
+    {
+        var filled = GenerateStatistic();
+        var empty = GenerateStatistic();
+        
+        filled.Fit(GenerateObservation(), 3);
+        
+        // pre-conditions
+        Assert.Equal(3, filled.Nobs);
+        Assert.Equal(0, empty.Nobs);
+        
+        filled.Merge(empty);
+        
+        // post-conditions
+        Assert.Equal(3, filled.Nobs);
+        Assert.Equal(0, empty.Nobs);
+    }
+    
+    [Fact]
+    public void Merge_IntoSelf_DoublesNobs()
+    {
+        var stat = GenerateStatistic();
+        
+        stat.Fit(GenerateObservation(), 3);
+        
+        // pre-condition
+        Assert.Equal(3, stat.Nobs);
+        
+        stat.Merge(stat);
+        
+        // post-condition
+        Assert.Equal(6, stat.Nobs);
+    }
+    
+    [Fact]
+    public void Merge_TwoPopulated_NobsAdditiveAndCommutative()
+    {
+        var first = GenerateStatistic();
+        var second = GenerateStatistic();
+        var firstCopy = GenerateStatistic();
+        var secondCopy = GenerateStatistic();
+        
+        first.Fit(GenerateObservation(), 3);
+        second.Fit(GenerateObservation(), 2);
+        firstCopy.Fit(GenerateObservation(), 3);
+        secondCopy.Fit(GenerateObservation(), 2);
+        
+        // pre-conditions
+        Assert.Equal(3, first.Nobs);
+        Assert.Equal(2, second.Nobs);
+        Assert.Equal(3, firstCopy.Nobs);
+        Assert.Equal(2, secondCopy.Nobs);
+        
+        first.Merge(second);
+        secondCopy.Merge(firstCopy);
+        
+        // post-conditions
+        Assert.Equal(5, first.Nobs);
+        Assert.Equal(first.Nobs, secondCopy.Nobs);
+    }
+    
+    [Fact]
+    public void CloneEmpty_NobsIndependence()
+    {
+        var stat = GenerateStatistic();
+        var clone = stat.CloneEmpty();
+        
+        // pre-conditions
+        Assert.Equal(0, clone.Nobs);
+        
+        stat.Fit(GenerateObservation(), 3);
+        Assert.Equal(3, stat.Nobs);
+        Assert.Equal(0, clone.Nobs);
+        
+        clone.Fit(GenerateObservation(), 2);
+        Assert.Equal(3, stat.Nobs);
+        Assert.Equal(2, clone.Nobs);
+        
+        stat.Merge(stat);
+        clone.Merge(clone);
+        
+        // post-conditions: each merge into self doubles that object's own Nobs only
+        Assert.Equal(6, stat.Nobs);
+        Assert.Equal(4, clone.Nobs);
+        
+        clone.Merge(stat);
+        
+        // post-conditions: additive on the receiver, other's state untouched
+        Assert.Equal(6, stat.Nobs);
+        Assert.Equal(10, clone.Nobs);
     }
 }

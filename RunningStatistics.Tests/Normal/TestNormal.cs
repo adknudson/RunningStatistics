@@ -98,7 +98,7 @@ public partial class TestNormal()
     }
 
     [Fact]
-    public void MergeWithEmptyOther()
+    public void Merge_WithEmptyOther()
     {
         var normal = new RunningStatistics.Normal();
         normal.Fit(1.0);

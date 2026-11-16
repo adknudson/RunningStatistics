@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace RunningStatistics.Tests.Extrema;
@@ -6,7 +7,17 @@ namespace RunningStatistics.Tests.Extrema;
 public partial class TestExtremaGenericComparableType
 {
     [Fact]
-    public void FitUpdatesMinAndMaxCorrectlyForMyComparable()
+    public void Fit_RejectsNullObservations()
+    {
+        Extrema<MyComparable> extrema = new();
+        var nullValue = (MyComparable)null;
+        Assert.Throws<ArgumentNullException>(() => extrema.Fit(nullValue));
+        Assert.Throws<ArgumentNullException>(() => extrema.Fit(nullValue, 3));
+        Assert.Equal(0, extrema.Nobs);
+    }
+
+    [Fact]
+    public void FitUpdates_MinAndMaxCorrectlyForMyComparable()
     {
         Extrema<MyComparable> extrema = new();
         extrema.Fit(new MyComparable(5.0m));
@@ -18,7 +29,7 @@ public partial class TestExtremaGenericComparableType
     }
 
     [Fact]
-    public void FitUpdatesMinCountAndMaxCountCorrectlyForMyComparable()
+    public void FitUpdates_MinCountAndMaxCountCorrectlyForMyComparable()
     {
         Extrema<MyComparable> extrema = new();
         extrema.Fit(new MyComparable(5.0m));
@@ -33,7 +44,7 @@ public partial class TestExtremaGenericComparableType
     }
 
     [Fact]
-    public void FitUpdatesNobsCorrectlyForMyComparable()
+    public void FitUpdates_NobsCorrectlyForMyComparable()
     {
         Extrema<MyComparable> extrema = new();
         extrema.Fit(new MyComparable(5.0m));
@@ -44,7 +55,7 @@ public partial class TestExtremaGenericComparableType
     }
         
     [Fact]
-    public void FitHandlesExtremeValuesForMyComparable()
+    public void Fit_ExtremeValuesForMyComparable()
     {
         Extrema<MyComparable> extrema = new();
         extrema.Fit(new MyComparable(decimal.MaxValue));
@@ -143,7 +154,7 @@ public partial class TestExtremaGenericComparableType
     }
 
     [Fact]
-    public void MergeCombinesMinAndMaxCorrectlyForMyComparable()
+    public void Merge_CombinesMinAndMaxCorrectlyForMyComparable()
     {
         Extrema<MyComparable> a = new();
         a.Fit(new MyComparable(1.0m));
@@ -160,7 +171,7 @@ public partial class TestExtremaGenericComparableType
     }
 
     [Fact]
-    public void MergeCombinesMinCountAndMaxCountCorrectlyForMyComparable()
+    public void Merge_CombinesMinCountAndMaxCountCorrectlyForMyComparable()
     {
         Extrema<MyComparable> a = new();
         a.Fit(new MyComparable(1.0m));
@@ -179,7 +190,7 @@ public partial class TestExtremaGenericComparableType
     }
 
     [Fact]
-    public void MergeCombinesNobsCorrectlyForMyComparable()
+    public void Merge_CombinesNobsCorrectlyForMyComparable()
     {
         Extrema<MyComparable> a = new();
         a.Fit(new MyComparable(1.0m));
@@ -192,5 +203,16 @@ public partial class TestExtremaGenericComparableType
         a.Merge(b);
 
         Assert.Equal(4, a.Nobs);
+    }
+
+    // Null iterable Fit contract — Extrema<TObs> has no iterable Fit override
+    // (only the value overloads got Require.NotNull), so the iterable call
+    // resolves to the base RunningStatisticBase.Fit(IEnumerable<TObs>).
+    [Fact]
+    public void Fit_RejectsNullIterable()
+    {
+        Extrema<MyComparable> extrema = new();
+        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<MyComparable>)null));
+        Assert.Equal(0, extrema.Nobs);
     }
 }

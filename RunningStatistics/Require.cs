@@ -31,6 +31,18 @@ internal static class Require
     }
 
     /// <summary>
+    /// Requires that the value is not null.
+    /// </summary>
+    /// <exception cref="System.ArgumentNullException">When the value is null.</exception>
+    public static void NotNull(object? value)
+    {
+        if (value is null)
+        {
+            throw new ArgumentNullException("value", "Value must not be null");
+        }
+    }
+    
+    /// <summary>
     /// Requires that the value is non-negative (must be greater than or equal to zero).
     /// </summary>
     /// <param name="value">The value to check.</param>
@@ -50,7 +62,7 @@ internal static class Require
     /// <exception cref="ArgumentOutOfRangeException">When the value is not in the interval [0, 1].</exception>
     public static void ValidProbability(double p)
     {
-        if (p is < 0 or > 1)
+        if (p is not (>= 0 and <= 1))
         {
             throw new ArgumentOutOfRangeException(
                 nameof(p), p, "Value must be in the interval [0, 1]");

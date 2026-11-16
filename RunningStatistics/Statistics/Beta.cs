@@ -75,7 +75,7 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
     /// and at least one observed failure.
     /// </summary>
     public double Variance => _a > 0 && _b > 0
-        ? _a * _b / (Math.Pow(_a + _b, 2) * (_a + _b + 1))
+        ? (double)_a * _b / (Math.Pow(_a + _b, 2) * (_a + _b + 1)) 
         : double.NaN;
 
 
@@ -85,13 +85,16 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
     {
         Require.NonNegative(count);
         
-        if (value)
+        checked
         {
-            _a += count;
-        }
-        else
-        {
-            _b += count;
+            if (value)
+            {
+                _a += count;
+            }
+            else
+            {
+                _b += count;
+            }
         }
     }
 
@@ -105,8 +108,11 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
         Require.NonNegative(successes);
         Require.NonNegative(failures);
 
-        _a += successes;
-        _b += failures;
+        checked
+        {
+            _a += successes;
+            _b += failures;
+        }
     }
     
     public override void Fit(IEnumerable<bool> values)

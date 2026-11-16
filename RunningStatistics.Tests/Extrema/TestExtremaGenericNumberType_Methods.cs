@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace RunningStatistics.Tests.Extrema;
@@ -6,7 +7,16 @@ namespace RunningStatistics.Tests.Extrema;
 public partial class TestExtremaGenericNumberType
 {
     [Fact]
-    public void FitUpdatesMinAndMaxCorrectlyForMyNum()
+    public void Fit_NobsOverflowThrows()
+    {
+        Extrema<MyNum> extrema = new();
+        extrema.Fit(new MyNum(5), long.MaxValue / 2 + 1);
+        Assert.Throws<OverflowException>(() => extrema.Fit(new MyNum(5), long.MaxValue / 2 + 1));
+        Assert.Equal(long.MaxValue / 2 + 1, extrema.Nobs);
+    }
+
+    [Fact]
+    public void FitUpdates_MinAndMaxCorrectlyForMyNum()
     {
         Extrema<MyNum> extrema = new();
         extrema.Fit(new MyNum(5.0m));
@@ -18,7 +28,7 @@ public partial class TestExtremaGenericNumberType
     }
 
     [Fact]
-    public void FitUpdatesMinCountAndMaxCountCorrectlyForMyNum()
+    public void FitUpdates_MinCountAndMaxCountCorrectlyForMyNum()
     {
         Extrema<MyNum> extrema = new();
         extrema.Fit(new MyNum(5.0m));
@@ -33,7 +43,7 @@ public partial class TestExtremaGenericNumberType
     }
 
     [Fact]
-    public void FitUpdatesNobsCorrectlyForMyNum()
+    public void FitUpdates_NobsCorrectlyForMyNum()
     {
         Extrema<MyNum> extrema = new();
         extrema.Fit(new MyNum(5.0m));
@@ -44,7 +54,7 @@ public partial class TestExtremaGenericNumberType
     }
         
     [Fact]
-    public void FitHandlesExtremeValuesForMyNum()
+    public void Fit_ExtremeValuesForMyNum()
     {
         Extrema<MyNum> extrema = new();
         extrema.Fit(new MyNum(decimal.MaxValue));
@@ -143,7 +153,7 @@ public partial class TestExtremaGenericNumberType
     }
 
     [Fact]
-    public void MergeCombinesMinAndMaxCorrectlyForMyNum()
+    public void Merge_CombinesMinAndMaxCorrectlyForMyNum()
     {
         Extrema<MyNum> a = new();
         a.Fit(new MyNum(1.0m));
@@ -160,7 +170,7 @@ public partial class TestExtremaGenericNumberType
     }
 
     [Fact]
-    public void MergeCombinesMinCountAndMaxCountCorrectlyForMyNum()
+    public void Merge_CombinesMinCountAndMaxCountCorrectlyForMyNum()
     {
         Extrema<MyNum> a = new();
         a.Fit(new MyNum(1.0m));
@@ -179,7 +189,7 @@ public partial class TestExtremaGenericNumberType
     }
 
     [Fact]
-    public void MergeCombinesNobsCorrectlyForMyNum()
+    public void Merge_CombinesNobsCorrectlyForMyNum()
     {
         Extrema<MyNum> a = new();
         a.Fit(new MyNum(1.0m));
@@ -195,7 +205,7 @@ public partial class TestExtremaGenericNumberType
     }
     
     [Fact]
-    public void RangeMethodReturnsCorrectValueForMyNum()
+    public void Range_ReturnsCorrectValueForMyNum()
     {
         Extrema<MyNum> extrema = new();
         extrema.Fit(new MyNum(1.0m));
@@ -204,5 +214,14 @@ public partial class TestExtremaGenericNumberType
         var range = extrema.Range();
         
         Assert.Equal(new MyNum(2.0m), range);
+    }
+
+    // Null iterable Fit contract — see the comparable-type twin above.
+    [Fact]
+    public void Fit_RejectsNullIterable()
+    {
+        Extrema<MyNum> extrema = new();
+        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<MyNum>)null));
+        Assert.Equal(0, extrema.Nobs);
     }
 }
