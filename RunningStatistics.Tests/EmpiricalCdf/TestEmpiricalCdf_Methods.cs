@@ -764,19 +764,20 @@ public partial class TestEmpiricalCdf
     // median readouts and the text form.
     //
     // The cost half checks the speed promise. The nanoseconds per replayed
-    // observation must stay between a half and a double between the two workloads.
-    // That range is what a true replay costs. A red run here means someone has
-    // changed the weighted overload to process a count in fewer steps. That
-    // change shows in one of two ways. The state stopped matching the replay,
-    // which would change behavior. Or the ratio fell far below a half, which
-    // means fewer updates per call than the documented replay. Per the house
-    // rules, do not adjust behavior to make this green. Re-run the correctness
-    // gates before adopting any batching candidate.
+    // observation must stay within [0.05, 0.30] of the per-observation loop: the
+    // weighted call must be several times cheaper, because it folds the per-
+    // observation bookkeeping and blends once per flush instead of once per
+    // observation. A ratio above 0.30 means the batching was lost. A ratio
+    // below 0.05 would mean blends are being skipped, which would change
+    // results. The equivalence half above pins the state bit for bit, so a
+    // ratio drift without a state change is a measurement artifact: re-run
+    // the gates; do not re-tune the bands to chase noise.
     //
-    // Measured here: about 74 nanoseconds per replayed observation through the weighted
-    // call against about 84 through the loop, a ratio of about 0.88. The weighted call is
-    // slightly cheaper because it pays one interface dispatch and one finite-value check
-    // per batched count instead of one per observation.
+    // Measured here: about 10 nanoseconds per replayed observation through the batched
+    // weighted call against about 80 through the loop, a ratio of about 0.13 at bins=25.
+    // The weighted call folds index math, redundant sorts, and the extrema segment
+    // update; the surviving cost is the per-flush blend chain, which the contract
+    // requires.
     [Fact]
     public void Bench_EmpiricalCdfWeightedFitIsPerObservationCost()
     {
@@ -877,11 +878,114 @@ public partial class TestEmpiricalCdf
             loopNsPerObs,
             weightedNsPerObs);
 
-        Assert.True(ratio >= 0.5 && ratio <= 2.0,
-                    $"weighted/loop ns per replayed observation {ratio:F3} outside [0.5, 2.0] " +
-                    $"({weightedNsPerObs:F4} vs {loopNsPerObs:F4} ns/obs): the weighted fit no " +
-                    $"longer costs about count single fits, so the documented O(count) model is " +
-                    $"stale (re-gate before adopting any batching candidate)");
+        Assert.True(ratio >= 0.05 && ratio <= 0.30,
+                    $"weighted/loop ns per replayed observation {ratio:F3} outside [0.05, 0.30] " +
+                    $"({weightedNsPerObs:F4} vs {loopNsPerObs:F4} ns/obs): the batched weighted fit " +
+                    $"no longer keeps the promised flush-blend cost (re-gate; do not re-tune bands)");
+    }
+
+    // Gate G0 for the batched weighted fit: the segments inside Fit(value, count) fold
+    // the extrema with Extrema.Fit(value, n). That fold is only trusted because this
+    // fact proves it bitwise equal to n single fits, across warm starts, constant runs,
+    // and counts that push MinCount/MaxCount/Nobs through every branch.
+    [Fact]
+    public void Gate_ExtremaWeightedFitBitwiseEqualsLoop()
+    {
+        var datasets = new[]
+        {
+            PropertyHelpers.UniformUnit(40, 20251121L),
+            PropertyHelpers.OffsetSpread(40, -1000.0, 50.0, 20251122L),
+            PropertyHelpers.NormalSamples(40, 40.0, 7.0, 20251123L),
+        };
+        var counts = new long[] { 1, 2, 24, 25, 100, 100_003 };
+
+        foreach (var dataset in datasets)
+        {
+            for (var c = 0; c < counts.Length; c++)
+            {
+                var n = counts[c];
+                foreach (var warmupCount in new[] { 0, 3 })
+                {
+                    for (var v = 0; v < 6; v++)
+                    {
+                        var value = dataset[(v * 7 + c) % dataset.Count];
+                        RunningStatistics.Extrema batched = new();
+                        RunningStatistics.Extrema looped = new();
+
+                        for (var w = 0; w < warmupCount; w++)
+                        {
+                            batched.Fit(dataset[w]);
+                            looped.Fit(dataset[w]);
+                        }
+
+                        batched.Fit(value, n);
+                        for (var k = 0L; k < n; k++)
+                        {
+                            looped.Fit(value);
+                        }
+
+                        Assert.Equal(looped.Nobs, batched.Nobs);
+                        Assert.Equal(looped.Min, batched.Min);
+                        Assert.Equal(looped.Max, batched.Max);
+                        Assert.Equal(looped.MinCount, batched.MinCount);
+                        Assert.Equal(looped.MaxCount, batched.MaxCount);
+                        Assert.Equal(looped.ToString(), batched.ToString());
+                    }
+                }
+            }
+        }
+    }
+
+    // Bitwise gate for the batched weighted fit. Across bin sizes, counts that sit
+    // below, at, and across flush boundaries, and a partially filled start window,
+    // the weighted overload must leave bit-for-bit the state a literal replay loop
+    // builds. ToString carries the class name inside the base text, so the tails
+    // after '(' are compared.
+    [Fact]
+    public void Gate_FitValueCountBitwiseEqualsReplayBinsSweep()
+    {
+        foreach (var bins in new[] { 2, 7, 25, 200 })
+        {
+            var values = PropertyHelpers.UniformUnit(12, 20251124L + bins);
+            RunningStatistics.EmpiricalCdf weighted = new(bins);
+            RunningStatistics.EmpiricalCdf replay = new(bins);
+
+            for (var w = 0; w < bins + 3; w++)
+            {
+                var warm = values[w % values.Count];
+                weighted.Fit(warm);
+                replay.Fit(warm);
+            }
+
+            var countSet = new long[] { 0, 1, bins - 1, bins, bins + 1, 2L * bins, 10L * bins + 3 };
+            for (var i = 0; i < values.Count; i++)
+            {
+                var value = values[i];
+                var count = countSet[i % countSet.Length];
+                weighted.Fit(value, count);
+                for (var k = 0L; k < count; k++)
+                {
+                    replay.Fit(value);
+                }
+
+                Assert.Equal(replay.Nobs, weighted.Nobs);
+                Assert.Equal(replay.Min, weighted.Min);
+                Assert.Equal(replay.Max, weighted.Max);
+                foreach (var p in new[] { 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95 })
+                {
+                    Assert.Equal(replay.Quantile(p), weighted.Quantile(p));
+                }
+
+                foreach (var x in new[] { 0.1, 0.25, 0.5, 0.75, 0.9 })
+                {
+                    Assert.Equal(replay.Cdf(x), weighted.Cdf(x));
+                }
+
+                Assert.Equal(
+                    replay.ToString().Substring(replay.ToString().IndexOf('(')),
+                    weighted.ToString().Substring(weighted.ToString().IndexOf('(')));
+            }
+        }
     }
 
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
