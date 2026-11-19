@@ -34,9 +34,9 @@ namespace RunningStatistics;
 internal static partial class Precision
 {
     /// <summary>
-    /// The number of binary digits used to represent the binary number for a double precision floating
-    /// point value. i.e. there are this many digits used to represent the
-    /// actual number, where in a number as: 0.134556 * 10^5 the digits are 0.134556 and the exponent is 5.
+    /// The number of binary digits used to write the significant part of a double-precision
+    /// floating-point number. By analogy, in a decimal number written as 0.134556 times ten
+    /// to the fifth, the significant digits are 0.134556 and the exponent is 5.
     /// </summary>
     private const int DoubleWidth = 53;
 
@@ -53,7 +53,8 @@ internal static partial class Precision
     public static readonly double PositiveDoublePrecision = 2 * DoublePrecision;
 
     /// <summary>
-    /// Value representing 10 * 2^(-53) = 1.11022302462516E-15
+    /// Ten times the standard double precision, about 1.11022302462516E-15. Used as the
+    /// default tolerance for approximate comparisons.
     /// </summary>
     private static readonly double DefaultDoubleAccuracy = DoublePrecision * 10;
 
@@ -79,12 +80,11 @@ internal static partial class Precision
             return Decrement(value, -count);
         }
 
-        // Translate the bit pattern of the double to an integer.
-        // Note that this leads to:
-        // double > 0 --> long > 0, growing as the double value grows
-        // double < 0 --> long < 0, increasing in absolute magnitude as the double
-        //                          gets closer to zero!
-        //                          i.e. 0 - double.epsilon will give the largest long value!
+        // Translate the bit pattern of the double into a whole number. Positive doubles then
+        // map to positive whole numbers that grow as the value grows, while negative doubles
+        // map to negative whole numbers whose magnitude grows as the value gets closer to
+        // zero. Just below zero, for instance at zero minus one machine epsilon, the pattern
+        // reaches its largest magnitude.
         var intValue = BitConverter.DoubleToInt64Bits(value);
         if (intValue < 0)
         {
@@ -128,12 +128,11 @@ internal static partial class Precision
             return Increment(value, -count);
         }
 
-        // Translate the bit pattern of the double to an integer.
-        // Note that this leads to:
-        // double > 0 --> long > 0, growing as the double value grows
-        // double < 0 --> long < 0, increasing in absolute magnitude as the double
-        //                          gets closer to zero!
-        //                          i.e. 0 - double.epsilon will give the largest long value!
+        // Translate the bit pattern of the double into a whole number. Positive doubles then
+        // map to positive whole numbers that grow as the value grows, while negative doubles
+        // map to negative whole numbers whose magnitude grows as the value gets closer to
+        // zero. Just below zero, for instance at zero minus one machine epsilon, the pattern
+        // reaches its largest magnitude.
         var intValue = BitConverter.DoubleToInt64Bits(value);
 
         // If the value is zero then we'd really like the value to be -0. So we'll make it -0

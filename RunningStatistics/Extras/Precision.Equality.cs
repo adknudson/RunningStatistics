@@ -79,7 +79,8 @@ internal static partial class Precision
     /// </summary>
     /// <param name="a">The first number</param>
     /// <param name="b">The second number</param>
-    /// <returns>true if the two values differ by no more than 10 * 2^(-52); false otherwise.</returns>
+    /// <returns>True when the two values differ by no more than ten times two to the minus
+    /// 52nd power; false otherwise.</returns>
     public static bool AlmostEqualRelative(this double a, double b)
     {
         return AlmostEqualNormRelative(a, b, a - b, DefaultDoubleAccuracy);

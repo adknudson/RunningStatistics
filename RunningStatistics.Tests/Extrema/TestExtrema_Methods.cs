@@ -249,8 +249,9 @@ public partial class TestExtrema
         Assert.Equal(2.0, extrema.Range());
     }
 
-    // Pins: Fit accepts infinities (only Require.NotNaN guards the value), so +Inf/-Inf become
-    // real min/max states with batch counts accumulating; NaN is still rejected.
+    // Fit only rejects NaN, so infinities are accepted as real observations: a fitted
+    // infinity becomes the minimum or maximum, and batched counts accumulate for it
+    // just like for any other value.
     [Fact]
     public void Fit_InfinityObservationsAccepted()
     {
@@ -277,8 +278,10 @@ public partial class TestExtrema
         Assert.Equal(2, negative.Nobs);
     }
 
-    // Pins: a stream seeing both infinities ends with Min=-Inf, Max=+Inf (Inf comparisons order as
-    // -Inf < x < +Inf); Range() of the mixed state is +Inf - (-Inf) = +Inf. NaN still rejected.
+    // When a stream sees both infinities, the minimum ends at negative infinity and
+    // the maximum at positive infinity, because comparisons order every finite value
+    // between them. The range of such a mixed state is positive infinity, and NaN is
+    // still rejected. The order the infinities arrive in does not matter.
     [Fact]
     public void Fit_MixedInfinityExtremes()
     {
@@ -306,8 +309,9 @@ public partial class TestExtrema
         Assert.Throws<ArgumentException>(() => extrema.Fit(double.NaN));
     }
 
-    // Pins: a flat all-Infinity stream has Min == Max == +/-Inf, so Range() = Inf - Inf = NaN
-    // (IEEE, honest — not a guard violation).
+    // A stream of one single infinity repeated many times has equal minimum and
+    // maximum, so the range subtracts that infinity from itself, and IEEE rules make
+    // that NaN. This is plain arithmetic on honest values, not a guard failing.
     [Fact]
     public void Range_InfiniteFlatStreamIsNaN()
     {
@@ -320,10 +324,11 @@ public partial class TestExtrema
         Assert.Equal(double.NaN, minus.Range());
     }
 
-    // Pins signed zeros: IEEE comparisons keep the FIRST-fitted zero as both min and max
-    // (-0.0 == 0.0 is true, so the second zero only bumps MinCount/MaxCount). Assert.Equal on
-    // doubles compares bitwise (===), which would distinguish -0.0, but the sign helpers make
-    // the pinned bit-level identity explicit and readable.
+    // Signed zeros: comparisons treat negative zero and positive zero as equal, so the
+    // zero fitted first stays both the minimum and the maximum, and a second zero of
+    // the other sign only raises the occurrence counts. The test's Assert.Equal
+    // compares doubles bit for bit, which can tell the two zeros apart, so the sign
+    // helper methods make the pinned bit-level identity explicit and readable.
     [Fact]
     public void Fit_SignedZerosKeepFirstFitted()
     {
@@ -346,8 +351,9 @@ public partial class TestExtrema
         Assert.Equal(2, positiveFirst.Nobs);
     }
 
-    // Pins: merging zero-carrying stats takes the THIS side's zero (_min == other._min holds for
-    // -0.0 vs 0.0, so only counts merge; the survivor is this's sign).
+    // When both statistics hold one of the two signed zeros, merging keeps the zero of
+    // the statistic being merged into: comparisons call the two zeros equal, so only
+    // the counts merge and the surviving zero carries the receiver's sign.
     [Fact]
     public void Merge_SignedZerosKeepThisSidesZero()
     {
@@ -373,8 +379,9 @@ public partial class TestExtrema
         Assert.True(IsPositiveZero(positiveFirst.Max));
     }
 
-    // Pins Fit(value, count) with count > 1: batch counts land on MinCount/MaxCount/Nobs exactly,
-    // independent of the order in which distinct values are fitted.
+    // A weighted fit of a count above one lands exactly on the minimum count, maximum
+    // count and total count, and the result does not depend on the order in which the
+    // distinct values are fitted.
     [Fact]
     public void FitBatched_MinMaxCountsNobs()
     {
@@ -403,7 +410,8 @@ public partial class TestExtrema
         Assert.Equal(7, reversed.Nobs);
     }
 
-    // Pins: count == 0 returns before any state update (empty stays empty; existing state untouched).
+    // A zero count returns before any state is touched, so the statistic stays empty if
+    // it was empty, and keeps its existing observations if it had any.
     [Fact]
     public void FitBatched_ZeroCountShortCircuit()
     {
@@ -421,8 +429,10 @@ public partial class TestExtrema
         Assert.Equal(2, extrema.Nobs);
     }
 
-    // Pins: Merge of batched stats keeps the honest merged min/max and their occurrence counts,
-    // in either merge direction (same as sequential Fit).
+    // Merging statistics that were filled by weighted fits keeps the true extremes of
+    // all the observations involved and their occurrence counts, and the outcome is the
+    // same whichever statistic merges into which, matching a sequential fit of the same
+    // observations.
     [Fact]
     public void MergeBatched_ValuesMatchSequential()
     {
@@ -467,19 +477,25 @@ public partial class TestExtrema
         Assert.Equal(5, first.Nobs);
     }
 
-    // Pin (empty-state asymmetry): the double Extrema and the generic Extrema<TObs> DISAGREE on
-    // how an empty statistic (Nobs == 0) exposes its extremes. Double: Min/Max accessors return
-    // double.NaN sentinels (no throw); Range() computes NaN - NaN = NaN (unguarded arithmetic on
-    // the NaN accessors); ToString renders "Min=NaN (n=0), Max=NaN (n=0)". Generic: the Min/Max
-    // accessors THROW InvalidOperationException("Nobs must be greater than 0") — there is no NaN
-    // sentinel for an arbitrary comparable TObs — and the NET7 Range extension (available only for
-    // TObs : ISubtractionOperators, e.g. MyNum; not for MyComparable) evaluates Max - Min so it
-    // propagates the same throw. Yet ToString of the generic type BYPASSES the guarded accessors
-    // and interpolates the raw _min/_max fields: null (class TObs) -> EMPTY text; for struct-like
-    // TObs the TObs? fields reify as plain structs holding the TObs DEFAULT, so a spurious zero
-    // extreme LEAKS (Min=0 for MyNum). MinCount/MaxCount/Nobs are the same identities (0) on both
-    // types. All contracts are individually clean; the asymmetry is pinned as-is, no library
-    // change.
+    // The two Extrema types disagree on how an empty statistic reports its extremes, and
+    // these facts pin both sides as they behave today, with no library change.
+    //
+    // The double Extrema returns NaN from Min and Max without throwing, its Range() comes
+    // out as NaN because it subtracts those NaN accessors, and ToString renders both
+    // extremes as "NaN (n=0)".
+    //
+    // The generic Extrema of a comparable type throws from Min and Max ("Nobs must be
+    // greater than 0"), because no sentinel value could stand in for a missing extreme of
+    // an arbitrary type. Its range extension subtracts the two accessors, so it
+    // propagates the same throw; that extension only exists for types that support
+    // subtraction, such as MyNum but not MyComparable.
+    //
+    // Oddly, ToString of the generic type reads the raw private fields instead of the
+    // throwing accessors: for a reference type the fields are still null and print as
+    // empty text, while for a value type they hold plain default objects, leaking a
+    // spurious zero extreme into the text. The count fields read the same zeros on both
+    // types. Every contract here is individually clean; only the reporting shape
+    // disagrees.
 
     [Fact]
     public void EmptyStateAccessors_DoubleNaNVsGenericThrow()
@@ -513,9 +529,9 @@ public partial class TestExtrema
         var d = new RunningStatistics.Extrema();
         Assert.Equal(double.NaN, d.Range());
 
-        // MyNum : ISubtractionOperators<MyNum,MyNum,MyNum> -> the NET7 Range extension applies:
-        // extrema.Max - extrema.Min propagates the accessor throw. Extrema<MyComparable> has NO
-        // Range(): MyComparable lacks ISubtractionOperators, so the extension never applies.
+        // MyNum supports subtraction, so the Range() extension applies and the accessor
+        // throw propagates through it. Extrema of MyComparable has no Range() at all,
+        // because MyComparable does not support subtraction.
         var num = new RunningStatistics.Extrema<MyNum>();
         Assert.Throws<InvalidOperationException>(() => num.Range());
     }
@@ -526,18 +542,19 @@ public partial class TestExtrema
         var d = new RunningStatistics.Extrema();
         Assert.Contains("Min=NaN (n=0), Max=NaN (n=0)", d.ToString());
 
-        // The generic ToString reads the private _min/_max fields, NOT the throwing accessors.
-        // The rendering of the empty state depends on the cardinality of TObs:
-        // MyComparable is a class -> fields are null -> render as EMPTY text (no throw), even
-        // though the Min/Max accessors themselves throw:
+        // The generic ToString reads the private fields rather than the throwing accessors,
+        // so the empty state renders per the shape of the type: MyComparable is a
+        // reference type whose fields are still null, printing empty text without
+        // throwing, even though asking the accessors directly would throw:
         var comparable = new RunningStatistics.Extrema<MyComparable>();
         Assert.Contains("Min= (n=0), Max= (n=0)", comparable.ToString());
         Assert.Throws<InvalidOperationException>(() => comparable.Min);
 
-        // MyNum is struct-like -> the TObs? fields reify as plain MyNum holding the DEFAULT
-        // MyNum(0), so ToString LEAKS a spurious "0" extreme (a third empty-state shape:
-        // double = NaN, class TObs = empty text, struct TObs = zero default). Accessors still
-        // throw, so the leaked value is reachable ONLY through ToString:
+        // MyNum is a value type, so the fields hold plain default objects and ToString
+        // leaks a spurious "0" for each extreme. That makes three shapes of the empty
+        // state: NaN for the double, empty text for a reference type, and the default
+        // value for a value type. The accessors still throw, so this leaked value can
+        // only be seen through ToString:
         var num = new RunningStatistics.Extrema<MyNum>();
         Assert.Contains("Min=0 (n=0), Max=0 (n=0)", num.ToString());
         Assert.Throws<InvalidOperationException>(() => num.Min);
@@ -559,8 +576,9 @@ public partial class TestExtrema
         Assert.Equal(0, num.Nobs);
         Assert.Throws<InvalidOperationException>(() => num.Min);
 
-        // Same guard ORDER as the double type (whose Fit(NaN, 0) throws ArgumentException): the
-        // value guard Require.NotNull runs BEFORE the count == 0 short-circuit -> ANE even at 0.
+        // The guards run in the same order as on the double type, which rejects a bad
+        // value even when the count is zero: the null check runs first, so fitting a
+        // null value throws even with a zero count.
         Assert.Throws<ArgumentNullException>(() => comparable.Fit((MyComparable)null, 0));
 
         // On a NON-empty generic statistic, Fit(value, 0) leaves state untouched.
@@ -574,10 +592,11 @@ public partial class TestExtrema
         Assert.Equal(2, filled.MaxCount);
     }
 
-    // Pin: empty-merge AGREES between the two types on state (Nobs/counts stay 0, values
-    // copied/kept symmetrically) but still differs on how emptiness is EXPOSED (NaN vs throw).
-    // (Generic empty-merge cases are also pinned in the generic Methods files; kept here side
-    // by side with the double.)
+    // Merging two empty statistics keeps both types empty, and the two agree on the
+    // state itself: counts stay zero and no values move in either direction. They still
+    // differ only in how emptiness is reported: NaN for the double, a throw for the
+    // generic. The generic empty-merge cases are also pinned in the generic test files,
+    // kept here side by side for contrast.
     [Fact]
     public void EmptyStateMerge_EmptyIntoEmpty_StaysEmptyBothTypes()
     {
@@ -649,13 +668,15 @@ public partial class TestExtrema
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 
     /// <summary>
-    /// Bit-level sign check: IEEE division sends -0.0 to -Infinity and +0.0 to +Infinity, whereas
-    /// == cannot distinguish -0.0 from +0.0.
+    /// Tells an ordinary zero from a negative zero. Comparing with equals cannot tell the
+    /// two apart, but dividing one by the zero sends negative zero to negative infinity,
+    /// which this check uses.
     /// </summary>
     private static bool IsNegativeZero(double value) => value == 0.0 && 1.0 / value < 0.0;
 
     /// <summary>
-    /// Counterpart of IsNegativeZero distinguishing +0.0 from -0.0 at the bit level.
+    /// The matching check that a zero is the ordinary positive zero rather than the
+    /// negative one, using the same division trick.
     /// </summary>
     private static bool IsPositiveZero(double value) => value == 0.0 && 1.0 / value > 0.0;
 }

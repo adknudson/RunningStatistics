@@ -337,8 +337,9 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         Assert.Matches(re, stat.ToString());
     }
     
-    // Algebraic identity properties at the Nobs level only (accessor exposure differs per stat),
-    // with small counts so stats whose Fit(value, count) loops per observation stay fast:
+    // The algebraic rules about counts are asserted here at the Nobs level, because each
+    // statistic exposes its readouts differently. The counts used are small, so even
+    // statistics whose weighted Fit processes one observation at a time stay fast.
     [Fact]
     public void FitExistingState_WithZeroCount_NoOp()
     {
@@ -477,15 +478,17 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         
         clone.Merge(stat);
         
-        // post-conditions: additive on the receiver, other's state untouched
+        // Merging adds the other statistic's counts to the receiver, and the statistic
+        // being merged keeps its own state unchanged.
         Assert.Equal(6, stat.Nobs);
         Assert.Equal(10, clone.Nobs);
     }
     
-    // Guard contract common to every running statistic (every Fit(value, count) override calls
-    // Require.NonNegative, the base null-checks both collection overloads, and every Nobs
-    // accumulation is checked). Asserting these here once replaces the per-class duplicates
-    // that only existed on a minority of statistics.
+    // A guard contract that every running statistic shares: the weighted Fit rejects
+    // negative counts, the base class rejects null collections, and every addition to
+    // the observation count is checked for overflow. Because all statistics inherit this
+    // same behavior, it is asserted once here instead of duplicated in each class's
+    // test file.
     [Fact]
     public void Fit_NegativeCountThrowsStateUntouched()
     {
@@ -520,22 +523,29 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         Assert.Equal(3, stat.Nobs);
     }
     
-    // Decision note: element-level guards are DELIBERATELY class-specific, not shared. Extrema.cs
-    // guards elements with Require.NotNaN (±Infinity fits, NaN throws) and Extrema.Generic.cs with
-    // Require.NotNull (a null boxed double in a generic sequence throws ArgumentNullException); the
-    // numeric families (Mean/Sum/Variance/Normal .cs) guard per element with Require.Finite, so a
-    // null element there is compile-time impossible for double, or NPEs on unboxing in the leading
-    // values.ToList() before any guard runs. Validation TIMING differs too: Mean/Sum/Variance/Normal
-    // iterable overloads pre-validate the whole iterable before applying anything (all-or-nothing),
-    // Beta.cs counts bools per element then validates the batched counts, and the base RunningStatisticBase.cs
-    // foreach families validate per element with preceding elements already applied - non-atomic,
-    // pinned for pairs by FitPairsWithNegativeCount_ThrowsPrecedingPairsApplied below. Only null
-    // COLLECTION rejection is shared, asserted here by FitNullCollections_ThrowsStateUntouched above.
-    // Do not "generalize" the element guards in a refactor without re-gating each class's iterable facts.
+    // Decision note: guards on individual elements are deliberately class-specific, not
+    // shared. Each class makes a different promise. Extrema accepts infinite values and
+    // rejects only NaN; the generic Extrema rejects null elements; the numeric classes
+    // (Mean, Sum, Variance, Normal) require each element to be finite, which makes a
+    // null element impossible for plain doubles, and for boxed numbers the null would
+    // already fail while the input list is built, before any guard runs.
+    // The timing of validation differs just as much. The collection overloads of Mean,
+    // Sum, Variance and Normal check the whole input before applying anything, so a
+    // rejected call changes nothing. Beta counts its bool elements first and then
+    // validates the totals. The base class's per-element overloads validate one element
+    // at a time, so elements seen before a rejected one have already been applied. That
+    // partial application is pinned by the fact below,
+    // FitPairsWithNegativeCount_ThrowsPrecedingPairsApplied. Only the rejection of a
+    // null collection is shared, and the fact above, FitNullCollections_ThrowsStateUntouched,
+    // asserts it for every statistic. Do not fold the element guards into one shared
+    // guard in a refactor: that would change behavior, so re-gate each class's
+    // collection facts first.
     
-    // The pairs overload resolves to the base for every statistic (none overrides it), so its
-    // behavior is uniform: pairs ahead of a rejected one stay applied — pair batches are
-    // non-atomic on rejection, unlike the pre-validated values overload. Pinned as-is.
+    // Every statistic uses the base class's pair overload, so its behavior is the same
+    // for all of them: when one pair is rejected, the valid pairs before it have
+    // already been applied. Pair batches are therefore not all-or-nothing, unlike the
+    // collection overload of values, which checks its whole input before applying
+    // anything. This is pinned exactly as the library behaves today.
     [Fact]
     public void FitPairsWithNegativeCount_ThrowsPrecedingPairsApplied()
     {
@@ -576,9 +586,11 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         Assert.Equal(3, stat.Nobs);
     }
     
-    // Nobs overflow via the merge path: every Merge adds counts with checked arithmetic.
-    // (Fit-path overflow stays per-class: statistics whose Fit(value, count) loops per
-    // observation, e.g. EmpiricalCdf, cannot fit a 2^62-sized batch at all.)
+    // Overflow of the observation count is checked through the merge path: every Merge
+    // adds two counts with arithmetic that reports overflow, so one shared fact covers
+    // every statistic. Overflow on the Fit path stays in the individual class tests,
+    // because statistics whose weighted Fit replays observations one at a time, such as
+    // EmpiricalCdf, could never process a batch that large in the first place.
     [Fact]
     public void MergeSelf_NobsOverflowThrows()
     {
@@ -587,7 +599,9 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         stat.Fit(GenerateObservation());
         Assert.Equal(1, stat.Nobs);
         
-        // self-merge doubles Nobs in lockstep: 2^62 after 62 merges, one more addition overflows
+        // Merging a statistic into itself doubles its observation count each round, so
+        // 62 rounds take the count from 1 to 2 to the power of 62, and one more merge
+        // would overflow.
         for (var i = 0; i < 62; i++)
         {
             stat.Merge(stat);

@@ -222,12 +222,18 @@ public partial class TestVariance()
         Assert.Equal(double.NaN, v1.Value);
     }
 
-    // PERMANENT merge-algebra gate (keep): Variance Merge associativity. Three seeded KappaStream
-    // chunks (n=100, spread 1) per κ, κ = 10^0..10^8; (a∪b)∪c vs a∪(b∪c) with fresh Clone()
-    // (CloneEmpty + Merge) receivers. Value and StandardDeviation of both groupings must match
-    // the two-pass reference on a∪b∪c, and each other, within relTol = 1e-8 + 1e4·κ·ε.
-    // Probe worst observed: rel 2.40E-8 at κ=1e8 (~1·κ·ε; merge errors scale ~linearly in κ,
-    // not κ²) → headroom ~1e4x; cross-grouping rel ≤ 1.1E-9.
+    // Permanent merge-algebra gate, keep it: merging variances is associative. For each condition
+    // number, walking powers of ten from one to one hundred million, three seeded KappaStream
+    // chunks of one hundred observations with spread one are built. The grouping of a merged with
+    // b, then merged with c, is compared against a merged with the result of b merged with c, each
+    // into a fresh copy made through CloneEmpty and Merge. The value and the standard deviation of
+    // both groupings must match the two-pass reference over all three chunks together, and match
+    // each other, within a relative margin of a hundred-millionth plus ten thousand times the
+    // condition number times machine epsilon. The worst error the probe found was a relative
+    // 2.40E-8 at condition number 1e8, about one times the condition number times machine epsilon:
+    // merge errors grow roughly linearly in the condition number, not its square, so the margin
+    // keeps about ten thousand times headroom, while the two groupings differ by at most a
+    // relative 1.1E-9.
     [Fact]
     public void Gate_MergeAssociativityVariance()
     {
@@ -269,8 +275,9 @@ public partial class TestVariance()
         }
     }
 
-    // Same contract, commutative direction: a∪b∪c vs c∪b∪a, same κ range (10^0..10^8),
-    // fresh Clone() receivers and margins relTol = 1e-8 + 1e4·κ·ε.
+    // The same contract in the commutative direction: merging a, b, c against c, b, a over the
+    // same condition-number range, into fresh copies as receivers, with the same margins as the
+    // associativity gate above.
     [Fact]
     public void Gate_MergeCommutativityVariance()
     {
@@ -323,28 +330,32 @@ public partial class TestVariance()
         Assert.True(PropertyHelpers.Within(left.StandardDeviation, right.StandardDeviation, relTol), PropertyHelpers.Describe($"{tag} StandardDeviation", left.StandardDeviation, right.StandardDeviation));
     }
 
-    // Getter-parity gate at merge-doubling scale (AGENTS.md's readout-getter budget:
-    // candidate/baseline ns-per-observation <= 1.05, i.e. the claim is "not slower" - a getter is
-    // one interface dispatch plus a few flops, so ~1% measurement noise straddles 1.00 and the
-    // band is NOT to be widened. A red run means the readouts got measurably slower once Nobs
-    // reaches 2^62 (an O(Nobs)/formatting/allocation path crept into a getter): re-gate the
-    // algorithm, do not relax the budget.)
-    // Construction mirrors AbstractRunningStatsTest.MergeSelf_NobsOverflowThrows (self-merge
-    // doubles Nobs in lockstep), but from TWO distinct observations doubled 61 times so the
-    // state has spread: from Nobs 1 the doubled state is constant data, Value and StandardDeviation
-    // land at 0 and StandardDeviation reads sqrt of a zero variance, which is degenerate rather
-    // than a finite readout. From two distinct fits, Nobs reaches the same 2^62 and both readouts
-    // stay finite and positive there (measured: Value ~1e-2, StandardDeviation ~1e-1), the same
-    // branches (Nobs >= 2, Bessel factor n/(n-1) ~ 1) as at small Nobs. Variance exposes Value
-    // (unbiased sample variance) and StandardDeviation only - its mean is private - so the sweep
-    // reads those two.
+    // What this checks: reading the getters must not get slower as the statistic sees more
+    // observations. The getters only look at a fixed amount of state, so reading them on a
+    // statistic that has seen 2^62 observations should cost the same as on one that has seen
+    // 6. The test builds both statistics, times millions of reads of Value and StandardDeviation
+    // on each, and requires the big one to be within [0.5, 1.05] of the small one. The band is
+    // deliberately tight: a getter is a dispatch plus a few arithmetic operations, so the honest
+    // claim is "not slower", and anything outside about 1% is noise, not a real gain or
+    // regression. If this fact ever goes red, a getter has picked up work that grows with the
+    // observation count - fix the algorithm, do not widen the band.
+    //
+    // How the big statistic is built: fit two distinct values, then merge the statistic with
+    // itself 61 times, which doubles the count each time up to 2^62. Two distinct values are
+    // needed on the way in: doubling a single observation keeps the data constant, which leaves
+    // the variance at 0 and makes the standard-deviation getter read the square root of a zero
+    // variance - a degenerate value the sweep could time as an early exit instead of a real
+    // readout. From two distinct values both readouts stay finite and positive at 2^62
+    // (measured: Value ~1e-2, StandardDeviation ~1e-1), and the big and the small statistic go
+    // through exactly the same getter code paths. Variance exposes only Value (the unbiased
+    // sample variance) and StandardDeviation, so the sweep reads those two.
     [Fact]
-    public void Bench_GetterParityAtMergeDoublingNobs_Variance()
+    public void Bench_GetterCostIndependentOfNobs_Variance()
     {
-        // 5M sweeps x 4 measured repeats (the harness's default shape): the sweep body is shared
-        // by both sides of the comparison (see SweepVariance below), so the ratio compares
-        // identical machine code and AGENTS.md's parity band [0.5, 1.05] holds at the default
-        // workload size rather than being bought by a bigger workload.
+        // Five million getter reads per measured run, four measured runs: the harness's default
+        // workload size. Both sides of the comparison run the same sweep body (see the helper
+        // below), so the ratio compares identical machine code, and the [0.5, 1.05] band is
+        // expected at the default size rather than at a bigger workload chosen to make it pass.
         const int obs = 5_000_000;
         const int repeats = 4;
 
@@ -390,10 +401,11 @@ public partial class TestVariance()
                     $"do not widen the band.");
     }
 
-    // One compiled sweep body serves both sides of the comparison: the stat is a parameter, so the
-    // 2^62 and the small-Nobs workloads run literally the same machine code (same JIT tier, same
-    // code layout). Two separately compiled lambda bodies drifted 7-8% on code layout alone, which
-    // is noise on a parity claim, not a regression.
+    // A single compiled sweep body serves both sides of the comparison: the statistic is passed
+    // in as a parameter, so the 2^62-scale and the small-Nobs workloads run literally the same
+    // machine code (same JIT tier, same code layout). This matters because two separately compiled
+    // copies of the same loop drifted 7-8% on code layout alone, which is noise on a "not slower"
+    // claim, not a regression.
     private static double SweepVariance(RunningStatistics.Variance stat, int obs)
     {
         var sum = 0.0;

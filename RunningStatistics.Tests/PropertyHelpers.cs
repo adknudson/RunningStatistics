@@ -4,14 +4,16 @@ using System.Collections.Generic;
 namespace RunningStatistics.Tests;
 
 /// <summary>
-/// Deterministic datasets and reference computations shared by correctness gates (see the workflow
-/// in <c>AGENTS.md</c>). Datasets are generated with a fixed-seed PRNG so a gate failure is
-/// reproducible, and cover the pathological shapes an incremental algorithm has to survive:
-/// badly offset streams (κ = |mean|/spread from 1 to 1e12), constant data, degenerate counts.
+/// Deterministic datasets and reference calculations shared by the correctness gates; the workflow
+/// they follow is described in the house-rules file at the root of the repository. Datasets come
+/// from a fixed-seed random generator so a failing gate reproduces exactly, and they cover the
+/// shapes an incremental algorithm has to survive: streams whose mean sits far off zero, from
+/// equal to its spread up to twelve orders of magnitude beyond it, constant data, and small counts.
 ///
-/// The reference values here are two-pass (mean first, then central sums) with compensated
-/// summation, i.e. correct to ~machine epsilon on every dataset these helpers generate. A candidate
-/// running statistic is judged against those, not against the production implementation.
+/// The reference values here are computed in two passes, the mean first and then the central sums,
+/// with compensated summation. They are correct to within machine epsilon on every dataset these
+/// helpers generate. A candidate running statistic is judged against those references, not
+/// against the production implementation.
 /// </summary>
 internal static class PropertyHelpers
 {
@@ -28,7 +30,7 @@ internal static class PropertyHelpers
         _state = seed == 0 ? 0x6C078963554F5A71L : seed;
     }
 
-    /// Next value in [0, 1).
+    /// The next value, drawn evenly from zero up to, but not including, one.
     public static double NextUnit()
     {
         _state = _state * 6364136223846793005L + 1440329614744452433L;
@@ -45,7 +47,7 @@ internal static class PropertyHelpers
         return Math.Sqrt(-2.0 * Math.Log(u)) * Math.Cos(2.0 * Math.PI * v);
     }
 
-    /// <paramref name="n"/> uniforms in [0, 1).
+    /// Draws <paramref name="n"/> values evenly from zero up to, but not including, one.
     public static List<double> UniformUnit(int n, long seed)
     {
         Seed(seed);
@@ -55,8 +57,9 @@ internal static class PropertyHelpers
     }
 
     /// <summary>
-    /// <paramref name="n"/> uniforms spread over [<c>offset</c>, <c>offset + spread</c>): κ ≈
-    /// <c>|offset|/spread</c>, the condition number that naive raw-power-sum algorithms blow up on.
+    /// Draws <paramref name="n"/> uniform values from <c>offset</c> up to, but not including,
+    /// <c>offset</c> plus <c>spread</c>. How many times larger the offset is than the spread is
+    /// the condition number that makes naive raw-power-sum algorithms blow up.
     /// </summary>
     public static List<double> OffsetSpread(int n, double offset, double spread, long seed)
     {
@@ -75,12 +78,16 @@ internal static class PropertyHelpers
         return xs;
     }
 
-    /// <summary>A stream with mean ≈ <paramref name="kappa"/> and spread 1 (κ ≈ kappa).</summary>
+    /// <summary>
+    /// A stream whose mean is about <paramref name="kappa"/> and whose spread is one, so the
+    /// condition number, the mean measured in spreads, is <paramref name="kappa"/>.
+    /// </summary>
     public static List<double> KappaStream(int n, double kappa, long seed) => OffsetSpread(n, kappa, 1.0, seed);
 
     /// <summary>
-    /// Streams whose κ sweeps 10^0 … 10^<paramref name="decades"/>, the range over which an
-    /// accurate algorithm must stay accurate and a raw-power-sum algorithm does not.
+    /// Streams whose condition number, the mean measured in spreads, walks through powers of ten
+    /// from one up to ten to the <paramref name="decades"/>th power: the range where an accurate
+    /// algorithm must stay accurate and a raw-power-sum algorithm does not.
     /// </summary>
     public static List<List<double>> KappaSweep(int n, int decades, long seed)
     {
@@ -93,7 +100,7 @@ internal static class PropertyHelpers
         return sets;
     }
 
-    /// <summary><paramref name="count"/> copies of <paramref name="value"/> (constant / zero-spread data).</summary>
+    /// <summary>Builds <paramref name="count"/> copies of <paramref name="value"/>: data with no spread.</summary>
     public static List<double> Constant(int n, double value)
     {
         var xs = new List<double>();
@@ -141,7 +148,8 @@ internal static class PropertyHelpers
         return reference;
     }
 
-    /// Neumaier-compensated sum: accurate to ~one epsilon regardless of order/magnitude.
+    /// Adds the values with Neumaier compensation, accurate to within about one epsilon no matter
+    /// the order of the terms or their sizes.
     private static double CompensatedSum(List<double> xs)
     {
         var sum = 0.0;
@@ -163,9 +171,11 @@ internal static class PropertyHelpers
     // ---- Tolerant comparison helpers ----
 
     /// <summary>
-    /// Relative-tolerance comparison with NaN agreement (both NaN passes). <paramref name="relTol"/>
-    /// is usually derived from κ, e.g. <c>1e-9 + 100 * kappa * PropertyHelpers.Epsilon</c> for a
-    /// stable algorithm whose worst error is a few κ·ε.
+    /// Compares two values with a relative tolerance, treating two NaNs as agreeing. The tolerance
+    /// is usually derived from the condition number of the data: for a stable algorithm whose
+    /// worst error is a small multiple of the condition number times machine epsilon, a margin
+    /// built as a billionth plus one hundred times the condition number times machine epsilon
+    /// is a typical choice.
     /// </summary>
     public static bool Within(double expected, double actual, double relTol)
     {
@@ -179,10 +189,12 @@ internal static class PropertyHelpers
     }
 
     /// <summary>
-    /// Absolute-tolerance comparison with NaN agreement. Use this for the standardized moments
-    /// (<c>Skewness</c>, <c>Kurtosis</c>): their true values are small ratios (g1, g2) while the
-    /// error a stable algorithm makes is ~κ·ε in <em>data-scale units</em> (σ³, σ⁴), so a relative
-    /// tolerance on g1 would demand accuracy better than the representation of the mean allows.
+    /// Compares two values with an absolute tolerance, treating two NaNs as agreeing. Use it for
+    /// the standardized moments, skewness and kurtosis: their true values are small ratios, while
+    /// the error a stable algorithm makes lives on the data's own scale, a small multiple of the
+    /// condition number times machine epsilon measured in units of the standard deviation to the
+    /// third and fourth powers. A relative tolerance on those small ratios would demand accuracy
+    /// beyond what the stored mean can represent.
     /// </summary>
     public static bool WithinAbsolute(double expected, double actual, double absTol)
     {
@@ -203,8 +215,9 @@ internal static class PropertyHelpers
 }
 
 /// <summary>
-/// Reference values for the four-moment readout contract, computed two-pass from the data.
-/// Unread members are <c>NaN</c> when the data does not support them (n &lt; 2, zero spread).
+/// Reference values for the four-moment readout contract, computed in two passes from the data.
+/// The members the data cannot support, such as when there are fewer than two values or no
+/// spread at all, read NaN.
 /// </summary>
 internal class MomentsReference
 {

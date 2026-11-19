@@ -122,10 +122,11 @@ public partial class TestMean
         Assert.Throws<ArgumentException>(() => a.Fit(double.NegativeInfinity));
     }
 
-    // Pinned: the batch path Fit(IEnumerable<double>) (values.Average() then
-    // Utils.Smooth with weight count/Nobs) must agree with the incremental path of repeated
-    // Fit(value) calls: same Nobs EXACTLY, Value within Utils.AssertIsApproximate(expected,
-    // actual, 0) = 1e-8 relative. Seeded Random(20251114) only — no unseeded sampling.
+    // The batch path for collections of doubles folds the whole batch in one step
+    // (it averages the values and blends with weight count over count), and that must
+    // agree with the incremental path of repeated single fits: the observation counts
+    // must be exactly equal, and the mean within the usual 1e-8 relative tolerance.
+    // The data comes from a seeded generator only, never from unseeded sampling.
 
     [Fact]
     public void MeanPaths_BatchEqualsLoop()
@@ -266,9 +267,11 @@ public partial class TestMean
         }
         var batchMean = sum / values.Count;
 
-        // Smooth(_value = 0, average, count/count = 1) = average EXACTLY, so Value is the
-        // library's values.Average(); this left-fold reference mean differs from it only by
-        // summation order.
+        // The first batch blends into an empty statistic with weight one, which leaves
+        // exactly the plain average of the values, so the statistic's value is the
+        // library's own average of the collection. The simple running sum computed here
+        // can differ from that average only in the order the additions happen, which is
+        // why the check is tolerant.
         Utils.AssertIsApproximate(batchMean, stat.Value, 0);
     }
 

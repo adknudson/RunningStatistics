@@ -50,25 +50,25 @@ public partial class TestBeta
     [Fact]
     public void Pdf_HandlesSpecialCases()
     {
-        // Case when _a == 0 and _b == 0
+        // Both parameters zero: the initial degenerate state
         var beta = new RunningStatistics.Beta(0, 0);
         Assert.Equal(double.PositiveInfinity, beta.Pdf(0));
         Assert.Equal(double.PositiveInfinity, beta.Pdf(1));
         Assert.Equal(0.0, beta.Pdf(0.5));
 
-        // Case when _a == 0
+        // First parameter zero, the second positive
         beta = new RunningStatistics.Beta(0, 10);
         Assert.Equal(double.PositiveInfinity, beta.Pdf(0));
         Assert.Equal(0.0, beta.Pdf(0.5));
         Assert.Equal(0.0, beta.Pdf(1));
 
-        // Case when _b == 0
+        // Second parameter zero, the first positive
         beta = new RunningStatistics.Beta(10, 0);
         Assert.Equal(0.0, beta.Pdf(0));
         Assert.Equal(0.0, beta.Pdf(0.5));
         Assert.Equal(double.PositiveInfinity, beta.Pdf(1));
 
-        // Case when _a == 1 and _b == 1
+        // Both parameters one: the uniform density case
         beta = new RunningStatistics.Beta(1, 1);
         Assert.Equal(1.0, beta.Pdf(0));
         Assert.Equal(1.0, beta.Pdf(0.5));
@@ -120,27 +120,27 @@ public partial class TestBeta
     [Fact]
     public void Cdf_HandlesSpecialCases()
     {
-        // Case when _a == 0 and _b == 0
+        // Both parameters zero: the initial degenerate state
         var beta = new RunningStatistics.Beta(0, 0);
         Assert.Throws<ArgumentException>(() => beta.Cdf(0));
         Assert.Throws<ArgumentException>(() => beta.Cdf(1));
         Assert.Throws<ArgumentException>(() => beta.Cdf(0.5));
 
-        // Case when _a == 0
+        // First parameter zero, the second positive
         beta = new RunningStatistics.Beta(0, 10);
         Assert.Equal(0.0, beta.Cdf(-0.0000001));
         Assert.Equal(1.0, beta.Cdf(0));
         Assert.Equal(1.0, beta.Cdf(0.5));
         Assert.Equal(1.0, beta.Cdf(1));
 
-        // Case when _b == 0
+        // Second parameter zero, the first positive
         beta = new RunningStatistics.Beta(10, 0);
         Assert.Equal(0.0, beta.Cdf(0));
         Assert.Equal(0.0, beta.Cdf(0.5));
         Assert.Equal(0.0, beta.Cdf(0.9999999));
         Assert.Equal(1.0, beta.Cdf(1));
 
-        // Case when _a == 1 and _b == 1, CDF is equal to x
+        // Both parameters one: the cumulative distribution equals the queried point
         beta = new RunningStatistics.Beta(1, 1);
         Random random = new();
         for (var i = 0; i < 100; i++)

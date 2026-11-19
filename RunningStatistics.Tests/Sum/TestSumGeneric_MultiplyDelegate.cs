@@ -11,43 +11,43 @@ public class TestSumGeneric_MultiplyDelegate
     [Fact]
     public void MultiplyDelegate_IsNotNull_ForLong()
     {
-        // long: IMultiplyOperators<long, long, long> � exact match, no conversion needed
+        // long multiplies by long directly: an exact match, no conversion needed
         Assert.NotNull(Sum<long>.MultiplyDelegate);
     }
 
     [Fact]
     public void MultiplyDelegate_IsNotNull_ForDouble()
     {
-        // double: IMultiplyOperators<double, double, double> � count is widened long?double
+        // double multiplies by double, so the whole-number count is widened to double first
         Assert.NotNull(Sum<double>.MultiplyDelegate);
     }
 
     [Fact]
     public void MultiplyDelegate_IsNotNull_ForDecimal()
     {
-        // decimal: IMultiplyOperators<decimal, decimal, decimal> � count is widened long?decimal
+        // decimal multiplies by decimal, so the whole-number count is widened to decimal first
         Assert.NotNull(Sum<decimal>.MultiplyDelegate);
     }
 
     [Fact]
     public void MultiplyDelegate_IsNotNull_ForFloat()
     {
-        // float: IMultiplyOperators<float, float, float> � count is narrowed long?float
-        // (precision loss accepted for counts > ~16.7M)
+        // float multiplies by float, so the whole-number count is narrowed to float first,
+        // accepting precision loss for counts above roughly 16.7 million
         Assert.NotNull(Sum<float>.MultiplyDelegate);
     }
 
     [Fact]
     public void MultiplyDelegate_IsNotNull_ForMyNum()
     {
-        // MyNum explicitly implements IMultiplyOperators<MyNum, long, MyNum>
+        // MyNum declares its own multiply operator taking a whole-number count
         Assert.NotNull(Sum<MyNum>.MultiplyDelegate);
     }
 
     [Fact]
     public void MultiplyDelegate_IsNull_ForMyAddOnlyNumType()
     {
-        // MyAddOnlyNum only implements IAdditionOperators � no multiply available
+        // MyAddOnlyNum only offers addition, so no multiply path is available for it
         Assert.Null(Sum<MyAddOnlyNum>.MultiplyDelegate);
     }
 
@@ -128,19 +128,20 @@ public class TestSumGeneric_MultiplyDelegate
     [Fact]
     public void FitWithCount_Float_PrecisionBreaks_AbovePow2_24()
     {
-        // float has a 24-bit mantissa, so integers are only exactly representable up to 2^24.
-        // Beyond that, adding 1f to an accumulator that is already >= 2^24 has no effect �
-        // the addition rounds back to the same value. This means the loop path saturates.
+        // A float keeps twenty-four bits of mantissa, so counting by ones only stays exact up to
+        // 2^24. Adding 1f to an accumulator already at or past that point has no effect: the
+        // addition rounds back to the same value, so the loop path saturates there.
         //
-        // At count = 2^25:
-        //   Delegate path: 1f * (float)(2^25) = 1f * 33554432f = 33554432f  (multiply is exact here)
-        //   Loop path:     saturates at 2^24 = 16777216f, because once the sum reaches 2^24,
-        //                  each subsequent +1f rounds back to 2^24 and contributes nothing.
+        // At a count of 2^25:
+        //   The delegate path multiplies 1f by the float of that count, 33554432f, and the product
+        //   is exact because it is representable.
+        //   The loop path saturates at 2^24, the value 16777216f: once the sum reaches it, every
+        //   further 1f rounds back and contributes nothing.
         //
-        // Note: at count = 2^24 + 1 both paths give the same wrong answer (2^24), because
-        // (float)(2^24+1) also rounds to 2^24, so there is no divergence there.
+        // Note that at a count of 2^24 plus one both paths give the same wrong answer, 2^24,
+        // because the float of 2^24 plus one also rounds to 2^24; there is nothing to diverge.
         const float value = 1f;
-        const long count = 1L << 25; // 2^25 = 33,554,432
+        const long count = 1L << 25; // 33,554,432 observations
 
         var delegatePath = new Sum<float>();
         delegatePath.Fit(value, count);
@@ -149,8 +150,8 @@ public class TestSumGeneric_MultiplyDelegate
         for (var i = 0L; i < count; i++) loopPath.Fit(value);
 
         Assert.NotEqual(loopPath.Value, delegatePath.Value);
-        Assert.Equal(1L << 25, delegatePath.Value);  // multiply: 1f * 2^25f = 2^25
-        Assert.Equal(1L << 24, loopPath.Value);      // loop: saturates at 2^24
+        Assert.Equal(1L << 25, delegatePath.Value); // the delegate path multiplies exactly
+        Assert.Equal(1L << 24, loopPath.Value);      // the loop path saturates short of the exact product
     }
 
     [Theory]

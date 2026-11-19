@@ -18,9 +18,10 @@ public partial class TestCountMap()
         Assert.Equal(long.MaxValue / 2 + 1, countMap.Nobs);
     }
 
-    // Pins for the per-key counter vs the checked _nobs: the per-key count is bounded by
-    // _nobs and the checked _nobs addition runs FIRST in UncheckedFit, so a per-key count
-    // can never wrap independently of Nobs. Pinned at the exact/edge boundaries:
+    // A per-key count can never overflow quietly on its own. The total count is checked
+    // first when fitting, and every per-key count is bounded by that total, so a
+    // rejected fit cannot leave one key's count wrapped while Nobs still looks fine.
+    // These facts pin that at the boundary itself, and just past it:
     [Fact]
     public void PerKeyCount_MatchesNobsAtMaxBoundary()
     {
@@ -38,7 +39,7 @@ public partial class TestCountMap()
         countMap.Fit(1, long.MaxValue / 2 + 1);
         Assert.Throws<OverflowException>(() => countMap.Fit(1, long.MaxValue / 2 + 1));
 
-        // the per-key counter did not wrap: it still equals _nobs
+        // the per-key counter did not wrap: it still equals the total observation count
         Assert.Equal(long.MaxValue / 2 + 1, countMap[1]);
         Assert.Equal(countMap[1], countMap.Nobs);
     }
@@ -60,7 +61,9 @@ public partial class TestCountMap()
         c.Fit(1, 2);
         Assert.Throws<OverflowException>(() => a.Merge(c));
 
-        // crossing throws from _nobs before any per-key update: a is untouched
+        // A merge that would cross the limit throws while checking the total count,
+        // before any per-key count is touched, so the receiving map is left exactly
+        // as it was.
         Assert.Equal(long.MaxValue - 1, a.Nobs);
         Assert.Equal(long.MaxValue - 1, a[1]);
     }
@@ -215,10 +218,11 @@ public partial class TestCountMap()
         Assert.Equal(3, countMap.MaxKey(null));
     }
     
-    // Pinned: the Merge contract (per-key sums via the counts accessor) and MinKey/
-    // MaxKey selection. Merge(CountMap) delegates to the base Fit(IEnumerable<KeyValuePair<TObs,long>>)
-    // which foreaches other's entries and calls Fit(key, count), so every key present in either
-    // side ends with the SUM of its counts and Nobs is the sum of all counts.
+    // This pins the Merge contract and the smallest/largest key selection. Merging
+    // another map feeds the other map's entries back through the pair fitting, one
+    // key and count at a time, so every key that appears on either side ends up with
+    // the sum of its counts from both sides, and the total count is the sum of all
+    // counts.
     [Fact]
     public void Merge_DisjointKeys()
     {
@@ -231,7 +235,8 @@ public partial class TestCountMap()
         
         a.Merge(b);
         
-        // merged map is exactly {1:2, 3:5, 7:4}
+        // the merged map holds exactly the key 1 with count 2, the key 3 with count 5 and the
+        // key 7 with count 4
         Assert.Equal(3, a.Count);
         Assert.Equal(2, a[1]);
         Assert.Equal(5, a[3]);
@@ -245,7 +250,8 @@ public partial class TestCountMap()
         Assert.False(b.ContainsKey(1));
         Assert.False(b.ContainsKey(3));
         
-        // merging into a fresh copy copies exactly b's one key {7:4} and leaves b untouched
+        // merging into a fresh copy carries exactly the source's single key 7 with count 4, and
+        // leaves the source untouched
         var fresh = new CountMap<int>();
         fresh.Merge(b);
         Assert.Single(fresh);
@@ -270,7 +276,9 @@ public partial class TestCountMap()
         
         a.Merge(b);
         
-        // shared key 3 sums to 4+5, the map is exactly {1:2, 3:9, 9:1}, Nobs 12 = 2+5+4+1
+        // The key both maps share ends up with the sum of its two counts (4 + 5), the
+        // merged map holds exactly these three keys with these counts, and the total
+        // count is the sum of all four fitted counts.
         Assert.Equal(3, a.Count);
         Assert.Equal(2, a[1]);
         Assert.Equal(9, a[3]);
@@ -304,7 +312,8 @@ public partial class TestCountMap()
         a1.Merge(b1);
         b2.Merge(a2);
         
-        // both directions give the identical map {1:2, 3:9, 9:1} and Nobs 12
+        // both directions give the identical map, key 1 with count 2, key 3 with count 9 and key
+        // 9 with count 1, and a combined total of 12 observations
         Assert.Equal(a1.Count, b2.Count);
         Assert.Equal(a1.Nobs, b2.Nobs);
         Assert.Equal(3, a1.Count);
@@ -319,9 +328,10 @@ public partial class TestCountMap()
         }
     }
     
-    // MinKey/MaxKey scan every key with the comparer and never consult counts, so selection
-    // is by KEY ORDER (not "most common"): negative int keys order as plain ints and ties
-    // in count have no effect on min/max.
+    // The minimum-key and maximum-key getters scan every key with the comparer and never look at
+    // counts, so the winner is chosen by key order rather than by which key occurs most often:
+    // negative integer keys order like plain integers, and equal counts have no effect on the
+    // outcome.
     [Fact]
     public void MinKey_MaxKey_NegativeAndTied()
     {
@@ -330,11 +340,12 @@ public partial class TestCountMap()
         countMap.Fit(7, 3);
         countMap.Fit(-5, 3);
         
-        // all counts tied: min/max follow key order only
+        // with every count tied, the minimum and maximum keys follow key order alone
         Assert.Equal(-5, countMap.MinKey());
         Assert.Equal(7, countMap.MaxKey());
         
-        // counts are irrelevant to key min/max: the same keys with skewed counts agree
+        // counts do not sway the outcome: the same keys with skewed counts give the same minimum
+        // and maximum keys
         var other = new CountMap<int>();
         other.Fit(0, 1);
         other.Fit(7, 1);
@@ -373,7 +384,7 @@ public partial class TestCountMap()
         Assert.Equal(5, stat[3]);
         Assert.Equal(7, stat.Nobs);
         
-        // and the other direction: fitting/merging on the original never touches the clone
+        // and the other direction: fitting and merging on the original never touches the clone
         stat.Fit(9, 4);
         Assert.Equal(4, stat[9]);
         Assert.Equal(11, stat.Nobs);
@@ -381,10 +392,11 @@ public partial class TestCountMap()
         Assert.Equal(107, clone.Nobs);
     }
 
-    // CloneEmpty's interface contract for parameterized statistics: the clone keeps the same
-    // internal parameters but zero observations. For CountMap(TObs) built with a custom comparer,
-    // the comparer IS the ordering configuration: a clone that dropped it would silently degrade
-    // the clone's MinKey()/MaxKey() to the default ordering.
+    // The CloneEmpty promise for statistics that carry configuration: the clone keeps the same
+    // configuration but starts with no observations. For a count map built with a custom comparer,
+    // that comparer is the ordering configuration: a clone that dropped it would quietly fall back
+    // to the default ordering, changing what the minimum-key and maximum-key readouts mean on the
+    // clone.
     [Fact]
     public void CloneEmpty_PreservesComparerOrdering()
     {
@@ -395,13 +407,14 @@ public partial class TestCountMap()
 
         var clone = stat.CloneEmpty();
 
-        // the clone carries the same comparer object (new(Comparer)), not a default
+        // the clone carries the same comparer object it was built with, not a default one
         Assert.Same(comparer, clone.Comparer);
         Assert.Empty(clone);
         Assert.Equal(0, clone.Nobs);
 
-        // ordering on the clone follows the comparer: with only key {2} min and max coincide,
-        // and after the merge it is reversed, so MinKey is the LARGEST int and MaxKey the smallest
+        // ordering on the clone follows the comparer: with only the key 2 present, the minimum and
+        // maximum coincide, and after the merge they swap, so the minimum key is the largest
+        // integer and the maximum key the smallest
         clone.Fit(2, 4);
         Assert.Equal(2, clone.MinKey());
         Assert.Equal(2, clone.MaxKey());
@@ -415,9 +428,11 @@ public partial class TestCountMap()
         Assert.Equal(7, stat.Nobs);
     }
 
-    // Merge-into-self observed: the base foreach reads each entry (key, count) at its visit and
-    // Fit accumulates into the same dictionary entry, so every key is doubled exactly once,
-    // Nobs doubles, and the map stays stable (no new keys, no throw, no skipped key).
+    // Merging a map into itself: the merge walks the entries and feeds each one back
+    // into the same dictionary, reading an entry's count at the moment it visits it.
+    // The result is that every key's count is doubled exactly once, the total doubles
+    // with it, and nothing else changes: no new keys appear, nothing throws, and no
+    // key is skipped.
     [Fact]
     public void MergeIntoSelf_DoublesCounts()
     {

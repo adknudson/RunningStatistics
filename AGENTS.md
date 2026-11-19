@@ -3,6 +3,25 @@
 Notes for automated contributors (and future sessions of this project) working on the
 `RunningStatistics` library.
 
+## Comment tone: write for a human reader
+
+Every comment in this repository must read like normal human speech — complete sentences in
+plain English a newcomer could read once and understand, with no mental translation.
+
+- No telegraphic notes: no sentence fragments, no arrow chains (`->`), no `≡`/`κ`/`α`/`ε` or
+  other shorthand standing in for words, no "i.e." cram, no dense parenthetical asides that
+  pack a paragraph into one line.
+- State *what is being tested and why it matters* first; keep measured numbers, tolerances and
+  budget bands as plain sentences (see the rewritten headers over the
+  `Bench_GetterCostIndependentOfNobs_*` facts — they are the reference style).
+- This applies to `//` comments, `///` doc comments and new facts alike; when a gate or bench
+  is added or revised, its header comment gets rewritten to this tone in the same change.
+
+## Subagent rules
+
+- Spawn only ONE subagent at a time, no exceptions. Wait for the current subagent to finish
+  before launching the next; never issue parallel subagent calls.
+
 ## Algorithm improvements: benchmarking and regression gates
 
 When replacing the algorithm inside a running statistic (e.g. swapping `Moments` for a

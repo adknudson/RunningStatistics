@@ -7,7 +7,8 @@ namespace RunningStatistics.Tests.Histogram;
 
 public partial class TestHistogram
 {
-    // |-inf, 0|, |0, 10|, |10, 100|
+    // The shared edge list: negative infinity, 0, 10 and 100. Consecutive edges form the
+    // three bins this histogram splits the number line into.
     private readonly double[] _edges = [double.NegativeInfinity, 0, 10, 100];
     
     [Fact]
@@ -19,10 +20,11 @@ public partial class TestHistogram
         Assert.Equal(long.MaxValue / 2 + 1, hist.Nobs);
     }
     
-    // Edge-validation guards in the constructor. Scenarios that silently
-    // constructed today (red): any NaN edge (any position), unsorted/non-monotonic edges
-    // (the ctor used to OrderBy-sort them), and (implicitly) duplicate edges. The ctor
-    // now requires finite-or-infinite (no NaN), strictly monotonically increasing edges.
+    // The constructor's checks on the edge list. These scenarios constructed quietly
+    // under the old lenient behavior and are now rejected: a NaN edge in any position,
+    // edges out of order, which the constructor used to sort for the caller, and repeated
+    // edges. The constructor now requires every edge to be a real number or an infinity,
+    // and the edges to strictly increase, so each of these scenarios must throw.
     [Fact]
     public void Ctor_RejectsNaNEdges()
     {
@@ -149,7 +151,8 @@ public partial class TestHistogram
     [Fact]
     public void FreshHistogram_NobsAndBinsAreZero()
     {
-        // (-inf, 0], (0, 10], (10, 100]
+        // The bins run from negative infinity to 0 including 0, 0 to 10 including 10, and
+        // 10 to 100 including 100, with the left ends open.
         RunningStatistics.Histogram h = new(_edges, false, false);
 
         Assert.Equal(0, h.Nobs);
@@ -167,7 +170,8 @@ public partial class TestHistogram
     [Fact]
     public void CloneEmpty_PreservesEdgesAndClosureFlags()
     {
-        // (-inf, 0], (0, 10], (10, 100]
+        // The bins run from negative infinity to 0 including 0, 0 to 10 including 10, and
+        // 10 to 100 including 100, with the left ends open.
         RunningStatistics.Histogram hist = new(_edges, leftClosed: false, endsClosed: false);
         hist.Fit(-1);
         hist.Fit(5);
@@ -175,26 +179,29 @@ public partial class TestHistogram
 
         var clone = hist.CloneEmpty();
 
-        // configuration survives, observations do not
+        // A reset keeps the edge configuration while discarding the observations.
         Assert.Equal(_edges, clone.Edges);
         Assert.False(clone.LeftClosed);
         Assert.False(clone.EndsClosed);
         Assert.Equal(0, clone.Nobs);
 
-        // the clone bins identically: same values -> same bins, same OOB side
+        // The clone sorts values into the bins the same way: identical values go to the
+        // same bins and out-of-range values land on the same side.
         clone.Fit(-1);
         clone.Fit(5);
         clone.Fit(1000);
-        // -1 lands in the (-inf,0] bin, 5 in the (0,10] bin; 1000 is above the top edge: OOB
+        // A value of -1 sits in the bin at or below 0, 5 sits in the bin above 0 up to 10,
+        // and 1000 is past the last edge so it counts as out of bounds.
         Assert.Equal([1, 1, 0], BinCounts(clone));
         Assert.Equal(0, clone.OutOfBoundsCounts.Lower);
         Assert.Equal(1, clone.OutOfBoundsCounts.Upper);
         Assert.Equal(3, clone.Nobs);
     }
 
-    // The accumulate pattern from user code (total = stat.CloneEmpty(); total.Merge(chunk)):
-    // the configuration-carrying clone must land on Merge's same-bins branch and sum bin counts
-    // directly — the midpoint fallback would not produce these counts.
+    // The accumulation pattern user code writes: clone an empty copy carrying the
+    // configuration, then merge each chunk into it. The clone keeps the edges, so the
+    // merge must take the same-bins branch that adds bin counts directly; the fallback
+    // that replays bins at their midpoints would not produce these counts.
     [Fact]
     public void CloneEmpty_AccumulateMergeSumsBinsDirectly()
     {
@@ -216,13 +223,14 @@ public partial class TestHistogram
         total.Merge(chunk1);
         total.Merge(chunk2);
 
-        // bins summed elementwise, OOB counters summed, nothing lost
+        // Each bin now holds the sum of the two chunks' counts, the out-of-bounds counters
+        // sum the same way, and nothing was dropped.
         Assert.Equal([3, 1, 3], BinCounts(total));
         Assert.Equal(0, total.OutOfBoundsCounts.Lower);
         Assert.Equal(1, total.OutOfBoundsCounts.Upper);
         Assert.Equal(8, total.Nobs);
 
-        // equivalence with a single histogram fitted all data at once
+        // The accumulated result must match one histogram fitted with all the data at once.
         RunningStatistics.Histogram all = new(_edges, leftClosed: false, endsClosed: false);
         all.Fit(-1, 2);
         all.Fit(5);
@@ -241,7 +249,7 @@ public partial class TestHistogram
     [Fact]
     public void Reset_PreservesEdgesRefitsSameBins()
     {
-        // [0, 10), [10, 100]
+        // The bins here are 0 up to but not including 10, and 10 up to and including 100.
         RunningStatistics.Histogram h = new([0.0, 10.0, 100.0]);
         h.Fit(-7, 2);
         h.Fit(5);
@@ -274,22 +282,26 @@ public partial class TestHistogram
         Assert.Equal(8, h.Nobs);
     }
 
-    // DECISION NOTE — the mismatched-edges fallback of Histogram.Merge is PINNED AS-IS.
-    // When BinsAreMatching is false (Bins.Equals compares bounds AND closure flags, counts
-    // ignored), Merge does NOT throw: it replays each source bin's count at that bin's
-    // Midpoint — an approximation of where the observations actually were — and a midpoint
-    // outside the receiver falls into its OutOfBounds counters instead of a bin. Turning
-    // this into a throw (or a finer redistribution) would change released behavior and
-    // would need the staged correctness + benchmark gate from AGENTS.md. Cross-statistic
-    // contrast, for the record: EmpiricalCdf.Merge THROWS on a NumBins mismatch while
-    // Histogram.Merge approximates. The contrast for SAME edges AND SAME closure flags
-    // (the bin-summing branch) is already pinned by Merge_MatchingEdgesSumsBinsDirectly
-    // and CloneEmpty_AccumulateMergeSumsBinsDirectly — not duplicated below.
-    // Mismatched edge sets: no throw, no complaint — each source bin's count is refit at
-    // that bin's midpoint into the receiver. Receiver [0,10), [10,20] holds fit 5 (bin 0);
-    // source [0,5), [5,10), [10,15), [15,20] has one observation per bin (fits 1, 6, 11, 16),
-    // midpoints 2.5, 7.5, 12.5, 17.5. Refit: 2.5 and 7.5 -> receiver bin 0 [0,10); 12.5 and
-    // 17.5 -> receiver bin 1 [10,20]. Final bins [3, 2], Nobs 1+4, OOB untouched (0, 0).
+    // Decision note: the fallback for mismatched edges in the merge is pinned exactly as
+    // the library behaves today. When the two histograms' edge lists differ, the merge
+    // does not throw. It replays each source bin's count at that bin's midpoint, an
+    // approximation of where the observations actually were, and a midpoint outside the
+    // receiver falls into its out-of-bounds counters instead of a bin. Making this a
+    // throw, or redistributing more finely, would change released behavior and would
+    // need the staged correctness and benchmark gate from the house rules before adopting
+    // it. For the record, the two statistics differ here: merging empirical cumulative
+    // distributions rejects a batch-size mismatch outright, while a histogram merge
+    // approximates. The same-edges branch, where counts are added directly, is already
+    // pinned by Merge_MatchingEdgesSumsBinsDirectly and CloneEmpty_AccumulateMergeSumsBinsDirectly,
+    // so it is not repeated below.
+    //
+    // The scenario pinned here: the receiver covers 0 up to but not including 10, and 10
+    // to 20 including 10, and holds one observation, 5, in its first bin. The source uses
+    // four bins of width 5, each closed on the left except the last which closes its right
+    // edge, and holds one observation in each, fitted at 1, 6, 11 and 16, with midpoints
+    // 2.5, 7.5, 12.5 and 17.5. The replay sends 2.5 and 7.5 into the receiver's first bin
+    // and 12.5 and 17.5 into its second, leaving bin counts 3 and 2, a total of one plus
+    // four observations, and out-of-bounds counters still at zero.
     [Fact]
     public void Merge_MismatchedEdgesRefitsBinMidpoints()
     {
@@ -310,14 +322,21 @@ public partial class TestHistogram
         Assert.Equal(0, receiver.OutOfBoundsCounts.Upper);
     }
 
-    // The midpoint refit reuses UncheckedFit, so a midpoint outside the receiver is routed
-    // to the OutOfBounds counters exactly like a normal Fit would. (a) Receiver [10,12] with
-    // fit 11; source [0,100] carries Fit(50, 4); the single source midpoint 50 > 12 -> upper
-    // OOB +4, Nobs 1+4, bins unchanged [1]. (b) Source edges [-inf, 0, 10, +inf] (bins [-inf,0),
-    // [0,10), [10,+inf]) refit into receiver [0,10), [10,20]: HistogramBin.Midpoint returns the
-    // infinite bound when one bound is infinite, so the infinite-edge bins refit at -Infinity
-    // (-> lower OOB) and +Infinity (-> upper OOB); only the middle bin's midpoint 5 lands in a
-    // bin. Fit guards NotNaN only, so the infinities are accepted, not thrown.
+    // The replayed midpoints go through the same unchecked fitting a normal fit would
+    // use, so a midpoint outside the receiver lands in its out-of-bounds counters just as
+    // an ordinary out-of-range observation would.
+    //
+    // Scenario a: the receiver covers 10 to 12 and holds an observation at 11. The source
+    // covers 0 to 100 and fits 50 with a count of four. The only source midpoint, 50, sits
+    // past the receiver's top edge, so four observations go to the upper out-of-bounds
+    // counter, the total becomes five, and the bins keep their one count unchanged.
+    //
+    // Scenario b: the source has edges at negative infinity, 0, 10 and positive infinity,
+    // and its bins are replayed into a receiver covering 0 to 10 and 10 to 20. A bin with
+    // an infinite bound reports that infinite bound as its midpoint, so the outer bins
+    // replay at negative infinity and positive infinity, going to the lower and upper
+    // out-of-bounds counters, and only the middle bin's midpoint, 5, lands in a bin.
+    // Fitting only rejects NaN, so the infinities are accepted rather than thrown.
     [Fact]
     public void Merge_MismatchedEdgesMidpointsFallOutOfBounds()
     {
@@ -344,20 +363,23 @@ public partial class TestHistogram
 
         receiver.Merge(infinite);
 
-        // midpoint 5 refits into bin 0; -Infinity -> lower OOB, +Infinity -> upper OOB
+        // The middle bin's midpoint, 5, replays into the first bin; negative infinity goes
+        // to the lower counter and positive infinity to the upper one.
         Assert.Equal([2, 0], BinCounts(receiver));
         Assert.Equal(4, receiver.Nobs);
         Assert.Equal(1, receiver.OutOfBoundsCounts.Lower);
         Assert.Equal(1, receiver.OutOfBoundsCounts.Upper);
     }
 
-    // BinsAreMatching compares bounds AND closure flags, so identical edges with different
-    // (leftClosed, endsClosed) take the refit branch, not the bin-summing branch. Receiver
-    // [0,10), [10,20] (defaults) vs source (0,10], (10,20]: the source's fits are both at
-    // 10.0, which with leftClosed=false lands in the source's FIRST bin (0,10]. The direct
-    // sum would have put those 2 into receiver bin 1 (10,20]-positioned); the refit branch
-    // instead replays 2 observations at the first bin's midpoint 5 -> receiver bin 0. Bins
-    // [2, 0] is only reachable via the midpoint replay.
+    // Matching bins compares both the edge values and the closure flags, so two histograms
+    // with identical edges but different closure settings take the replay branch rather
+    // than adding counts. The receiver covers 0 up to but not including 10, and 10 to 20
+    // including 10, with the default flags; the source uses the same edges closed on the
+    // right instead. Its two fits of 10 land in the source's first bin because its left
+    // end is open. Adding counts directly would have placed them in the receiver's second
+    // bin; the replay instead puts both observations at the first bin's midpoint, 5,
+    // landing in the receiver's first bin. The resulting counts, two and zero, are only
+    // reachable through that replay.
     [Fact]
     public void Merge_SameEdgesDifferentClosureFlagsRefitsMidpoints()
     {
@@ -413,7 +435,8 @@ public partial class TestHistogram
     [Fact]
     public void Fit_LeftClosedBins()
     {
-        // [-inf, 0), [0, 10), [10, 100]
+        // The bins are: negative infinity to 0 excluding 0, 0 to 10 excluding 10, and 10
+        // to 100 including 100.
         RunningStatistics.Histogram h = new(_edges);
 
         h.Fit(-1);
@@ -436,7 +459,8 @@ public partial class TestHistogram
     [Fact]
     public void Fit_LeftOpenBins()
     {
-        // [-inf, 0), [0, 10), [10, 100)
+        // The bins are: negative infinity to 0 excluding 0, 0 to 10 excluding 10, and 10
+        // to 100 excluding 100.
         RunningStatistics.Histogram h = new(_edges, true, false);
 
         h.Fit(-1);
@@ -459,7 +483,8 @@ public partial class TestHistogram
     [Fact]
     public void Fit_RightClosedBins()
     {
-        // [-inf, 0], (0, 10], (10, 100]
+        // The bins are: negative infinity to 0 including 0, above 0 up to 10 including 10,
+        // and above 10 up to 100 including 100.
         RunningStatistics.Histogram h = new(_edges, false);
 
         h.Fit(double.NegativeInfinity);
@@ -482,7 +507,8 @@ public partial class TestHistogram
     [Fact]
     public void Fit_RightOpenBins()
     {
-        // (-inf, 0], (0, 10], (10, 100]
+        // The bins run from negative infinity to 0 including 0, 0 to 10 including 10, and
+        // 10 to 100 including 100, with the left ends open.
         RunningStatistics.Histogram h = new(_edges, false, false);
 
         h.Fit(double.NegativeInfinity);
@@ -501,11 +527,12 @@ public partial class TestHistogram
         }
     }
 
-    // The static Type.Merge(a, b) returns a new stat; a and b keep their own state.
+    // The static Merge form returns a new statistic and leaves both arguments unchanged.
     [Fact]
     public void StaticMerge_DoesNotAffectOriginals()
     {
-        // (0, 0.1], (0.1, 0.5], (0.5, 0.9]
+        // The bins are: above 0 up to and including 0.1, above 0.1 up to and including 0.5,
+        // and above 0.5 up to and including 0.9.
         RunningStatistics.Histogram a = new([0, 0.1, 0.5, 0.9], leftClosed: false, endsClosed: false);
         RunningStatistics.Histogram b = new([0, 0.1, 0.5, 0.9], leftClosed: false, endsClosed: false);
             
@@ -526,27 +553,33 @@ public partial class TestHistogram
     }
 
     // -----------------------------------------------------------------------
-    // PIN — observation/bin MEMBERSHIP at edges for every
-    // (leftClosed, endsClosed) combination. Pins exactly what UncheckedFit +
-    // HistogramBin.Contains do today. BinCounts(h) = the bin Nobs by bin index,
-    // so the exact bin getting each edge observation is pinned. The conservation
-    // identity Nobs == SumBins(h) + OutOfBounds.Lower + OutOfBounds.Upper is
-    // pinned in every scenario: no bin double-counts an observation and no
-    // observation counted in Nobs is counted nowhere.
+    // The promise about which bin receives an observation sitting exactly on an edge,
+    // for every combination of the two closure flags, pinned exactly as the fitting and
+    // the bin-containment check behave today. Each scenario reads back the observation
+    // count of every bin in index order, so the exact bin that gets each edge
+    // observation is pinned. Every scenario also checks the conservation identity: the
+    // total count equals the sum of the bins plus the two out-of-bounds counters, so
+    // no bin double-counts an observation and no observation counted in the total is
+    // counted nowhere.
     //
-    // Membership table (edges e0<e1<...<e4, bins B0=[e0,e1)-style ... B3):
-    //   interior edge ek:  leftClosed=true  -> Bk    (upper bin, bins [a,b))
-    //                      leftClosed=false -> B(k-1) (lower bin, bins (a,b])
-    //   first edge e0:     leftClosed=true -> B0 always
-    //                      leftClosed=false: endsClosed=true -> B0; false -> OOB.Lower
-    //   last edge e4:      leftClosed=false -> B3 always
-    //                      leftClosed=true: endsClosed=true -> B3; false -> OOB.Upper
-    //   v < e0 / v > e4:   OOB.Lower / OOB.Upper flag-independently (never thrown;
-    //                      counted in Nobs, not in bins)
-    //   -Infinity at a -Infinity lower edge: in B0 iff first bin closed at Left
-    //     (leftClosed=true, or leftClosed=false AND endsClosed=true)
-    //   +Infinity at a +Infinity upper edge: in last bin iff last bin closed at Right
-    //     (leftClosed=false always; leftClosed=true only when endsClosed=true)
+    // How the flags decide membership, for edges running from the first to the last:
+    // - An observation on an interior edge goes to the bin above it when the bins are
+    //   closed on the left, and to the bin below it when they are closed on the right.
+    // - The first edge belongs to the first bin when the left end is closed. When the
+    //   left end is open, it belongs to the first bin only if the ends are closed;
+    //   otherwise it goes to the lower out-of-bounds counter.
+    // - The last edge belongs to the last bin when the right end is closed. When the
+    //   left end is closed instead, it belongs to the last bin only if the ends are
+    //   closed; otherwise it goes to the upper out-of-bounds counter.
+    // - A value strictly below the first edge or strictly above the last edge goes to
+    //   the matching out-of-bounds counter regardless of the flags; it is never thrown
+    //   away, and it counts in the total but not in any bin.
+    // - A value of negative infinity sitting at a first edge of negative infinity is in
+    //   the first bin exactly when that bin's left end is closed: the closed-left flag
+    //   forces that, and the open-left flag takes it from the ends flag. A value of
+    //   positive infinity at a last edge of positive infinity is in the last bin exactly
+    //   when that bin's right end is closed: the open-left flag always closes it, the
+    //   closed-left flag closes it only when the ends are closed.
     // -----------------------------------------------------------------------
 
     private static int[] BinCounts(RunningStatistics.Histogram histogram)
@@ -572,10 +605,10 @@ public partial class TestHistogram
     [Fact]
     public void Boundary_InteriorEdgeLeftClosedToUpperBin()
     {
-        // leftClosed=true: interior bins are [a, b), so an observation exactly at an
-        // interior edge ek (0.25, 0.5, 0.75) is the LOWER (closed) bound of the bin
-        // ABOVE -> it lands in Bk (indices 1, 2, 3). endsClosed never moves interior
-        // edges: the same counts hold for endsClosed true and false.
+        // With the left end closed, an interior bin covers its lower edge, so an
+        // observation sitting exactly on an interior edge, such as 0.25, 0.5 or 0.75,
+        // belongs to the bin above it, at indices 1, 2 and 3. The ends flag never moves
+        // an interior edge, so both of its values give the same counts.
         RunningStatistics.Histogram bothClosed = new([0.0, 0.25, 0.5, 0.75, 1.0], true, true);
         bothClosed.Fit(0.25);
         bothClosed.Fit(0.5);
@@ -598,9 +631,9 @@ public partial class TestHistogram
     [Fact]
     public void Boundary_InteriorEdgeLeftOpenToLowerBin()
     {
-        // leftClosed=false: interior bins are (a, b], so an observation at an interior
-        // edge ek is the UPPER (closed) bound of the bin BELOW -> B(k-1) (indices 0, 1, 2).
-        // Mirror of the leftClosed=true case shifted one bin down, for both endsClosed.
+        // With the right end closed, an interior bin covers its upper edge, so an
+        // observation sitting exactly on an interior edge belongs to the bin below it,
+        // one bin lower than in the closed-left case. The ends flag changes nothing here.
         RunningStatistics.Histogram bothClosed = new([0.0, 0.25, 0.5, 0.75, 1.0], false, true);
         bothClosed.Fit(0.25);
         bothClosed.Fit(0.5);
@@ -623,9 +656,10 @@ public partial class TestHistogram
     [Fact]
     public void Boundary_FirstEdgeLeftClosedAlwaysInFirstBin()
     {
-        // Observation exactly at the FIRST edge (0.0) with leftClosed=true: the first
-        // bin's ClosedLeft is hard-coded true (InitializeBins), so it is in B0 for
-        // either endsClosed. Counted once in bins, once in Nobs (conservation pinned).
+        // An observation exactly on the first edge, 0.0, with the left end closed: the
+        // first bin always closes its left end when the flag asks for a closed left, so
+        // the observation is in the first bin for either value of the ends flag. It is
+        // counted once in the bins and once in the total.
         RunningStatistics.Histogram bothClosed = new([0.0, 0.25, 0.5, 0.75, 1.0], true, true);
         bothClosed.Fit(0.0);
         Assert.Equal([1, 0, 0, 0], BinCounts(bothClosed));
@@ -646,11 +680,12 @@ public partial class TestHistogram
     [Fact]
     public void Boundary_FirstEdgeLeftOpenEndsClosedDecides()
     {
-        // leftClosed=false: the first bin is [0.0, ...) iff endsClosed=true (InitializeBins
-        // passes EndsClosed as its closedLeft). endsClosed=false makes the first edge an
-        // OPEN end: the observation at e0 is NOT dropped silently and NOT thrown — the
-        // value.Equals(firstBin.Lower) branch in UncheckedFit routes it to the lower
-        // OutOfBounds counter: bins count 0, OOB.Lower == 1, Nobs == 1 (conservation).
+        // With the left end open, the first bin closes its left end only when the ends
+        // flag asks for it. With the ends open too, an observation on the first edge
+        // sits at an open end: it is not silently dropped and not thrown. A dedicated
+        // check in the fitting notices a value equal to the first bin's lower edge and
+        // routes it to the lower out-of-bounds counter, so the bins count nothing, the
+        // counter holds one, and the total holds one.
         RunningStatistics.Histogram firstClosed = new([0.0, 0.25, 0.5, 0.75, 1.0], false, true);
         firstClosed.Fit(0.0);
         Assert.Equal([1, 0, 0, 0], BinCounts(firstClosed));
@@ -671,10 +706,12 @@ public partial class TestHistogram
     [Fact]
     public void Boundary_LastEdgeLeftClosedEndsClosedDecides()
     {
-        // leftClosed=true: the last bin is [0.75, 1.0] iff endsClosed=true. An observation
-        // exactly at the LAST edge (1.0) hits the value.Equals(lastBin.Upper) branch:
-        // endsClosed=true -> B3; endsClosed=false -> upper OutOfBounds counter (bins 0,
-        // OOB.Upper == 1, Nobs == 1 — counted, not lost, conservation pinned).
+        // With the left end closed, the last bin covers its upper edge only when the ends
+        // flag asks for it. An observation exactly on the last edge, 1.0, meets the check
+        // for a value equal to the last bin's upper edge: with the ends closed it goes to
+        // the last bin, and with the ends open it goes to the upper out-of-bounds counter
+        // instead. The bins stay at zero, the counter holds one and the total holds one,
+        // so the observation is counted, not lost.
         RunningStatistics.Histogram lastClosed = new([0.0, 0.25, 0.5, 0.75, 1.0], true, true);
         lastClosed.Fit(1.0);
         Assert.Equal([0, 0, 0, 1], BinCounts(lastClosed));
@@ -695,9 +732,10 @@ public partial class TestHistogram
     [Fact]
     public void Boundary_LastEdgeLeftOpenAlwaysInLastBin()
     {
-        // leftClosed=false: the last bin's ClosedRight is hard-coded true, so an
-        // observation at the last edge (1.0) is in B3 for either endsClosed — endsClosed
-        // acts on the LEFT end when leftClosed=false (mirror of FirstEdgeLeftClosed...).
+        // With the right end closed, the last bin always closes its right end, so an
+        // observation exactly on the last edge is in the last bin for either value of
+        // the ends flag. With the left end open, the ends flag acts on the left side
+        // instead, the mirror of the first-edge case above.
         RunningStatistics.Histogram bothClosed = new([0.0, 0.25, 0.5, 0.75, 1.0], false, true);
         bothClosed.Fit(1.0);
         Assert.Equal([0, 0, 0, 1], BinCounts(bothClosed));
@@ -718,12 +756,12 @@ public partial class TestHistogram
     [Fact]
     public void Boundary_OutsideFiniteEdgesCountedInOobAndNobs()
     {
-        // Observations strictly OUTSIDE [first edge, last edge] with finite ends never
-        // throw: the value < firstBin.Lower / value > lastBin.Upper branches of UncheckedFit
-        // run BEFORE any leftClosed/endsClosed logic, so the outcome is flag-independent.
-        // They are ignored by the bins but counted: OOB.Lower == 2, OOB.Upper == 3, Nobs == 5,
-        // and Nobs == SumBins + OOB exactly (bin sum does not exceed Nobs; every Nobs-counted
-        // observation is somewhere).
+        // Observations strictly outside the outer edges, with finite ends, never throw:
+        // the checks for a value below the first bin's lower edge and above the last
+        // bin's upper edge run before any closure-flag logic, so the flags make no
+        // difference. The bins ignore them while the counters hold two below and three
+        // above, the total is five, and the total equals the bins plus the counters
+        // exactly: no bin over-counts, and every counted observation lives somewhere.
         double[] edges = [0.0, 0.25, 0.5, 0.75, 1.0];
         for (var leftClosed = 0; leftClosed < 2; leftClosed++)
         {
@@ -744,11 +782,13 @@ public partial class TestHistogram
     [Fact]
     public void Boundary_InfiniteEndsObservationMembership()
     {
-        // Edges [-Infinity, 0, 10, 100]: an observation at -Infinity equals firstBin.Lower,
-        // so it is in B0 iff the first bin is closed at its Left: leftClosed=true fixes that
-        // true, and leftClosed=false uses EndsClosed. -Infinity with leftClosed=false AND
-        // endsClosed=false goes to OOB.Lower. +Infinity is strictly > 100 == lastBin.Upper
-        // -> OOB.Upper flag-independently. Conservation pinned in every combo.
+        // Edges at negative infinity, 0, 10 and 100: an observation of negative infinity
+        // equals the first bin's lower edge, so it belongs to the first bin exactly when
+        // that bin's left end is closed, which the closed-left flag forces and the open-
+        // left flag takes from the ends flag. Negative infinity with both flags open goes
+        // to the lower out-of-bounds counter. Positive infinity sits strictly above the
+        // last edge of 100, so it takes the upper counter regardless of the flags. The
+        // conservation identity holds in every combination.
         for (var leftClosed = 0; leftClosed < 2; leftClosed++)
         {
             for (var endsClosed = 0; endsClosed < 2; endsClosed++)
@@ -758,15 +798,18 @@ public partial class TestHistogram
                 h.Fit(double.PositiveInfinity);
                 if (leftClosed == 0 || endsClosed == 0)
                 {
-                    // first bin closed at -Infinity (leftClosed=true, or leftClosed=false
-                    // with endsClosed=true) -> -Inf observation in B0 (4 edges -> 3 bins)
+                    // Where the first bin closes at negative infinity, by the closed-left
+                    // flag or by the open-left flag paired with closed ends, the
+                    // observation of negative infinity belongs to the first bin; four
+                    // edges make three bins.
                     Assert.Equal([1, 0, 0], BinCounts(h));
                     Assert.Equal(0, h.OutOfBoundsCounts.Lower);
                 }
                 else
                 {
-                    // leftClosed=false, endsClosed=false: first bin (-Infinity, 0] is open
-                    // at its Lower -> the -Inf observation goes to the lower OOB counter
+                    // With both flags open, the first bin starts above negative infinity, so
+                    // the observation of negative infinity falls to the lower out-of-bounds
+                    // counter.
                     Assert.Equal([0, 0, 0], BinCounts(h));
                     Assert.Equal(1, h.OutOfBoundsCounts.Lower);
                 }
@@ -776,10 +819,11 @@ public partial class TestHistogram
             }
         }
 
-        // Edges [0, 10, +Infinity]: an observation at +Infinity equals lastBin.Upper; it is
-        // in the last bin iff ClosedRight there: leftClosed=false hard-codes it true, but
-        // leftClosed=true uses endsClosed — leftClosed=true, endsClosed=false leaves +Infinity
-        // in OOB.Upper (the value.Equals(lastBin.Upper) branch), NOT in a bin.
+        // Edges at 0, 10 and positive infinity: an observation of positive infinity equals
+        // the last bin's upper edge, so it belongs to the last bin exactly when that bin's
+        // right end is closed, which the open-left flag forces and the closed-left flag
+        // takes from the ends flag. With the closed left and open ends, positive infinity
+        // goes to the upper out-of-bounds counter instead of a bin.
         for (var leftClosed = 0; leftClosed < 2; leftClosed++)
         {
             for (var endsClosed = 0; endsClosed < 2; endsClosed++)
@@ -788,8 +832,9 @@ public partial class TestHistogram
                 h.Fit(double.PositiveInfinity);
                 if (leftClosed == 0 && endsClosed == 1)
                 {
-                    // leftClosed=true, endsClosed=false: last bin [10, +Infinity) open at
-                    // Upper -> +Inf observation in OOB.Upper
+                    // With the closed left and open ends, the last bin stops short of
+                    // positive infinity, so the observation there goes to the upper
+                    // out-of-bounds counter.
                     Assert.Equal([0, 0], BinCounts(h));
                     Assert.Equal(1, h.OutOfBoundsCounts.Upper);
                 }
@@ -805,17 +850,20 @@ public partial class TestHistogram
         }
     }
 
-    // Why this matters: the merge-doubling facts (AbstractRunningStatsTest.MergeSelf_NobsOverflowThrows)
-    // pin Nobs at 2^62 scale, but nothing pinned the PER-BIN counters there. Fit(value, count)
-    // accumulates a bin in O(1) (HistogramBin.Increment: Nobs += count, unchecked) exactly like
-    // Histogram's own checked Nobs += count, so one histogram can hold per-bin counts near 2^61
-    // while Nobs stays representable: the bin counters and their formatting must neither throw nor
-    // silently lose digits. Pinned here (edges [0,1), [1,2), [2,3]; fits 0.5 and 1.5 at 1L << 61
-    // each): Nobs == 2^62 == 4611686018427387904, the two hit bins read back exactly 2^61 ==
-    // 2305843009213693952, ToString succeeds, repeated calls give the SAME string, and the digit
-    // runs survive formatting. Separator-tolerance: the base ToString and HistogramBin.ToString
-    // both print {Nobs:N0}, which groups thousands with the locale separator, so the digit
-    // assertions below run over DigitsOf(text), the same text with every non-digit dropped.
+    // Why this matters: the self-merge facts in the abstract test pin the total count at
+    // the scale of 2 to the 62nd power, but nothing pinned the counters inside the bins
+    // at that scale. A weighted fit raises a bin's count in one step, an unchecked
+    // addition, while the histogram's own total is checked, so one histogram can hold
+    // per-bin counts near 2 to the 61st power while its total stays representable. The
+    // bin counters and their text form must then neither throw nor lose digits.
+    //
+    // Pinned here: edges 0, 1, 2 and 3, with 0.5 and 1.5 each fitted at a count of 2 to
+    // the 61st power. The total comes to 2 to the 62nd power, exactly 4,611,686,018,427,387,904;
+    // the two hit bins read back exactly 2 to the 61st power, 2,305,843,009,213,693,952
+    // apiece; the text form succeeds, gives the same string on repeated calls, and the
+    // long digit runs survive formatting. Because the text form groups thousands with the
+    // locale's separator, the digit checks below compare the text with every non-digit
+    // dropped, using the helper the test shares.
     [Fact]
     public void ToString_HugeBinCountsFormatsStably()
     {
@@ -823,11 +871,12 @@ public partial class TestHistogram
         hist.Fit(0.5, 1L << 61);
         hist.Fit(1.5, 1L << 61);
 
-        // Nobs is the checked sum of the two weighted fits: 2^61 + 2^61 == 2^62, no overflow
+        // The total is the checked sum of the two weighted fits: 2 to the 61st power twice
+        // makes 2 to the 62nd power, comfortably inside the whole-number range.
         Assert.Equal(1L << 62, hist.Nobs);
 
-        // formatting succeeds and is stable across repeated calls (no lazily recomputed/
-        // drifting rendering of the huge counters)
+        // The text form renders the huge counters successfully and gives the same text on
+        // every call, with no lazily recomputed rendering drifting between calls.
         var first = hist.ToString();
         var again = hist.ToString();
         Assert.Equal(first, again);
@@ -856,8 +905,9 @@ public partial class TestHistogram
 
         Assert.Equal(3, binIndex);
 
-        // conservation at the huge scale: Nobs == sum of bins + OOB, and the untouched
-        // out-of-bounds counters still read zero (nothing leaked out of the bins)
+        // The conservation identity holds at this scale too: the total equals the bins plus
+        // the two untouched out-of-bounds counters, which still read zero, so nothing
+        // leaked out of the bins.
         Assert.Equal(0, hist.OutOfBoundsCounts.Lower);
         Assert.Equal(0, hist.OutOfBoundsCounts.Upper);
         Assert.Equal(hist.Nobs, SumBins(hist));

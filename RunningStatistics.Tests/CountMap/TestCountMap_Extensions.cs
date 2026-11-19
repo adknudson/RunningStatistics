@@ -262,7 +262,8 @@ public partial class TestCountMap
 
         Assert.Equal(2, countMap.Median());
         
-        // even number of observations returns first observation where PDF >= 0.5
+        // with an even number of observations, the median is the first observation at which the
+        // cumulative proportion of the sample reaches one half
         countMap.Fit(4, 1);
         Assert.Equal(2, countMap.Median());
     }

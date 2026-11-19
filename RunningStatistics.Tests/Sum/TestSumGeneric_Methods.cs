@@ -219,15 +219,16 @@ public class TestSumGenericMethods_MyNum : TestSumGenericMethods<MyNum>
         Assert.Equal(6.67m, sum.Mean().Value, 2);
     }
 
-    // --- Pinned: the DELEGATE path (MyNum implements IMultiplyOperators<MyNum,long,MyNum>,
-    // so Fit(value,count) computes value * count in O(1) via the compiled multiply delegate).
-    // MyNum is decimal-backed so exact-integer products must come out exact.
+    // The multiply-capable path: MyNum knows how to multiply itself by a count, so the
+    // weighted fit asks the type for value times count in one step. MyNum stores its
+    // numbers as decimals, so a product of whole numbers must come out exact.
 
     [Fact] public void DelegatePath_ExactCountProduct()
     {
-        // Same count/value shape as the fallback pins: 1_000_003 is odd with mixed bits
-        // (19,18,17,16,14,9,6,1,0 set). The delegate's value * count must equal the exact
-        // mathematical product: 5 * 1_000_003 = 5_000_015, exact in the decimal backing.
+        // Deliberately the same count and value the fallback tests use, so the paths can
+        // be compared: 1,000,003 is odd with a mixed pattern of set bits, and one step of
+        // the type's own multiplication must equal the exact product 5,000,015, which the
+        // decimal storage holds exactly.
         const long count = 1_000_003L;
         var sum = new Sum<MyNum>();
         sum.Fit(From(5), count);
@@ -247,7 +248,8 @@ public class TestSumGenericMethods_MyNum : TestSumGenericMethods<MyNum>
 
     [Fact] public void DelegatePath_SingleCount()
     {
-        // count = 1 on the delegate path must equal one Fit(value): value * 1 is exact.
+        // A count of one on this path must match a single ordinary fit, since multiplying
+        // by one leaves the value unchanged.
         var sum = new Sum<MyNum>();
         sum.Fit(From(42), 1L);
         Assert.Equal(1L, sum.Nobs);
@@ -256,13 +258,15 @@ public class TestSumGenericMethods_MyNum : TestSumGenericMethods<MyNum>
 
     [Fact] public void CrossAgreement_DelegateEqualsFallback()
     {
-        // Pin: the delegate path (MyNum, via IMultiplyOperators<MyNum,long,MyNum>) and the
-        // O(log count) doubling fallback (MyBigAddOnlyNum long-backed / MyAddOnlyNum int-backed)
-        // must AGREE EXACTLY for identical exact-integer observations — every product below is
-        // exactly representable in all three backings. Compares the underlying .Value (decimal
-        // vs (decimal)long/(decimal)int) and Nobs. Counts cover a power of two (2^20 — the
-        // fallback adds a single doubled block), an odd mixed-bit count, and count = 1.
-        // (Not pinned bit-exact for floating-like types — associativity caveat.)
+        // The multiply-capable path (MyNum) and the doubling fallback used by the types
+        // that can only add (MyBigAddOnlyNum stored as long, MyAddOnlyNum stored as int)
+        // must agree exactly for the same exact whole-number observations, because every
+        // product used here is exactly representable in all three storages. The checks
+        // compare the stored sums and the observation counts. The counts are chosen to
+        // cover a power of two, where the fallback adds one doubled block, an odd count
+        // with a mixed set of bits, and a count of one. Products for floating-point-like
+        // types are deliberately not pinned bit for bit here, because the way additions
+        // group together would change their results.
         const long powerOfTwo = 1_048_576L;
         const long odd = 1_000_003L;
 
@@ -302,9 +306,10 @@ public class TestSumGenericMethods_MyAddOnlyNum : TestSumGenericMethods<MyAddOnl
 
     [Fact] public void FallbackFit_ModerateCount_ExactSum()
     {
-        // 1_000_003 is odd with an interesting bit pattern (bits 19,18,17,16,14,9,6,1,0 set):
-        // the O(log count) doubling fallback must produce exactly count * value for the
-        // integer-backed helper. int backing: 3 * 1_000_003 = 3_000_009 fits exactly.
+        // The count 1,000,003 is odd with a mixed pattern of set bits, so the doubling
+        // fallback walks a general route through the bits of the count and must still
+        // produce the exact product of count and value: three million nine, which sits
+        // comfortably inside the int-backed helper's storage.
         const long count = 1_000_003L;
         var sum = new Sum<MyAddOnlyNum>();
         sum.Fit(From(3), count);
@@ -315,30 +320,33 @@ public class TestSumGenericMethods_MyAddOnlyNum : TestSumGenericMethods<MyAddOnl
 
 public class TestSumGenericMethods_MyBigAddOnlyNum : TestSumGenericMethods<MyBigAddOnlyNum>
 {
-    // MyBigAddOnlyNum has no Mean() extension — only Sum/Value tests from the base apply.
-    // long-backed (unlike int-backed MyAddOnlyNum) so count * value is exactly representable
-    // even at count = long.MaxValue with value = 1.
+    // MyBigAddOnlyNum has no average extension, so only the sum and value tests from the
+    // base apply here. Unlike the int-stored MyAddOnlyNum, it stores whole numbers as
+    // longs, so a product like the largest long count times a value of one is still
+    // exactly representable.
     protected override MyBigAddOnlyNum From(int value) => new(value);
 
     [Fact] public void FallbackFit_HugeCountCompletes()
     {
-        // The fallback (no IMultiplyOperators delegate) must handle huge counts without
-        // iterating count times: this completes fast with the exact value count * value
-        // (v = 1, long-backed so 1 * long.MaxValue is exact) and Nobs == long.MaxValue.
+        // The fallback must handle huge counts without one iteration per observation:
+        // fitting one with the largest long count finishes quickly and lands on exactly
+        // that count both as the observation count and as the stored sum, which the long
+        // storage represents exactly.
         var sum = new Sum<MyBigAddOnlyNum>();
         sum.Fit(From(1), long.MaxValue);
         Assert.Equal(long.MaxValue, sum.Nobs);
         Assert.Equal(long.MaxValue, sum.Value.Value);
     }
 
-    // --- Pinned: the FALLBACK path (no IMultiplyOperators -> O(log count) doubling).
-    // (MyAddOnlyNum's exact moderate-count product is already pinned by
-    // FallbackFit_ModerateCount_ExactSum; the cross-agreement test adds it at -11 * odd.)
+    // The doubling fallback path: types that cannot multiply get their weighted fit by
+    // doubling partial products, so the work grows with the number of bits in the count.
+    // The moderate exact product for MyAddOnlyNum is already pinned by the fact above,
+    // and the cross-agreement test repeats it at negative eleven times the odd count.
 
     [Fact] public void FallbackPath_ExactCountProduct()
     {
-        // Same count/value as DelegatePath_ExactCountProduct: the doubling fallback must
-        // produce the exact product 5 * 1_000_003 = 5_000_015 in the long backing.
+        // Deliberately the same count and value as the multiply-capable test above, so
+        // the fallback must produce the same exact product, 5,000,015, in long storage.
         const long count = 1_000_003L;
         var sum = new Sum<MyBigAddOnlyNum>();
         sum.Fit(From(5), count);

@@ -171,7 +171,7 @@ internal static class RootFinding
     }
 
     /// <summary>Helper method useful for preventing rounding errors.</summary>
-    /// <returns>a*sign(b)</returns>
+    /// <returns><paramref name="a"/> taken with the sign of <paramref name="b"/>.</returns>
     private static double Sign(double a, double b)
     {
         return b >= 0 ? a >= 0 ? a : -a : a >= 0 ? -a : a;

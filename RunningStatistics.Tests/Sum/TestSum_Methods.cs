@@ -105,10 +105,11 @@ public partial class TestSum
         Assert.Equal(6.67, sum.Mean(), 2);
     }
 
-    // PIN: the non-finite contract of double Sum, documented exactly as the code
-    // behaves today: Fit's first guard is Require.Finite (ArgumentException), the count guard
-    // Require.NonNegative (ArgumentOutOfRangeException) comes second, and both the scalar and
-    // batch paths validate before touching state. No library change.
+    // The promise about non-finite values, pinned exactly as the code behaves today
+    // without changing the library: fitting first checks that the value is finite
+    // (throwing an ArgumentException), and only then that the count is not negative
+    // (throwing an ArgumentOutOfRangeException). Both the single-value and the batch
+    // paths check their input before touching any state.
 
     [Fact]
     public void Fit_RejectsInfinityAndNaN()
@@ -125,8 +126,9 @@ public partial class TestSum
     [Fact]
     public void Fit_GuardOrder_FiniteBeforeZeroCount()
     {
-        // Require.Finite(value) runs BEFORE anything else: even count == 0 does not let a
-        // non-finite value through (double Fit has no zero-count short-circuit ahead of the guards).
+        // The finiteness of the value is checked before anything else, so even a zero
+        // count does not let a non-finite value through: unlike the other statistics,
+        // the double fit here has no zero-count shortcut placed before the guards.
         var sum = new RunningStatistics.Sum();
         Assert.Throws<ArgumentException>(() => sum.Fit(double.PositiveInfinity, 0));
         Assert.Throws<ArgumentException>(() => sum.Fit(double.NegativeInfinity, 0));
@@ -144,8 +146,10 @@ public partial class TestSum
     [Fact]
     public void Fit_GuardOrder_NaNBeatsNegativeCount()
     {
-        // Fit(NaN, -1): the Finite guard wins -> ArgumentException, NOT ArgumentOutOfRangeException;
-        // a negative count gives ArgumentOutOfRangeException only for a finite value.
+        // A bad value is rejected before the bad count is even considered, so fitting
+        // NaN with a negative count reports the bad-value ArgumentException rather than
+        // the bad-count ArgumentOutOfRangeException. Only a finite value with a
+        // negative count gets the count error.
         var sum = new RunningStatistics.Sum();
         Assert.Throws<ArgumentException>(() => sum.Fit(double.NaN, -1));
         Assert.Throws<ArgumentOutOfRangeException>(() => sum.Fit(1.0, -1));
@@ -156,9 +160,10 @@ public partial class TestSum
     [Fact]
     public void BatchFit_NonFiniteElementThrowsStateUntouched()
     {
-        // batch Fit(IEnumerable<double>) copies (values.ToList()) and validates every element
-        // (xs.ForEach(Require.Finite)) BEFORE any accumulation: the state before the rejected
-        // call is exactly the state after (Nobs/Value pinned before == after).
+        // Fitting a collection of doubles copies it and validates every element before
+        // adding anything, so a call that is rejected leaves the statistic exactly as it
+        // was: the counts and the sum read the same values the test saved before the
+        // call.
         var fresh = new RunningStatistics.Sum();
         Assert.Throws<ArgumentException>(() => fresh.Fit(new double[] { 1.0, double.PositiveInfinity, 2.0 }));
         Assert.Equal(0, fresh.Nobs);
@@ -169,17 +174,19 @@ public partial class TestSum
         var nobsBefore = fitted.Nobs;
         var valueBefore = fitted.Value;
         Assert.Throws<ArgumentException>(() => fitted.Fit(new double[] { 1.0, double.NaN, 2.0 }));
-        Assert.Equal(nobsBefore, fitted.Nobs);  // before == after
+        Assert.Equal(nobsBefore, fitted.Nobs);  // the saved values still match
         Assert.Equal(valueBefore, fitted.Value);
     }
 
     [Fact]
     public void Merge_HugeFiniteValuesSaturateValueToInfinity()
     {
-        // OBSERVATION, documented and NOT fixed: the Value field is a double, so accumulated
-        // finite observations saturate to ±Inf per IEEE (only the *value* goes non-finite; Nobs
-        // stays finite and exact). Merge itself has no guards; Fit rejects non-finite
-        // observations but cannot stop the accumulated Value from overflowing.
+        // An observation about the current behavior, deliberately documented and not
+        // fixed: the running total is a double, so adding huge finite values saturates
+        // it to an infinity the way IEEE arithmetic does. Only the total goes
+        // non-finite; the observation count stays finite and exact. Merge has no
+        // guards of its own, and although Fit rejects non-finite observations, nothing
+        // prevents the accumulated total itself from overflowing.
         var pos1 = new RunningStatistics.Sum();
         var pos2 = new RunningStatistics.Sum();
         pos1.Fit(1.7e308);
@@ -199,7 +206,8 @@ public partial class TestSum
         Assert.Equal(2, neg1.Nobs);
         Assert.Equal(double.NegativeInfinity, neg1.Value);
 
-        // same IEEE saturation on the Fit path with count > 1: value * count overflows to ±Inf
+        // The same saturation happens on a weighted fit of a count above one: value
+        // times count passes beyond the largest double and lands on an infinity.
         var fitSaturated = new RunningStatistics.Sum();
         fitSaturated.Fit(1.7e308, 2);
         Assert.Equal(2, fitSaturated.Nobs);

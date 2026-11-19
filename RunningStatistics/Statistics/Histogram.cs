@@ -216,13 +216,13 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     public override Histogram CloneEmpty() => new(_edges, LeftClosed, EndsClosed);
     
     /// <remarks>
-    /// Two branches. If BinsAreMatching holds (same bin count and, per bin, equal bounds AND
-    /// closure flags — HistogramBin.Equals ignores counts), the bin counts are summed directly:
-    /// exact. Otherwise (different edges, or the same edges with different leftClosed/endsClosed
-    /// closure flags) the method does not throw: each source bin's count is refit at that bin's
-    /// Midpoint, an approximation of where the observations actually were; a midpoint falling
-    /// outside the receiver is routed to its OutOfBounds counters by UncheckedFit. Out-of-bounds
-    /// counters of the source are always merged first, in both branches.
+    /// Merging works in two branches. When the two histograms have the same bins, meaning the
+    /// same number of bins with equal bounds and equal closure flags, the observation counts of
+    /// matching bins are added directly and the result is exact. When the bins differ, either
+    /// in their edges or in their closure flags, the merge does not throw. Instead it refits
+    /// each source bin's count at that bin's midpoint, an approximation of where the
+    /// observations actually were, and a midpoint outside the receiver falls into its
+    /// out-of-bounds counters. The source's out-of-bounds counters are merged in both branches.
     /// </remarks>
     public override void Merge(Histogram histogram)
     {

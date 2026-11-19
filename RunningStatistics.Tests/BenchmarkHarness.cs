@@ -58,8 +58,8 @@ internal static class BenchmarkHarness
     }
 
     /// <summary>
-    /// Stream: <c>Fit(value)</c> for every element of <paramref name="data"/>, fresh stat per pass.
-    /// Returns ns/obs.
+    /// Fits every element of <paramref name="data"/> once each, taking a fresh statistic for every
+    /// timed pass. The result is nanoseconds per observation.
     /// </summary>
     public static double StreamFit(Func<IRunningStatistic<double>> factory, List<double> data, int repeats)
     {
@@ -83,7 +83,8 @@ internal static class BenchmarkHarness
     }
 
     /// <summary>
-    /// Weighted: <c>Fit(value, count)</c> per element, fresh stat per pass. Returns ns/obs.
+    /// Fits every element with one weighted call each, taking a fresh statistic for every timed
+    /// pass. The result is nanoseconds per observation.
     /// </summary>
     public static double WeightedFit(Func<IRunningStatistic<double>> factory, List<double> data, long count, int repeats)
     {
@@ -107,9 +108,10 @@ internal static class BenchmarkHarness
     }
 
     /// <summary>
-    /// Merge-heavy: <paramref name="chunks"/> statistics of equal size are fitted and merged into a
-    /// fresh stat. Costs of <c>Merge</c> (and, via the base class default, <c>Clone</c>) are what user
-    /// code multiplies. Returns ns/obs.
+    /// Builds <paramref name="chunks"/> statistics of equal size, fits them, then merges them all
+    /// into a fresh statistic. Merging, and the cloning the base class default relies on, are costs
+    /// user code pays for, so they belong in the measurement. The result is nanoseconds per
+    /// observation.
     /// </summary>
     public static double MergeChunks(Func<IRunningStatistic<double>> factory, List<double> data, int chunks, int repeats)
     {
@@ -140,8 +142,8 @@ internal static class BenchmarkHarness
     }
 
     /// <summary>
-    /// Clone-heavy: <c>Fit(value)</c> then <c>Clone()</c> per element (idiom: snapshot after each
-    /// observation). Returns ns/obs.
+    /// Fits every element and takes a snapshot copy of the statistic after each observation, the
+    /// accumulate-into-a-clone idiom. The result is nanoseconds per observation.
     /// </summary>
     public static double ClonePerStep(Func<IRunningStatistic<double>> factory, List<double> data, int repeats)
     {

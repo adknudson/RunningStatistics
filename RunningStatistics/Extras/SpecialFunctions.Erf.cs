@@ -47,11 +47,7 @@ namespace RunningStatistics;
 /// </summary>
 internal static partial class SpecialFunctions
 {
-    /// <summary>
-    /// **************************************
-    /// COEFFICIENTS FOR METHOD ErfImp       *
-    /// **************************************
-    /// </summary>
+    // Coefficients used by the ErfImp method.
     /// <summary>
     /// Polynomial coefficients for a numerator of ErfImp
     /// calculation for Erf(x) in the interval [1e-10, 0.5].
@@ -445,11 +441,7 @@ internal static partial class SpecialFunctions
         0.193847039275845656900547e-5
     ];
 
-    /// <summary>
-    /// **************************************
-    /// COEFFICIENTS FOR METHOD ErfInvImp    *
-    /// **************************************
-    /// </summary>
+    // Coefficients used by the ErfInvImp method.
     /// <summary>
     /// Polynomial coefficients for a numerator of ErfInvImp
     /// calculation for Erf^-1(z) in the interval [0, 0.5].
@@ -910,16 +902,14 @@ internal static partial class SpecialFunctions
 
         if (p <= 0.5)
         {
-            // Evaluate inverse erf using the rational approximation:
+            // Evaluate the inverse error function with the rational approximation
             //
-            // x = p(p+10)(Y+R(p))
+            //     x = p(p+10)(Y + R(p))
             //
-            // Where Y is a constant, and R(p) is optimized for a low
-            // absolute error compared to |Y|.
-            //
-            // double: Max error found: 2.001849e-18
-            // long double: Max error found: 1.017064e-20
-            // Maximum Deviation Found (actual error term at infinite precision) 8.030e-21
+            // where Y is a constant and R(p) is a correction tuned to keep a small
+            // absolute error next to Y. Measured accuracy: a maximum error of
+            // 2.001849e-18 for double, 1.017064e-20 for the extended long double,
+            // and an actual error term at infinite precision of at most 8.030e-21.
             const float y = 0.0891314744949340820313f;
             var g = p * (p + 10);
             var r = Polynomial.Evaluate(p, ErvInvImpAn) / Polynomial.Evaluate(p, ErvInvImpAd);
@@ -927,16 +917,14 @@ internal static partial class SpecialFunctions
         }
         else if (q >= 0.25)
         {
-            // Rational approximation for 0.5 > q >= 0.25
+            // Rational approximation for the band where q is at least 0.25 but below 0.5:
             //
-            // x = sqrt(-2*log(q)) / (Y + R(q))
+            //     x = sqrt(-2 log q) / (Y + R(q))
             //
-            // Where Y is a constant, and R(q) is optimized for a low
-            // absolute error compared to Y.
-            //
-            // double : Max error found: 7.403372e-17
-            // long double : Max error found: 6.084616e-20
-            // Maximum Deviation Found (error term) 4.811e-20
+            // where Y is a constant and R(q) is a correction tuned to keep a small
+            // absolute error next to Y. Measured accuracy: a maximum error of
+            // 7.403372e-17 for double, 6.084616e-20 for the extended long double,
+            // and an error term of 4.811e-20 at infinite precision.
             const float y = 2.249481201171875f;
             var g = Math.Sqrt(-2 * Math.Log(q));
             var xs = q - 0.25;
@@ -945,23 +933,18 @@ internal static partial class SpecialFunctions
         }
         else
         {
-            // For q < 0.25 we have a series of rational approximations all
-            // of the general form:
+            // Below q of 0.25 there is a series of rational approximations, all of
+            // the same general shape. Writing x for the square root of minus the
+            // natural log of q, the result has the form
             //
-            // let: x = sqrt(-log(q))
+            //     x (Y + R(x - B))
             //
-            // Then the result is given by:
-            //
-            // x(Y+R(x-B))
-            //
-            // where Y is a constant, B is the lowest value of x for which
-            // the approximation is valid, and R(x-B) is optimized for a low
-            // absolute error compared to Y.
-            //
-            // Note that almost all code will really go through the first
-            // or maybe second approximation.  After than we're dealing with very
-            // small input values indeed: 80 and 128 bit long double's go all the
-            // way down to ~ 1e-5000 so the "tail" is rather long...
+            // where Y is a constant, B is the smallest value of x for which the
+            // approximation is valid, and R is a correction tuned to keep a small
+            // absolute error next to Y. Almost every input goes through the first
+            // approximation, sometimes the second; only after those are the inputs
+            // extremely small, and extended-precision formats reach values down to
+            // about 1e-5000, so that tail is long.
             var x = Math.Sqrt(-Math.Log(q));
             
             if (x < 3)

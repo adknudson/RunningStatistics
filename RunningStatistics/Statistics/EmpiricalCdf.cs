@@ -69,21 +69,20 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     }
 
     /// <summary>
-    /// Fits <paramref name="value"/> <paramref name="count"/> times, replaying it observation by
-    /// observation.
+    /// Fits the value a given number of times, replaying it one observation at a time.
     ///
-    /// <b>Cost: O(<paramref name="count"/>) — per observation, not O(1) in the count.</b> Unlike the
-    /// other statistics' weighted overloads (e.g. <see cref="Extrema"/> or <see cref="Moments"/>,
-    /// which fold a count into their state in closed form), this one replays the observation one
-    /// <see cref="Fit(double)"/>-sized step at a time, so a large <paramref name="count"/> costs
-    /// proportionally more. It cannot be batched: when a buffer flushes, the blend weight applied
-    /// to each bin is <c>alpha = NumBins / Nobs</c>, which depends on the running observation
-    /// count — and that count advances with every replay inside the batch, so different replays
-    /// of the same call get different alphas.
+    /// <b>The cost of this overload grows with the count: it pays one fitting step per
+    /// observation, not one step per call.</b> That sets it apart from the weighted overloads of
+    /// other statistics, such as the extrema or the moments, which fold a count straight into
+    /// their state in closed form. This one cannot: when the internal buffer flushes, each bin
+    /// is blended with a weight equal to the batch size divided by the running observation
+    /// count, and that count advances with every replayed observation inside the batch. So
+    /// different replays of the same call would blend with different weights, and no shortcut
+    /// can serve a whole batch without changing what a flush means.
     ///
-    /// Because of that, the weighted fit is equivalent to a loop of <paramref name="count"/>
-    /// identical single-observation fits, bitwise: the replay performs the same arithmetic in the
-    /// same order, one observation at a time.
+    /// Because of that, a weighted fit leaves exactly the same state, bit for bit, as a loop of
+    /// the same number of single-observation fits in the same order: the replay performs the
+    /// same arithmetic at the same points, one observation at a time.
     /// </summary>
     /// <param name="value">The value to fit. Must be finite.</param>
     /// <param name="count">The number of times to fit <paramref name="value"/>. Must be non-negative.</param>
@@ -162,10 +161,10 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         // Counts, min and max for all of the source's observations, including its unflushed tail.
         _extrema.Merge(empiricalCdf._extrema);
 
-        // Replay the source's not-yet-flushed buffer values through this object's buffer and
-        // quantile-value update (the buffer half of UncheckedFit): their counts and min/max are
-        // already accounted for by the extrema merge above, so they must not be fitted to the
-        // extrema again. They belong at the tail positions of the merged observation stream.
+        // Replay the source's still-unflushed buffer values through this object's own buffer
+        // and quantile-value update. Their counts and extremes were already merged above, so
+        // they must not be re-fitted to the extremes here. Placing them in order puts them at
+        // the tail positions of the merged observation stream.
         for (var r = 0; r < otherPartial; r++)
         {
             var i = (int) ((Nobs - otherPartial + r) % NumBins);
@@ -208,24 +207,24 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
             return Max;
         }
 
-        // [min, V[0], V[1], ..., V[NumBins - 1], max]
+        // The interpolation window: the minimum, the bins in order, then the maximum.
         var i = (NumBins - 1 + 2) * p;
         var r = i % 1; // fractional part of i
         
-        // if i is less than 1, return the interpolation between min and V[0]
+        // A position below the first bin interpolates between the minimum and the first bin.
         if (i < 1)
         {
             return Utils.Smooth(Min, Values[0], r);
         }
         
-        // if i is greater than NumBins, return the interpolation between V[^1] and max
+        // A position past the last bin interpolates between the last bin and the maximum.
         if (i >= NumBins)
         {
             // ReSharper disable once UseIndexFromEndExpression
             return Utils.Smooth(Values[Values.Length - 1], Max, r);
         }
         
-        // otherwise, return the interpolation between V[floor(i)] and V[ceil(i)]
+        // Otherwise the position falls between two neighboring bins; interpolate between them.
         var fi = (int)Math.Floor(i) - 1;
         var ci = (int)Math.Ceiling(i) - 1;
         return Utils.Smooth(Values[fi], Values[ci], r);
@@ -263,15 +262,15 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         _values[_values.Length - 1] = Max;
         
         // find the index of the first value greater than x
-        // ___v[i]___x___v[i+1]___
+        // The query sits between that value and the window value just before it.
         var i = Array.FindIndex(_values, v => v > x);
         
-        // x is now between v[i-1] and v[i]
+        // The query now lies between the window value just below it and the one above it.
         
-        // get the fractional amount between v[i-1] and v[i]
+        // How far the query sits through that span, as a fraction of the span's width.
         var r = (x - _values[i - 1]) / (_values[i] - _values[i - 1]);
         
-        // return the interpolation between v[i-1] and v[i]
+        // Interpolate between the two window positions and scale by the window length.
         return Utils.Smooth(i - 1, i, r) / _values.Length;
     }
 
