@@ -805,5 +805,74 @@ public partial class TestHistogram
         }
     }
 
+    // Why this matters: the merge-doubling facts (AbstractRunningStatsTest.MergeSelf_NobsOverflowThrows)
+    // pin Nobs at 2^62 scale, but nothing pinned the PER-BIN counters there. Fit(value, count)
+    // accumulates a bin in O(1) (HistogramBin.Increment: Nobs += count, unchecked) exactly like
+    // Histogram's own checked Nobs += count, so one histogram can hold per-bin counts near 2^61
+    // while Nobs stays representable: the bin counters and their formatting must neither throw nor
+    // silently lose digits. Pinned here (edges [0,1), [1,2), [2,3]; fits 0.5 and 1.5 at 1L << 61
+    // each): Nobs == 2^62 == 4611686018427387904, the two hit bins read back exactly 2^61 ==
+    // 2305843009213693952, ToString succeeds, repeated calls give the SAME string, and the digit
+    // runs survive formatting. Separator-tolerance: the base ToString and HistogramBin.ToString
+    // both print {Nobs:N0}, which groups thousands with the locale separator, so the digit
+    // assertions below run over DigitsOf(text), the same text with every non-digit dropped.
+    [Fact]
+    public void ToString_HugeBinCountsFormatsStably()
+    {
+        RunningStatistics.Histogram hist = new([0.0, 1.0, 2.0, 3.0]);
+        hist.Fit(0.5, 1L << 61);
+        hist.Fit(1.5, 1L << 61);
+
+        // Nobs is the checked sum of the two weighted fits: 2^61 + 2^61 == 2^62, no overflow
+        Assert.Equal(1L << 62, hist.Nobs);
+
+        // formatting succeeds and is stable across repeated calls (no lazily recomputed/
+        // drifting rendering of the huge counters)
+        var first = hist.ToString();
+        var again = hist.ToString();
+        Assert.Equal(first, again);
+
+        // the whole Nobs digit run appears in the rendered string
+        Assert.True(DigitsOf(first).Contains("4611686018427387904"), first);
+
+        // the bins themselves: the two hit bins read the huge counts exactly, the third stays
+        // zero, and each bin's own ToString carries the huge count's digits
+        var binIndex = 0;
+        foreach (var bin in hist)
+        {
+            var binText = bin.ToString();
+            if (binIndex < 2)
+            {
+                Assert.Equal(1L << 61, bin.Nobs);
+                Assert.True(DigitsOf(binText).Contains("2305843009213693952"), binText);
+            }
+            else
+            {
+                Assert.Equal(0L, bin.Nobs);
+            }
+
+            binIndex++;
+        }
+
+        Assert.Equal(3, binIndex);
+
+        // conservation at the huge scale: Nobs == sum of bins + OOB, and the untouched
+        // out-of-bounds counters still read zero (nothing leaked out of the bins)
+        Assert.Equal(0, hist.OutOfBoundsCounts.Lower);
+        Assert.Equal(0, hist.OutOfBoundsCounts.Upper);
+        Assert.Equal(hist.Nobs, SumBins(hist));
+    }
+
+    private static string DigitsOf(string text)
+    {
+        var pieces = new List<string>();
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (char.IsDigit(text[i])) pieces.Add(text.Substring(i, 1));
+        }
+
+        return string.Join("", pieces);
+    }
+
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

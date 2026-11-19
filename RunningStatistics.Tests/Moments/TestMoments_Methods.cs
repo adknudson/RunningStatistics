@@ -442,5 +442,100 @@ public partial class TestMoments
         Assert.True(PropertyHelpers.WithinAbsolute(left.ExcessKurtosis, right.ExcessKurtosis, absTol), PropertyHelpers.Describe($"{tag} ExcessKurtosis", left.ExcessKurtosis, right.ExcessKurtosis));
     }
 
+    // Getter-parity gate at merge-doubling scale (AGENTS.md's readout-getter budget:
+    // candidate/baseline ns-per-observation <= 1.05, i.e. the claim is "not slower" - a getter is
+    // one interface dispatch plus a few flops, so ~1% measurement noise straddles 1.00 and the
+    // band is NOT to be widened. A red run here means the readouts got measurably slower once
+    // Nobs reaches 2^62 (an O(Nobs)/formatting/allocation path crept into a getter), and the
+    // algorithm must be re-gated, not the budget relaxed.)
+    // Construction mirrors AbstractRunningStatsTest.MergeSelf_NobsOverflowThrows - self-merge
+    // doubles Nobs in lockstep - but from TWO distinct observations doubled 61 times instead of
+    // Nobs 1 doubled 62 times, and stops at the same 2^62: from Nobs 1 the state has zero spread,
+    // which parks Moments.Variance/StandardDeviation at 0 and Moments.Skewness/Kurtosis in their
+    // m2 <= 0 NaN guard, i.e. the sweep would time early returns instead of the readouts. From
+    // two distinct fits every readout is finite at Nobs = 2^62 (measured: Mean ~0.5, Variance
+    // ~1e-21, StandardDeviation ~1e-11, Skewness ~0, Kurtosis ~2.3e18) with m2 > 0, so the big
+    // sweep and the small sweep take the identical branches of every getter. Moments exposes
+    // Mean/Variance/StandardDeviation/Skewness/Kurtosis/ExcessKurtosis (no PopulationVariance
+    // getter), so the sweep reads the first five.
+    [Fact]
+    public void Bench_GetterParityAtMergeDoublingNobs_Moments()
+    {
+        // 5M sweeps x 4 measured repeats (the harness's default shape): the sweep body is shared
+        // by both sides of the comparison (see SweepMoments below), so the ratio is a like-for-
+        // like comparison of identical machine code and AGENTS.md's parity band [0.5, 1.05] holds
+        // at the default workload size.
+        const int obs = 5_000_000;
+        const int repeats = 4;
+
+        // fixed-seed data: deterministic, and both stats end in a finite fitted state
+        var values = PropertyHelpers.UniformUnit(6, 20251118L);
+
+        var big = new RunningStatistics.Moments();
+        big.Fit(values[0]);
+        big.Fit(values[1]);
+        for (var i = 0; i < 61; i++) big.Merge(big);
+        Assert.Equal(1L << 62, big.Nobs);
+
+        var small = new RunningStatistics.Moments();
+        foreach (var value in values) small.Fit(value);
+        Assert.Equal(6, small.Nobs);
+
+        // preconditions: finite readouts on both sides, so neither sweep takes a NaN guard and
+        // no NaN can poison the checksum BenchmarkHarness folds
+        Assert.False(
+            double.IsNaN(big.Mean) || double.IsNaN(big.Variance) || double.IsNaN(big.StandardDeviation) ||
+            double.IsNaN(big.Skewness) || double.IsNaN(big.Kurtosis));
+        Assert.False(
+            double.IsNaN(small.Mean) || double.IsNaN(small.Variance) || double.IsNaN(small.StandardDeviation) ||
+            double.IsNaN(small.Skewness) || double.IsNaN(small.Kurtosis));
+
+        var bigNsPerObs = BenchmarkHarness.Measure(
+            "Moments readout sweep at Nobs=2^62, ns per sweep",
+            obs,
+            repeats,
+            () => SweepMoments(big, obs));
+
+        var smallNsPerObs = BenchmarkHarness.Measure(
+            "Moments readout sweep at Nobs=6, ns per sweep",
+            obs,
+            repeats,
+            () => SweepMoments(small, obs));
+
+        var ratio = BenchmarkHarness.Compare(
+            "Moments getter readout at Nobs=2^62 vs at Nobs=6, ns per sweep",
+            smallNsPerObs,
+            bigNsPerObs);
+
+        Assert.True(ratio >= 0.5 && ratio <= 1.05,
+                    $"2^62-scale readout sweep costs {ratio:F3} of the same sweep at Nobs=6 " +
+                    $"({bigNsPerObs:F4} vs {smallNsPerObs:F4} ns per sweep): the readout getters " +
+                    $"got slower once Nobs reaches 2^62. A getter is one interface dispatch plus a " +
+                    $"few flops and the claim is parity (not speed), so re-gate the algorithm - " +
+                    $"do not widen the band.");
+    }
+
+    // One compiled sweep body serves both sides of the comparison: the stat is a parameter, so
+    // the 2^62 and the small-Nobs workloads run literally the same machine code (same JIT tier,
+    // same code layout), which is what makes the +-1% parity band meaningful - two separately
+    // compiled lambda bodies drifted 7-8% on code layout alone.
+    private static double SweepMoments(RunningStatistics.Moments stat, int obs)
+    {
+        var sum = 0.0;
+        for (var i = 0; i < obs; i++)
+        {
+            sum += stat.Mean;
+            sum += stat.Variance;
+            sum += stat.StandardDeviation;
+            sum += stat.Skewness;
+            sum += stat.Kurtosis;
+        }
+
+        // Kurtosis at 2^62-scale Nobs is ~2.3e18, so a raw sum would leave the long range
+        // BenchmarkHarness folds the checksum into; the modulo bounds it while staying
+        // dependent on every getter read (one fmod per call, outside the timed sweep).
+        return sum % 1_000_000.0;
+    }
+
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

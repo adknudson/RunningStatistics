@@ -322,4 +322,87 @@ public partial class TestVariance()
         Assert.True(PropertyHelpers.Within(left.Value, right.Value, relTol), PropertyHelpers.Describe($"{tag} Value", left.Value, right.Value));
         Assert.True(PropertyHelpers.Within(left.StandardDeviation, right.StandardDeviation, relTol), PropertyHelpers.Describe($"{tag} StandardDeviation", left.StandardDeviation, right.StandardDeviation));
     }
+
+    // Getter-parity gate at merge-doubling scale (AGENTS.md's readout-getter budget:
+    // candidate/baseline ns-per-observation <= 1.05, i.e. the claim is "not slower" - a getter is
+    // one interface dispatch plus a few flops, so ~1% measurement noise straddles 1.00 and the
+    // band is NOT to be widened. A red run means the readouts got measurably slower once Nobs
+    // reaches 2^62 (an O(Nobs)/formatting/allocation path crept into a getter): re-gate the
+    // algorithm, do not relax the budget.)
+    // Construction mirrors AbstractRunningStatsTest.MergeSelf_NobsOverflowThrows (self-merge
+    // doubles Nobs in lockstep), but from TWO distinct observations doubled 61 times so the
+    // state has spread: from Nobs 1 the doubled state is constant data, Value and StandardDeviation
+    // land at 0 and StandardDeviation reads sqrt of a zero variance, which is degenerate rather
+    // than a finite readout. From two distinct fits, Nobs reaches the same 2^62 and both readouts
+    // stay finite and positive there (measured: Value ~1e-2, StandardDeviation ~1e-1), the same
+    // branches (Nobs >= 2, Bessel factor n/(n-1) ~ 1) as at small Nobs. Variance exposes Value
+    // (unbiased sample variance) and StandardDeviation only - its mean is private - so the sweep
+    // reads those two.
+    [Fact]
+    public void Bench_GetterParityAtMergeDoublingNobs_Variance()
+    {
+        // 5M sweeps x 4 measured repeats (the harness's default shape): the sweep body is shared
+        // by both sides of the comparison (see SweepVariance below), so the ratio compares
+        // identical machine code and AGENTS.md's parity band [0.5, 1.05] holds at the default
+        // workload size rather than being bought by a bigger workload.
+        const int obs = 5_000_000;
+        const int repeats = 4;
+
+        var values = PropertyHelpers.UniformUnit(6, 20251118L);
+
+        var big = new RunningStatistics.Variance();
+        big.Fit(values[0]);
+        big.Fit(values[1]);
+        for (var i = 0; i < 61; i++) big.Merge(big);
+        Assert.Equal(1L << 62, big.Nobs);
+
+        var small = new RunningStatistics.Variance();
+        foreach (var value in values) small.Fit(value);
+        Assert.Equal(6, small.Nobs);
+
+        // preconditions: finite readouts on both sides, and the checksum below stays well inside
+        // long range when BenchmarkHarness folds it in
+        Assert.False(double.IsNaN(big.Value) || double.IsNaN(big.StandardDeviation));
+        Assert.False(double.IsNaN(small.Value) || double.IsNaN(small.StandardDeviation));
+
+        var bigNsPerObs = BenchmarkHarness.Measure(
+            "Variance readout sweep at Nobs=2^62, ns per sweep",
+            obs,
+            repeats,
+            () => SweepVariance(big, obs));
+
+        var smallNsPerObs = BenchmarkHarness.Measure(
+            "Variance readout sweep at Nobs=6, ns per sweep",
+            obs,
+            repeats,
+            () => SweepVariance(small, obs));
+
+        var ratio = BenchmarkHarness.Compare(
+            "Variance getter readout at Nobs=2^62 vs at Nobs=6, ns per sweep",
+            smallNsPerObs,
+            bigNsPerObs);
+
+        Assert.True(ratio >= 0.5 && ratio <= 1.05,
+                    $"2^62-scale readout sweep costs {ratio:F3} of the same sweep at Nobs=6 " +
+                    $"({bigNsPerObs:F4} vs {smallNsPerObs:F4} ns per sweep): the readout getters " +
+                    $"got slower once Nobs reaches 2^62. A getter is one interface dispatch plus a " +
+                    $"few flops and the claim is parity (not speed), so re-gate the algorithm - " +
+                    $"do not widen the band.");
+    }
+
+    // One compiled sweep body serves both sides of the comparison: the stat is a parameter, so the
+    // 2^62 and the small-Nobs workloads run literally the same machine code (same JIT tier, same
+    // code layout). Two separately compiled lambda bodies drifted 7-8% on code layout alone, which
+    // is noise on a parity claim, not a regression.
+    private static double SweepVariance(RunningStatistics.Variance stat, int obs)
+    {
+        var sum = 0.0;
+        for (var i = 0; i < obs; i++)
+        {
+            sum += stat.Value;
+            sum += stat.StandardDeviation;
+        }
+
+        return sum % 1_000_000.0;
+    }
 }
