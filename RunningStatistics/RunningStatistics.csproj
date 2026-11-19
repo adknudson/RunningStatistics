@@ -8,7 +8,7 @@
 	
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageVersion>3.3.0</PackageVersion>
+		<PackageVersion>3.3.1</PackageVersion>
 		<Authors>Alex Knudson</Authors>
 		<Title>Running Statistics</Title>
 		<Description>A library of single pass algorithms for statistical measures.</Description>
@@ -20,6 +20,8 @@
 		<PackageTags>statistics, online algorithm, streaming, single pass</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageReleaseNotes>
+			Changes since 3.3.0:
+			- `EmpiricalCdf`: `Fit(value, count)` batches a constant run instead of replaying it one observation at a time. The cost is now O(count / NumBins) flush blends plus O(NumBins) boundary work, down from O(count). The resulting state stays bitwise identical to a loop of single fits, so no released result changes (issue #8)
 			Changes since 3.2.0:
 			- `CountMap`: `CloneEmpty` now propagates the map's comparer (previously the clone dropped a custom comparer and fell back to the default one, so `MinKey`/`MaxKey` and merging on a cloned map used wrong key order — issue #6)
 			- `Beta`: `Median` existence relaxed from `Successes` > 1 and `Failures` > 1 to at least one success and at least one failure (`Quantile(0.5)` now defined for e.g. 1/1 fits instead of returning NaN); `Mode` still requires > 1 of each
