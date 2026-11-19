@@ -215,6 +215,15 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
 
     public override Histogram CloneEmpty() => new(_edges, LeftClosed, EndsClosed);
     
+    /// <remarks>
+    /// Two branches. If BinsAreMatching holds (same bin count and, per bin, equal bounds AND
+    /// closure flags — HistogramBin.Equals ignores counts), the bin counts are summed directly:
+    /// exact. Otherwise (different edges, or the same edges with different leftClosed/endsClosed
+    /// closure flags) the method does not throw: each source bin's count is refit at that bin's
+    /// Midpoint, an approximation of where the observations actually were; a midpoint falling
+    /// outside the receiver is routed to its OutOfBounds counters by UncheckedFit. Out-of-bounds
+    /// counters of the source are always merged first, in both branches.
+    /// </remarks>
     public override void Merge(Histogram histogram)
     {
         _oob.Merge(histogram._oob);
