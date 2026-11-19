@@ -6,7 +6,7 @@ namespace RunningStatistics;
 
 /// <summary>
 /// Represents a running statistic for a normal distribution. I.e., it keeps track of the mean and
-/// variance of a set of values. The variance is returned as the unbiased sample variance.
+/// variance of a set of values. The class returns the variance as the unbiased sample variance.
 /// </summary>
 public sealed class Normal : RunningStatisticBase<double, Normal>
 {

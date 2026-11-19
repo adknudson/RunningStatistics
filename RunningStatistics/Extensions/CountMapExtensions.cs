@@ -348,11 +348,11 @@ public static partial class CountMapExtensions
     /// <summary>
     /// Compute the mode of a CountMap.
     /// </summary>
-    /// <param name="countMap"></param>
-    /// <typeparam name="TObs"></typeparam>
-    /// <returns></returns>
-    /// <exception cref="Exception"></exception>
-    /// <exception cref="NullReferenceException"></exception>
+    /// <param name="countMap">The count map to compute the mode for.</param>
+    /// <typeparam name="TObs">The type of the observations in the count map.</typeparam>
+    /// <returns>The observation with the highest count.</returns>
+    /// <exception cref="Exception">Thrown when the count map has no observations. The mode does not exist.</exception>
+    /// <exception cref="NullReferenceException">Thrown when the caller passes a null count map.</exception>
     public static TObs Mode<TObs>(this CountMap<TObs> countMap) where TObs : notnull
     {
         if (countMap.Nobs == 0)
@@ -375,13 +375,13 @@ public static partial class CountMapExtensions
 
     /// <summary>
     /// Compute the p-th quantile of a CountMap.
-    /// If <c>p</c> is less than or equal to 0, then the minimum key is returned.
-    /// If <c>p</c> is greater than or equal to 1, then the maximum key is returned.
+    /// If <c>p</c> is less than or equal to 0, the method returns the minimum key.
+    /// If <c>p</c> is greater than or equal to 1, the method returns the maximum key.
     /// </summary>
     /// <param name="countMap">The count map to compute the quantile for.</param>
-    /// <param name="p">The quantile to compute. Must be between 0 and 1.</param>
+    /// <param name="p">The quantile to compute. Pass a value between 0 and 1.</param>
     /// <param name="comparer">The comparer to use for ordering the keys.
-    /// If null, the default comparer is used.</param>
+    /// If null, the method uses the default comparer.</param>
     /// <typeparam name="TObs">The type of the observations in the count map.</typeparam>
     /// <returns>The p-th quantile of the count map.</returns>
     /// <exception cref="Exception">
@@ -423,16 +423,16 @@ public static partial class CountMapExtensions
     
     /// <summary>
     /// Compute the p-th quantile of a CountMap.
-    /// If <c>p</c> is less than or equal to 0, then the minimum key is returned.
-    /// If <c>p</c> is greater than or equal to 1, then the maximum key is returned.
+    /// If <c>p</c> is less than or equal to 0, the method returns the minimum key.
+    /// If <c>p</c> is greater than or equal to 1, the method returns the maximum key.
     /// </summary>
     /// <param name="countMap">The count map to compute the quantile for.</param>
-    /// <param name="p">The quantile to compute. Must be between 0 and 1.</param>
+    /// <param name="p">The quantile to compute. Pass a value between 0 and 1.</param>
     /// <typeparam name="TObs">The type of the observations in the count map.</typeparam>
     /// <returns>The p-th quantile of the count map.</returns>
     /// <remarks>
-    /// This method uses the comparer associated with the CountMap. If no comparer
-    /// was specified when the CountMap was created, the default comparer is used instead.
+    /// This method uses the comparer associated with the CountMap. If the CountMap
+    /// has no comparer, the method uses the default comparer instead.
     /// </remarks>
     public static TObs Quantile<TObs>(this CountMap<TObs> countMap, double p) where TObs : notnull
     {
@@ -441,11 +441,11 @@ public static partial class CountMapExtensions
     
     /// <summary>
     /// Compute the median of a CountMap using the specified comparer.
-    /// This is equivalent to calling <c>Quantile(0.5, comparer)</c>.
+    /// This method returns the result of <c>Quantile(0.5, comparer)</c>.
     /// </summary>
     /// <param name="countMap">The count map to compute the median for.</param>
     /// <param name="comparer">The comparer to use for ordering the keys.
-    /// If null, the default comparer is used.</param>
+    /// If null, the method uses the default comparer.</param>
     /// <typeparam name="TObs">The type of the observations in the count map.</typeparam>
     /// <returns>The median of the count map.</returns>
     public static TObs Median<TObs>(this CountMap<TObs> countMap, IComparer<TObs>? comparer) where TObs : notnull
@@ -460,8 +460,8 @@ public static partial class CountMapExtensions
     /// <typeparam name="TObs">The type of the observations in the count map.</typeparam>
     /// <returns>The median of the count map.</returns>
     /// <remarks>
-    /// This method uses the comparer associated with the CountMap. If no comparer
-    /// was specified when the CountMap was created, the default comparer is used instead.
+    /// This method uses the comparer associated with the CountMap. If the CountMap
+    /// has no comparer, the method uses the default comparer instead.
     /// </remarks>
     public static TObs Median<TObs>(this CountMap<TObs> countMap) where TObs : notnull
     {

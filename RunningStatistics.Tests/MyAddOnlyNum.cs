@@ -4,9 +4,9 @@ using System.Numerics;
 namespace RunningStatistics.Tests;
 
 /// <summary>
-/// A minimal numeric type that supports only addition and additive identity —
-/// i.e. it does NOT implement <see cref="IMultiplyOperators{TSelf,TOther,TResult}"/>.
-/// Used to exercise the O(count) fallback path in <see cref="Sum{TObs}"/>.
+/// A minimal numeric type that supports only addition and additive identity, so it does not
+/// implement the multiply operators. It exercises the counting fallback path of
+/// <see cref="Sum{TObs}" />, the one used when no multiply by a count is available.
 /// </summary>
 public readonly struct MyAddOnlyNum(int value) :
     IAdditionOperators<MyAddOnlyNum, MyAddOnlyNum, MyAddOnlyNum>,

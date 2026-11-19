@@ -6,8 +6,8 @@ using System.Linq;
 namespace RunningStatistics;
 
 /// <summary>
-/// Represents a histogram for running statistics. The histogram is defined by a set of edges,
-/// which define the boundaries of the bins. The bins can be open or closed on the left and right ends.
+/// Represents a histogram for running statistics. A set of edges defines the boundaries of the
+/// bins. Each bin has left and right ends that are open or closed.
 /// </summary>
 public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumerable<HistogramBin>
 {
@@ -20,14 +20,20 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     /// <summary>
     /// Initializes a new instance of the <see cref="Histogram"/> class.
     /// </summary>
-    /// <param name="edges">The edges of the histogram bins. They must be strictly monotonically
-    /// increasing. Infinite edge values are allowed, but NaN edge values are not.</param>
-    /// <param name="leftClosed">Indicates if the bins are closed on the left side. If true, the
-    /// left side of the bin is closed, otherwise the right side is closed.</param>
-    /// <param name="endsClosed">Indicates if the end bins are closed on the outside.</param>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when fewer than 2 edges are provided.</exception>
+    /// <param name="edges">The edges of the histogram bins, in strictly monotonically increasing
+    /// order. The constructor rejects NaN edge values. Infinite edge values are fine.</param>
+    ///
+    /// <param name="leftClosed">Shows if the bins have a closed left side. With true, the left
+    /// side of each bin is the closed side. With false, the right side is the closed side.</param>
+    ///
+    /// <param name="endsClosed">Shows if the end bins have a closed side on the outside.</param>
+    ///
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the constructor receives fewer
+    /// than 2 edges.</exception>
+    ///
     /// <exception cref="ArgumentException">Thrown when an edge value is NaN or when the edges are
-    /// not strictly monotonically increasing (duplicate or decreasing edges are rejected).</exception>
+    /// not strictly monotonically increasing (the constructor rejects duplicate or decreasing
+    /// edges).</exception>
     public Histogram(IEnumerable<double> edges, bool leftClosed = true, bool endsClosed = true)
     {
         _edges = edges.ToList();
@@ -215,6 +221,17 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
 
     public override Histogram CloneEmpty() => new(_edges, LeftClosed, EndsClosed);
     
+    /// <remarks>
+    /// The merge works in two branches. Same bins mean the same number of bins with equal
+    /// bounds and equal closure flags. In that case, the merge adds the counts of the matching
+    /// bins directly and the result stays exact.
+    ///
+    /// When the bins differ, in their edges or in their closure flags, the merge does not throw.
+    /// Instead it refits each source bin's count at that bin's midpoint. The midpoint
+    /// approximates where the observations actually were. A midpoint outside the receiver falls
+    /// into its out-of-bounds counters. The merge folds the source's out-of-bounds counters in
+    /// both branches.
+    /// </remarks>
     public override void Merge(Histogram histogram)
     {
         _oob.Merge(histogram._oob);

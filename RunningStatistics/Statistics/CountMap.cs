@@ -8,8 +8,8 @@ namespace RunningStatistics;
 
 /// <summary>
 /// Represents a count map that tracks the number of occurrences of each unique observation.
-/// Accessing a key that has not been fitted will return zero, but the key will not be added to the
-/// dictionary. Fitting a key with a count of zero will also not add the key to the dictionary.
+/// The map returns zero for a key that it never fitted. That access does not add the key to the
+/// dictionary. A fit with a count of zero also does not add the key.
 /// </summary>
 /// <typeparam name="TObs">The observation type.</typeparam>
 public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>, IReadOnlyDictionary<TObs, long> 
@@ -39,7 +39,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     
     
     /// <summary>
-    /// Gets the count of the specified key. If the key has not been fitted, zero is returned.
+    /// Gets the count of the specified key. If the map never fitted the key, it returns zero.
     /// </summary>
     /// <param name="key">The key whose count to get.</param>
     /// <returns>The count of the specified key.</returns>
@@ -47,8 +47,8 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     public long this[TObs key] => _dict.TryGetValue(key, out var value) ? value : 0;
 
     /// <summary>
-    /// The number of unique observations that have been fitted. Observations with a count of zero
-    /// are not included.
+    /// The number of unique observations that the map fitted. Observations with a count of zero
+    /// do not count toward this number.
     /// </summary>
     public int Count => _dict.Count;
 
@@ -81,8 +81,9 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     {
         checked { _nobs += count; }
         
-        // defensive: per-key counts are bounded by the already-checked _nobs, but keep the
-        // per-key accumulation explicitly checked too, so it throws rather than wraps
+        // The checked total already bounds the per-key counts. The code still
+        // checks the per-key accumulation explicitly, so it reports overflow
+        // rather than wrapping quietly.
 #if NET5_0_OR_GREATER
         ref var valueCount = ref CollectionsMarshal.GetValueRefOrAddDefault(_dict, value, out _);
         checked { valueCount += count; }
@@ -116,7 +117,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// Finds the minimum key in the count map.
     /// </summary>
     /// <param name="comparer">The comparer to use for finding the minimum key.
-    /// If null, the default comparer is used.</param>
+    /// If null, the method uses the default comparer.</param>
     /// <returns>The minimum key in the count map, if any exist.</returns>
     /// <exception cref="KeyNotFoundException">
     /// Thrown if the count map is empty and no minimum key exists.
@@ -156,7 +157,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// Finds the maximum key in the count map.
     /// </summary>
     /// <param name="comparer">The comparer to use for finding the maximum key.
-    /// If null, the default comparer is used.</param>
+    /// If null, the method uses the default comparer.</param>
     /// <returns>The maximum key in the count map, if any exist.</returns>
     /// <exception cref="KeyNotFoundException">
     /// Thrown if the count map is empty and no maximum key exists.

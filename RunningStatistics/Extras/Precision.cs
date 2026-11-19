@@ -34,9 +34,9 @@ namespace RunningStatistics;
 internal static partial class Precision
 {
     /// <summary>
-    /// The number of binary digits used to represent the binary number for a double precision floating
-    /// point value. i.e. there are this many digits used to represent the
-    /// actual number, where in a number as: 0.134556 * 10^5 the digits are 0.134556 and the exponent is 5.
+    /// The number of binary digits used to write the significant part of a double-precision
+    /// floating-point number. By analogy, in a decimal number written as 0.134556 times ten
+    /// to the fifth, the significant digits are 0.134556 and the exponent is 5.
     /// </summary>
     private const int DoubleWidth = 53;
 
@@ -53,15 +53,16 @@ internal static partial class Precision
     public static readonly double PositiveDoublePrecision = 2 * DoublePrecision;
 
     /// <summary>
-    /// Value representing 10 * 2^(-53) = 1.11022302462516E-15
+    /// Ten times the standard double precision, about 1.11022302462516E-15. Used as the
+    /// default tolerance for approximate comparisons.
     /// </summary>
     private static readonly double DefaultDoubleAccuracy = DoublePrecision * 10;
 
     /// <summary>
     /// Increments a floating point number to the next bigger number representable by the data type.
     /// </summary>
-    /// <param name="value">The value which needs to be incremented.</param>
-    /// <param name="count">How many times the number should be incremented.</param>
+    /// <param name="value">The value to increment.</param>
+    /// <param name="count">The number of times to increment the value.</param>
     /// <remarks>
     /// The incrementation step length depends on the provided value.
     /// Increment(double.MaxValue) will return positive infinity.
@@ -79,12 +80,12 @@ internal static partial class Precision
             return Decrement(value, -count);
         }
 
-        // Translate the bit pattern of the double to an integer.
-        // Note that this leads to:
-        // double > 0 --> long > 0, growing as the double value grows
-        // double < 0 --> long < 0, increasing in absolute magnitude as the double
-        //                          gets closer to zero!
-        //                          i.e. 0 - double.epsilon will give the largest long value!
+        // Convert the bit pattern of the double to a whole number. A
+        // positive double maps to a positive whole number that grows with
+        // the value. A negative double maps to a negative whole number
+        // whose magnitude grows as the value approaches zero. The
+        // pattern reaches its largest magnitude just below zero, at zero
+        // minus one machine epsilon.
         var intValue = BitConverter.DoubleToInt64Bits(value);
         if (intValue < 0)
         {
@@ -101,16 +102,16 @@ internal static partial class Precision
             return 0;
         }
 
-        // Note that not all long values can be translated into double values. There's a whole bunch of them
-        // which return weird values like infinity and NaN
+        // Not every long value converts to a double value. Some long values convert to
+        // infinity or NaN.
         return BitConverter.Int64BitsToDouble(intValue);
     }
 
     /// <summary>
     /// Decrements a floating point number to the next smaller number representable by the data type.
     /// </summary>
-    /// <param name="value">The value which should be decremented.</param>
-    /// <param name="count">How many times the number should be decremented.</param>
+    /// <param name="value">The value to decrement.</param>
+    /// <param name="count">The number of times to decrement the value.</param>
     /// <remarks>
     /// The decrementation step length depends on the provided value.
     /// Decrement(double.MinValue) will return negative infinity.
@@ -128,16 +129,17 @@ internal static partial class Precision
             return Increment(value, -count);
         }
 
-        // Translate the bit pattern of the double to an integer.
-        // Note that this leads to:
-        // double > 0 --> long > 0, growing as the double value grows
-        // double < 0 --> long < 0, increasing in absolute magnitude as the double
-        //                          gets closer to zero!
-        //                          i.e. 0 - double.epsilon will give the largest long value!
+        // Convert the bit pattern of the double to a whole number. A
+        // positive double maps to a positive whole number that grows with
+        // the value. A negative double maps to a negative whole number
+        // whose magnitude grows as the value approaches zero. The
+        // pattern reaches its largest magnitude just below zero, at zero
+        // minus one machine epsilon.
         var intValue = BitConverter.DoubleToInt64Bits(value);
 
-        // If the value is zero then we'd really like the value to be -0. So we'll make it -0
-        // and then everything else should work out.
+        // When the input is zero, the method still needs the value -0.
+        // The code sets the value to -0, so the rest of the logic should
+        // work.
         if (intValue == 0)
         {
             // Note that long.MinValue has the same bit pattern as -0.0.
@@ -153,8 +155,8 @@ internal static partial class Precision
             intValue -= count;
         }
 
-        // Note that not all long values can be translated into double values. There's a whole bunch of them
-        // which return weird values like infinity and NaN
+        // Not every long value converts to a double value. Some long values convert to
+        // infinity or NaN.
         return BitConverter.Int64BitsToDouble(intValue);
     }
 }

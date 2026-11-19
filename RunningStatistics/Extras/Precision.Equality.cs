@@ -45,9 +45,9 @@ internal static partial class Precision
     /// <returns>True if both doubles are almost equal up to the specified maximum error, false otherwise.</returns>
     public static bool AlmostEqualNormRelative(this double a, double b, double diff, double maximumError)
     {
-        // If A or B are infinity (positive or negative) then
-        // only return true if they are exactly equal to each other -
-        // that is, if they are both infinities of the same sign.
+        // If either value is a positive or negative infinity, compare
+        // the two values for exact equality. An infinity equals only
+        // an infinity of the same sign.
         if (double.IsInfinity(a) || double.IsInfinity(b))
         {
             return a == b;
@@ -75,11 +75,12 @@ internal static partial class Precision
     }
 
     /// <summary>
-    /// Checks whether two real numbers are almost equal.
+    /// Checks if two real numbers are almost equal.
     /// </summary>
     /// <param name="a">The first number</param>
     /// <param name="b">The second number</param>
-    /// <returns>true if the two values differ by no more than 10 * 2^(-52); false otherwise.</returns>
+    /// <returns>True when the two values differ by no more than ten times two to the minus
+    /// 52nd power. In all other cases the method returns false.</returns>
     public static bool AlmostEqualRelative(this double a, double b)
     {
         return AlmostEqualNormRelative(a, b, a - b, DefaultDoubleAccuracy);

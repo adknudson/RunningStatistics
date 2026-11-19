@@ -4,30 +4,30 @@ using System.Collections.Generic;
 namespace RunningStatistics.Tests;
 
 /// <summary>
-/// Reusable wall-clock harness for detecting performance regressions when the algorithm of a
-/// running statistic is changed (see the workflow in <c>AGENTS.md</c>).
+/// Reusable wall-clock timing tool. It detects performance regressions when the algorithm of
+/// a running statistic changes. See the workflow in <c>AGENTS.md</c>.
 ///
-/// Timed work is driven by closures so the same workload can be replayed against a baseline and
-/// against a candidate in the same process, on identical fixed-seed data (data generation always
-/// happens outside the timed region). Results are min-of-<c>repeats</c> with unmeasured warm-up
-/// passes, and every timed action folds a checksum into a sink so the optimizer cannot delete the
-/// work.
+/// A closure drives the timed work. It can replay one workload against a baseline and
+/// against a candidate in one process. The two runs read the same fixed-seed data. The
+/// generator always builds that data outside the timed region. A result is the minimum of the
+/// measured <c>repeats</c>, after warm-up passes that go unmeasured. Each timed action
+/// folds a checksum into a sink, so the optimizer cannot delete the work.
 /// </summary>
 internal static class BenchmarkHarness
 {
-    /// Keeps timed (and warm-up) work alive; the optimizer cannot remove a loop feeding this.
+    /// Keeps timed (and warm-up) work alive. The optimizer cannot remove a loop that feeds this.
     private static long _sink;
 
     private static long Sink { get; } = _sink;
 
     /// <summary>
     /// Times one pass of <paramref name="pass"/> and returns nanoseconds per observation.
-    /// <paramref name="pass"/> runs the whole timed workload (e.g. fitting a whole array) and
-    /// returns a checksum that is folded into the sink.
+    /// <paramref name="pass"/> runs the whole timed workload, for example one whole array.
+    /// It returns a checksum, and Measure folds that checksum into the sink.
     /// </summary>
     /// <param name="label">Printed with the result.</param>
     /// <param name="obs">Number of observations/iterations the pass performs, for normalization.</param>
-    /// <param name="repeats">Measured passes; the fastest wins.</param>
+    /// <param name="repeats">Measured passes. The fastest wins.</param>
     /// <param name="pass">Timed workload closure.</param>
     public static double Measure(string label, int obs, int repeats, Func<double> pass)
     {
@@ -58,8 +58,8 @@ internal static class BenchmarkHarness
     }
 
     /// <summary>
-    /// Stream: <c>Fit(value)</c> for every element of <paramref name="data"/>, fresh stat per pass.
-    /// Returns ns/obs.
+    /// Fits every element of <paramref name="data"/> once each. Each timed pass starts from a
+    /// fresh statistic. The result is nanoseconds per observation.
     /// </summary>
     public static double StreamFit(Func<IRunningStatistic<double>> factory, List<double> data, int repeats)
     {
@@ -83,7 +83,8 @@ internal static class BenchmarkHarness
     }
 
     /// <summary>
-    /// Weighted: <c>Fit(value, count)</c> per element, fresh stat per pass. Returns ns/obs.
+    /// Fits every element with one weighted call each. Each timed pass starts from a fresh
+    /// statistic. The result is nanoseconds per observation.
     /// </summary>
     public static double WeightedFit(Func<IRunningStatistic<double>> factory, List<double> data, long count, int repeats)
     {
@@ -107,9 +108,10 @@ internal static class BenchmarkHarness
     }
 
     /// <summary>
-    /// Merge-heavy: <paramref name="chunks"/> statistics of equal size are fitted and merged into a
-    /// fresh stat. Costs of <c>Merge</c> (and, via the base class default, <c>Clone</c>) are what user
-    /// code multiplies. Returns ns/obs.
+    /// Builds <paramref name="chunks"/> statistics of equal size, fits them, and merges them all
+    /// into a fresh statistic. User code pays for merge costs and for the clone that the base
+    /// class default relies on. Those costs belong in the measurement. The result is nanoseconds
+    /// per observation.
     /// </summary>
     public static double MergeChunks(Func<IRunningStatistic<double>> factory, List<double> data, int chunks, int repeats)
     {
@@ -140,8 +142,8 @@ internal static class BenchmarkHarness
     }
 
     /// <summary>
-    /// Clone-heavy: <c>Fit(value)</c> then <c>Clone()</c> per element (idiom: snapshot after each
-    /// observation). Returns ns/obs.
+    /// Fits every element and takes a snapshot copy of the statistic after each observation, the
+    /// accumulate-into-a-clone idiom. The result is nanoseconds per observation.
     /// </summary>
     public static double ClonePerStep(Func<IRunningStatistic<double>> factory, List<double> data, int repeats)
     {

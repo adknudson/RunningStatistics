@@ -39,7 +39,7 @@ internal static partial class SpecialFunctions
     private const int GammaN = 10;
 
     /// <summary>
-    /// Auxiliary variable when evaluating the <see cref="GammaLn"/> function.
+    /// Auxiliary variable that the <see cref="GammaLn"/> function uses in its evaluation.
     /// </summary>
     private const double GammaR = 10.900511;
 
@@ -70,7 +70,7 @@ internal static partial class SpecialFunctions
     /// <para>This implementation of the computation of the gamma and logarithm of the gamma function follows the derivation in
     ///     "An Analysis Of The Lanczos Gamma Approximation", Glendon Ralph Pugh, 2004.
     /// We use the implementation listed on p. 116 which achieves an accuracy of 16 floating point digits. Although 16 digit accuracy
-    /// should be sufficient for double values, improving accuracy is possible (see p. 126 in Pugh).</para>
+    /// should be sufficient for double values, and more accuracy is possible (see p. 126 in Pugh).</para>
     /// <para>Our unit tests suggest that the accuracy of the Gamma function is correct up to 14 floating point digits.</para>
     /// </remarks>
     public static double GammaLn(double z)

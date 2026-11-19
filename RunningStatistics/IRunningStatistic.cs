@@ -5,7 +5,7 @@ namespace RunningStatistics;
 public interface IRunningStatistic
 {
     /// <summary>
-    /// The number of observations that have been fitted.
+    /// The number of observations fitted so far.
     /// </summary>
     public long Nobs { get; }
 
@@ -51,7 +51,7 @@ public interface IRunningStatistic<TObs> : IRunningStatistic
 
     /// <summary>
     /// Fit a single observation with an associated count. A <paramref name="count"/> greater than one
-    /// is equivalent to fitting <paramref name="value"/> that many times individually.
+    /// fits <paramref name="value"/> that many times individually.
     /// </summary>
     public void Fit(TObs value, long count);
 
@@ -62,8 +62,8 @@ public interface IRunningStatistic<TObs> : IRunningStatistic
 
     /// <summary>
     /// Fit a list of observations with associated counts. Each key-value pair represents an observation
-    /// and the number of times it should be fitted; the count is equivalent to fitting the key that many
-    /// times individually.
+    /// and the number of times to fit it. The count matches fitting the key that many times
+    /// individually.
     /// </summary>
     public void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs);
 
@@ -109,8 +109,8 @@ public interface IRunningStatistic<TObs, TSelf> : IRunningStatistic<TObs>
     /// <summary>
     /// Create a deep copy of the running statistic. The default implementation in
     /// <see cref="RunningStatisticBase{TObs,TSelf}"/> calls <see cref="CloneEmpty"/> followed by
-    /// <see cref="Merge"/>, so both of those members must be correctly implemented for
-    /// <c>Clone</c> to behave correctly.
+    /// <see cref="Merge"/>. Implement both of those members correctly for <c>Clone</c>
+    /// to behave correctly.
     /// </summary>
     /// <returns>A copy with the same concrete type.</returns>
     public new TSelf Clone();

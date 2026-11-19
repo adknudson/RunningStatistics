@@ -337,8 +337,10 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         Assert.Matches(re, stat.ToString());
     }
     
-    // Algebraic identity properties at the Nobs level only (accessor exposure differs per stat),
-    // with small counts so stats whose Fit(value, count) loops per observation stay fast:
+    // These tests assert the algebraic rules about counts at the Nobs level, because
+    // each statistic exposes its readouts in a different way. The counts in these
+    // tests are small, so even statistics whose weighted Fit processes one
+    // observation at a time stay fast.
     [Fact]
     public void FitExistingState_WithZeroCount_NoOp()
     {
@@ -477,8 +479,173 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         
         clone.Merge(stat);
         
-        // post-conditions: additive on the receiver, other's state untouched
+        // Merging adds the other statistic's counts to the receiver, and the statistic
+        // being merged keeps its own state unchanged.
         Assert.Equal(6, stat.Nobs);
         Assert.Equal(10, clone.Nobs);
+    }
+    
+    // Every running statistic shares three guard contracts. The weighted Fit rejects
+    // negative counts. The base class rejects null collections. The code checks
+    // every addition to the observation count for overflow. Because every statistic
+    // inherits this behavior, one test here covers every statistic, instead of a
+    // copy in each class's test file.
+    [Fact]
+    public void Fit_NegativeCountThrowsStateUntouched()
+    {
+        IRunningStatistic<TObs> stat = GenerateStatistic();
+        
+        stat.Fit(GenerateObservation(), 3);
+        
+        // pre-condition
+        Assert.Equal(3, stat.Nobs);
+        
+        Assert.Throws<ArgumentOutOfRangeException>(() => stat.Fit(GenerateObservation(), -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => stat.Fit(GenerateObservation(), long.MinValue));
+        
+        // post-condition: rejected counts never touch state
+        Assert.Equal(3, stat.Nobs);
+    }
+    
+    [Fact]
+    public void FitNullCollections_ThrowsStateUntouched()
+    {
+        IRunningStatistic<TObs> stat = GenerateStatistic();
+        
+        stat.Fit(GenerateObservation(), 3);
+        
+        // pre-condition
+        Assert.Equal(3, stat.Nobs);
+        
+        Assert.Throws<ArgumentNullException>(() => stat.Fit((IEnumerable<TObs>)null));
+        Assert.Throws<ArgumentNullException>(() => stat.Fit((IEnumerable<KeyValuePair<TObs, long>>)null));
+        
+        // post-condition: rejected collections never touch state
+        Assert.Equal(3, stat.Nobs);
+    }
+    
+    // Decision note: guards on single elements are deliberately class-specific, not shared. Each
+    // class makes a different promise. Extrema accepts infinite values and rejects only NaN. The
+    // generic Extrema rejects null elements. The numeric classes (Mean, Sum, Variance, Normal)
+    // require each element to be finite. For plain doubles, a null element cannot occur. For
+    // boxed numbers, the null already fails while the code builds the input list, before any
+    // guard runs. The timing of validation differs just as much. The collection overloads of
+    // Mean, Sum, Variance and Normal check the whole input before they apply anything, so a
+    // rejected call changes nothing. Beta counts its bool elements first, then checks the
+    // totals. The base class's per-element overloads check one element at a time. The code has
+    // already applied the elements it saw before a rejected one. The fact below,
+    // FitPairsWithNegativeCount_ThrowsPrecedingPairsApplied, pins that partial application. Only
+    // one element rule is shared, and it is the rejection of a null collection. The fact
+    // above, FitNullCollections_ThrowsStateUntouched, asserts it for every statistic. Do not
+    // fold the element guards into one shared guard in a refactor. That change would change
+    // behavior, so re-gate each class's collection facts first.
+    
+    // Every statistic uses the base class's pair overload, so every statistic shares
+    // its behavior. When the overload rejects one pair, it has already applied the
+    // valid pairs before it. Pair batches are therefore not all-or-nothing, unlike
+    // the collection overload of values, which checks its whole input before
+    // applying anything. This fact pins the behavior exactly as the library behaves
+    // today.
+    [Fact]
+    public void FitPairsWithNegativeCount_ThrowsPrecedingPairsApplied()
+    {
+        IRunningStatistic<TObs> stat = GenerateStatistic();
+        
+        Assert.Throws<ArgumentOutOfRangeException>(() => stat.Fit(new List<KeyValuePair<TObs, long>>
+        {
+            new(GenerateObservation(), 2L),
+            new(GenerateObservation(), -1)
+        }));
+        
+        // post-condition: the valid pair before the bad one was applied, the bad one was not
+        Assert.Equal(2, stat.Nobs);
+    }
+    
+    [Fact]
+    public void FitEmptyIterable_FreshIsNoOp()
+    {
+        IRunningStatistic<TObs> stat = GenerateStatistic();
+        
+        stat.Fit(new List<TObs>());
+        Assert.Equal(0, stat.Nobs);
+    }
+    
+    [Fact]
+    public void FitEmptyIterable_FittedKeepsState()
+    {
+        IRunningStatistic<TObs> stat = GenerateStatistic();
+        
+        stat.Fit(GenerateObservation(), 3);
+        
+        // pre-condition
+        Assert.Equal(3, stat.Nobs);
+        
+        stat.Fit(new List<TObs>());
+        
+        // post-condition: an empty batch leaves the existing state alone
+        Assert.Equal(3, stat.Nobs);
+    }
+    
+    // The tests check overflow of the observation count through the merge path.
+    // Every Merge adds two counts with arithmetic that reports overflow, so one
+    // shared fact covers every statistic. The individual class tests keep the
+    // overflow check for the Fit path. Statistics such as EmpiricalCdf replay
+    // observations one at a time, so they could never process a batch that large
+    // in the first place.
+    [Fact]
+    public void MergeSelf_NobsOverflowThrows()
+    {
+        var stat = GenerateStatistic();
+        
+        stat.Fit(GenerateObservation());
+        Assert.Equal(1, stat.Nobs);
+        
+        // Merging a statistic into itself doubles its observation count each round.
+        // 62 rounds take the count from 1 to 2 to the power of 62, and one more
+        // merge would overflow.
+        for (var i = 0; i < 62; i++)
+        {
+            stat.Merge(stat);
+            Assert.Equal(1L << i + 1, stat.Nobs);
+        }
+        
+        var big = long.MaxValue / 2 + 1;
+        
+        Assert.Throws<OverflowException>(() => stat.Merge(stat));
+        
+        // post-condition: the overflowed merge leaves Nobs at its pre-merge value
+        Assert.Equal(big, stat.Nobs);
+    }
+    
+    [Fact]
+    public void Reset_FreshIsNoOp()
+    {
+        IRunningStatistic<TObs> stat = GenerateStatistic();
+        
+        Assert.Equal(0, stat.Nobs);
+        
+        stat.Reset();
+        Assert.Equal(0, stat.Nobs);
+    }
+    
+    [Fact]
+    public void ToString_NobsMatchesLiveState()
+    {
+        var stat = GenerateStatistic();
+        
+        Assert.Matches(ToStringWithNobs(0), stat.ToString());
+        
+        stat.Fit(GenerateObservation(), 3);
+        Assert.Matches(ToStringWithNobs(3), stat.ToString());
+        
+        var clone = stat.Clone();
+        clone.Fit(GenerateObservation(), 2);
+        Assert.Matches(ToStringWithNobs(5), clone.ToString());
+        Assert.DoesNotMatch(ToStringWithNobs(5), stat.ToString());
+    }
+    
+    private static Regex ToStringWithNobs(long nobs)
+    {
+        return new Regex($@"^\S+{{{typeof(TObs).Name}}}\(Nobs={nobs:N0}\).*");
     }
 }

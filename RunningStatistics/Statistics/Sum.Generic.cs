@@ -15,25 +15,28 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
     where TObs : IAdditionOperators<TObs, TObs, TObs>, IAdditiveIdentity<TObs, TObs>
 {
     /// <summary>
-    /// If <typeparamref name="TObs"/> implements <see cref="IMultiplyOperators{TObs,TMultiplier,TObs}"/>
-    /// for any <c>TMultiplier</c> in the set <c>{ long, double, decimal, float }</c>, this delegate
-    /// is compiled once (per type instantiation) via an expression tree and used by
-    /// <see cref="Fit(TObs,long)"/> to compute <c>value * count</c> in O(1). Otherwise it is
-    /// <c>null</c> and the method falls back to an O(log count) doubling-accumulation loop.
+    /// A precompiled routine that multiplies an observation by a whole-number count, when the
+    /// observation type supports that multiplication. If the type implements multiplication by
+    /// long, double, decimal or float, the class compiles this delegate once per type
+    /// instantiation. It builds the delegate from an expression tree. The weighted fit uses it
+    /// to fold a count into the running sum in one step. If the type supports none of these
+    /// multiplications, the delegate stays null. The weighted fit then falls back to a doubling
+    /// loop whose work grows with the count's bits.
     /// <para>
-    /// Note: when <c>TMultiplier</c> is <c>float</c>, the <c>long</c> count is narrowed to
-    /// <c>float</c> before the multiply, which loses precision for counts greater than ~16.7M
-    /// (2²⁴).
+    /// Note: when the multiplier type is float, the implementation narrows the whole-number count
+    /// to float before the multiplication, which loses precision for counts above roughly 16.7
+    /// million.
     /// </para>
     /// </summary>
     internal static readonly Func<TObs, long, TObs>? MultiplyDelegate = TryCreateMultiplyDelegate();
 
     private static Func<TObs, long, TObs>? TryCreateMultiplyDelegate()
     {
-        // Try multiplier types in priority order.
-        // long → double and long → decimal are implicit widening conversions.
-        // long → float is a narrowing conversion (precision loss for counts > ~16.7M), but is
-        // accepted here to provide a fast path for Sum<float>.
+        // Try the multiplier types in priority order. Multiplying by double and by
+        // decimal widens the whole-number count implicitly. Multiplying by float
+        // narrows the count and loses precision for counts above roughly 16.7
+        // million. The code still accepts float to give sums of float values a
+        // fast path.
         return TryCreate<long>()
             ?? TryCreate<double>()
             ?? TryCreate<decimal>()
@@ -41,9 +44,10 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
 
         Func<TObs, long, TObs>? TryCreate<TMultiplier>()
         {
-            // We cannot use MakeGenericType here because IMultiplyOperators<TSelf,…> has a
-            // self-referential constraint on TSelf that the runtime enforces even at reflection
-            // time. Scanning GetInterfaces() avoids that — it only returns already-validated types.
+            // Do not use MakeGenericType here: the multiply-operator interface carries a
+            // self-referential constraint that the runtime enforces even at reflection
+            // time. Scanning the interfaces the type already implements avoids that
+            // enforcement, because those interfaces already passed validation.
             var hasMultiply = Array.Exists(typeof(TObs).GetInterfaces(), i =>
                 i.IsGenericType &&
                 i.GetGenericTypeDefinition() == typeof(IMultiplyOperators<,,>) &&
@@ -56,7 +60,7 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
             var valueParam = Expression.Parameter(typeof(TObs), "value");
             var countParam = Expression.Parameter(typeof(long), "count");
 
-            // Insert an implicit widening conversion when the operator doesn't take long directly.
+            // Insert an implicit widening conversion when the operator does not take long directly.
             Expression multiplierExpr = typeof(TMultiplier) == typeof(long)
                 ? countParam
                 : Expression.Convert(countParam, typeof(TMultiplier));
@@ -84,21 +88,20 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
     }
 
     /// <summary>
-    /// Adds <paramref name="count"/> observations of <paramref name="value"/>, incrementing
-    /// the observation count in one <c>checked</c> step.
+    /// Adds the given number of observations of the value at once. The method raises the
+    /// observation count in one checked step.
     /// <para>
-    /// When <see cref="MultiplyDelegate"/> is non-null the contribution is <c>value * count</c>
-    /// in O(1). The fallback computes <c>value * count</c> in O(log count) by binary decomposition
-    /// of <paramref name="count"/>: doubling <c>value</c> to itself once per bit and adding the
-    /// blocks for the set bits into an accumulator, then combining the accumulator into the
-    /// running sum once.
-    /// <para>
-    /// Associativity caveat: for floating-point-like <typeparamref name="TObs"/> the doubling
-    /// path groups additions differently than <paramref name="count"/> repeated additions do, so
-    /// the result may differ in the low bits from the result of calling <see cref="Fit(TObs)"/>
-    /// <paramref name="count"/> times; do not test bit-exact equality against repeated addition
-    /// for non-exact types.
+    /// When the multiply delegate above is available, it multiplies the value by the count.
+    /// The fit adds that product to the running sum in one step. Otherwise the fit builds the
+    /// contribution bit by bit. It doubles the value once per bit position. It gathers the
+    /// blocks that belong to the set bits into an accumulator. The accumulator joins the running
+    /// sum once.
     /// </para>
+    /// <para>
+    /// Caveat for floating-point-like observation types: the doubling path groups additions
+    /// differently than adding the value one observation at a time does. The result may differ
+    /// in the low bits from repeated single fits. Do not test bit-exact equality against
+    /// repeated addition for such types.
     /// </para>
     /// </summary>
     public override void Fit(TObs value, long count)
@@ -108,16 +111,18 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
 
         if (MultiplyDelegate is not null)
         {
-            // O(1): TObs supports IMultiplyOperators<TObs, long, TObs>
+            // Fast path: the observation type multiplies directly by a whole-number count.
             checked { _nobs += count; }
             Value += MultiplyDelegate(value, count);
         }
         else
         {
-            // O(log count) fallback: no multiply operator available for this type.
-            // Binary decomposition of count: blocks of value doubled to self, one per bit;
-            // the final iteration's doubling is skipped (no higher bits remain — doubling
-            // there could overflow even when the exact count * value would fit).
+            // Fallback when no multiplication by a count is available: build the
+            // contribution by reading the count's bits. Each bit stands for a
+            // block of the value doubled once per position. The loop gathers
+            // blocks for the set bits into an accumulator. The loop skips the
+            // last doubling, because no higher bits remain. Doubling there
+            // could overflow even when the exact product would fit.
             var contribution = TObs.AdditiveIdentity;
             var block = value;
             for (var n = count; n > 0; n >>= 1)

@@ -216,12 +216,5 @@ public partial class TestExtremaGenericNumberType
         Assert.Equal(new MyNum(2.0m), range);
     }
 
-    // Null iterable Fit contract — see the comparable-type twin above.
-    [Fact]
-    public void Fit_RejectsNullIterable()
-    {
-        Extrema<MyNum> extrema = new();
-        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<MyNum>)null));
-        Assert.Equal(0, extrema.Nobs);
-    }
+    // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

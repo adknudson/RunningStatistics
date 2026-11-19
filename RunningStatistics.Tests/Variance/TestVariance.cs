@@ -29,23 +29,10 @@ public partial class TestVariance()
         });
     }
     
-    [Fact]
-    public void Fit_GuardsAgainstNegativeCount()
-    {
-        var v = new RunningStatistics.Variance();
-        Assert.Throws<ArgumentOutOfRangeException>(() => v.Fit(1.0, -1));
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-        {
-            var keyValuePairs = new List<KeyValuePair<double, long>>
-            {
-                new(1.0, 1),
-                new(2.0, -2)
-            };
-
-            v.Fit(keyValuePairs);
-        });
-    }
-
+    // Scalar negative-count and pairs-with-negative-count guards now live in
+    // AbstractRunningStatsTest (Fit_NegativeCountThrowsStateUntouched and
+    // FitPairsWithNegativeCount_ThrowsPrecedingPairsApplied).
+    
     [Fact]
     public void Fit_GuardsAgainstInfiniteValues()
     {
@@ -235,11 +222,206 @@ public partial class TestVariance()
         Assert.Equal(double.NaN, v1.Value);
     }
 
+    // This merge-algebra gate is permanent, so keep it. Merging variances is associative. The
+    // fact builds three seeded KappaStream chunks for each condition number. The walk runs
+    // powers of ten from one to one hundred million. Each chunk holds one hundred observations
+    // with spread one. The grouping of a merged with b, then merged with c, is compared against
+    // a merged with the result of b merged with c. Each grouping runs on a fresh copy made
+    // through CloneEmpty and Merge. The value and the standard deviation of both groupings must
+    // match the two-pass reference over all three chunks together, and match each other. The
+    // relative margin is a hundred-millionth plus ten thousand times the condition number
+    // times machine epsilon. The worst error the probe found was a relative 2.40E-8 at
+    // condition number 1e8, about one times the condition number times machine epsilon. Merge
+    // errors grow roughly linearly in the condition number, not its square, so the margin
+    // keeps about ten thousand times headroom. The two groupings differ by at most a relative
+    // 1.1E-9.
     [Fact]
-    public void Fit_RejectsNullIterable()
+    public void Gate_MergeAssociativityVariance()
     {
-        var variance = new RunningStatistics.Variance();
-        Assert.Throws<ArgumentNullException>(() => variance.Fit((IEnumerable<double>)null));
-        Assert.Equal(0, variance.Nobs);
+        const int n = 100;
+        for (var d = 0; d <= 8; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var relTol = 1e-8 + 1e4 * kappa * PropertyHelpers.Epsilon;
+
+            var chunkA = PropertyHelpers.KappaStream(n, kappa, 11251128 + d);
+            var chunkB = PropertyHelpers.KappaStream(n, kappa, 33251129 + d);
+            var chunkC = PropertyHelpers.KappaStream(n, kappa, 55251131 + d);
+
+            var all = new List<double>();
+            for (var i = 0; i < n; i++) all.Add(chunkA[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkB[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkC[i]);
+            var reference = PropertyHelpers.ReferenceMoments(all);
+
+            var a = new RunningStatistics.Variance();
+            var b = new RunningStatistics.Variance();
+            var c = new RunningStatistics.Variance();
+            for (var i = 0; i < n; i++) a.Fit(chunkA[i]);
+            for (var i = 0; i < n; i++) b.Fit(chunkB[i]);
+            for (var i = 0; i < n; i++) c.Fit(chunkC[i]);
+
+            var g1 = a.Clone();
+            g1.Merge(b);
+            g1.Merge(c);
+
+            var bc = b.Clone();
+            bc.Merge(c);
+            var g2 = a.Clone();
+            g2.Merge(bc);
+
+            AssertVarianceAgainstReference("(a∪b)∪c", reference, g1, relTol);
+            AssertVarianceAgainstReference("a∪(b∪c)", reference, g2, relTol);
+            AssertVarianceGroupingsAgree("(a∪b)∪c vs a∪(b∪c)", g1, g2, relTol);
+        }
+    }
+
+    // This fact checks the same contract in the commutative direction. It merges a,
+    // b, c against c, b, a over the same condition-number range. Both sides merge
+    // into fresh copies as receivers, with the same margins as the associativity
+    // gate above.
+    [Fact]
+    public void Gate_MergeCommutativityVariance()
+    {
+        const int n = 100;
+        for (var d = 0; d <= 8; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var relTol = 1e-8 + 1e4 * kappa * PropertyHelpers.Epsilon;
+
+            var chunkA = PropertyHelpers.KappaStream(n, kappa, 22251138 + d);
+            var chunkB = PropertyHelpers.KappaStream(n, kappa, 44251139 + d);
+            var chunkC = PropertyHelpers.KappaStream(n, kappa, 66251141 + d);
+
+            var all = new List<double>();
+            for (var i = 0; i < n; i++) all.Add(chunkA[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkB[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkC[i]);
+            var reference = PropertyHelpers.ReferenceMoments(all);
+
+            var a = new RunningStatistics.Variance();
+            var b = new RunningStatistics.Variance();
+            var c = new RunningStatistics.Variance();
+            for (var i = 0; i < n; i++) a.Fit(chunkA[i]);
+            for (var i = 0; i < n; i++) b.Fit(chunkB[i]);
+            for (var i = 0; i < n; i++) c.Fit(chunkC[i]);
+
+            var g1 = a.Clone();
+            g1.Merge(b);
+            g1.Merge(c);
+
+            var g3 = c.Clone();
+            g3.Merge(b);
+            g3.Merge(a);
+
+            AssertVarianceAgainstReference("a∪b∪c", reference, g1, relTol);
+            AssertVarianceAgainstReference("c∪b∪a", reference, g3, relTol);
+            AssertVarianceGroupingsAgree("a∪b∪c vs c∪b∪a", g1, g3, relTol);
+        }
+    }
+
+    private static void AssertVarianceAgainstReference(string tag, MomentsReference reference, RunningStatistics.Variance merged, double relTol)
+    {
+        Assert.True(PropertyHelpers.Within(reference.Variance, merged.Value, relTol), PropertyHelpers.Describe($"{tag} Value vs reference", reference.Variance, merged.Value));
+        Assert.True(PropertyHelpers.Within(reference.StandardDeviation, merged.StandardDeviation, relTol), PropertyHelpers.Describe($"{tag} StandardDeviation vs reference", reference.StandardDeviation, merged.StandardDeviation));
+    }
+
+    private static void AssertVarianceGroupingsAgree(string tag, RunningStatistics.Variance left, RunningStatistics.Variance right, double relTol)
+    {
+        Assert.True(PropertyHelpers.Within(left.Value, right.Value, relTol), PropertyHelpers.Describe($"{tag} Value", left.Value, right.Value));
+        Assert.True(PropertyHelpers.Within(left.StandardDeviation, right.StandardDeviation, relTol), PropertyHelpers.Describe($"{tag} StandardDeviation", left.StandardDeviation, right.StandardDeviation));
+    }
+
+    // This fact checks that reading the getters does not get slower as the statistic sees
+    // more observations. The getters look at a fixed amount of state. Reading them should
+    // therefore cost the same on a huge statistic as on a small one. The test builds one
+    // statistic that has seen 2 to the 62nd power observations, and one that has seen 6.
+    // The test times millions of reads of Value and StandardDeviation on each statistic. It
+    // requires the big one to be within [0.5, 1.05] of the small one. The band is
+    // deliberately tight. A getter is one interface dispatch plus a few arithmetic
+    // operations, so the honest claim here is "not slower". Measurement noise of about 1%
+    // straddles 1.00, so a ratio outside about 1% is noise, not a real gain or regression.
+    // If this fact ever goes red, a getter has picked up work that grows with the
+    // observation count. Fix the algorithm, and do not widen the band.
+    //
+    // The code builds the big statistic in one way. It fits two distinct values, then merges
+    // the statistic with itself 61 times. Each merge doubles the count, up to 2 to the 62nd
+    // power. Two distinct values are needed at the start. Doubling a single observation keeps
+    // the data constant, which leaves the variance at 0. The standard-deviation getter then
+    // reads the square root of a zero variance. That value is degenerate, so the sweep could
+    // time an early exit instead of a real readout. From two distinct values both readouts
+    // stay finite and positive at 2 to the 62nd power. The measured values are Value about
+    // 1e-2 and StandardDeviation about 1e-1. The big and the small statistic go through
+    // exactly the same getter code paths. Variance exposes only Value, the unbiased sample
+    // variance, and StandardDeviation, so the sweep reads those two.
+    [Fact]
+    public void Bench_GetterCostIndependentOfNobs_Variance()
+    {
+        // The harness default is five million getter reads per measured run, over four
+        // measured runs. Both sides of the comparison run the same sweep body, which the
+        // helper below provides. The ratio therefore compares identical machine code. The
+        // [0.5, 1.05] band is expected at the default size, not at a bigger workload
+        // chosen to make it pass.
+        const int obs = 5_000_000;
+        const int repeats = 4;
+
+        var values = PropertyHelpers.UniformUnit(6, 20251118L);
+
+        var big = new RunningStatistics.Variance();
+        big.Fit(values[0]);
+        big.Fit(values[1]);
+        for (var i = 0; i < 61; i++) big.Merge(big);
+        Assert.Equal(1L << 62, big.Nobs);
+
+        var small = new RunningStatistics.Variance();
+        foreach (var value in values) small.Fit(value);
+        Assert.Equal(6, small.Nobs);
+
+        // preconditions: finite readouts on both sides, and the checksum below stays well inside
+        // long range when BenchmarkHarness folds it in
+        Assert.False(double.IsNaN(big.Value) || double.IsNaN(big.StandardDeviation));
+        Assert.False(double.IsNaN(small.Value) || double.IsNaN(small.StandardDeviation));
+
+        var bigNsPerObs = BenchmarkHarness.Measure(
+            "Variance readout sweep at Nobs=2^62, ns per sweep",
+            obs,
+            repeats,
+            () => SweepVariance(big, obs));
+
+        var smallNsPerObs = BenchmarkHarness.Measure(
+            "Variance readout sweep at Nobs=6, ns per sweep",
+            obs,
+            repeats,
+            () => SweepVariance(small, obs));
+
+        var ratio = BenchmarkHarness.Compare(
+            "Variance getter readout at Nobs=2^62 vs at Nobs=6, ns per sweep",
+            smallNsPerObs,
+            bigNsPerObs);
+
+        Assert.True(ratio >= 0.5 && ratio <= 1.05,
+                    $"2^62-scale readout sweep costs {ratio:F3} of the same sweep at Nobs=6 " +
+                    $"({bigNsPerObs:F4} vs {smallNsPerObs:F4} ns per sweep): the readout getters " +
+                    $"got slower once Nobs reaches 2^62. A getter is one interface dispatch plus a " +
+                    $"few flops and the claim is parity (not speed), so re-gate the algorithm - " +
+                    $"do not widen the band.");
+    }
+
+    // One compiled sweep body serves both sides of the comparison. The statistic is passed in
+    // as a parameter. Both workloads therefore run literally the same machine code, with the
+    // same JIT tier and code layout. The two workloads are the 2 to the 62nd-power one and
+    // the small-Nobs one. This matters because two separately compiled copies of the same
+    // loop drifted 7-8% on code layout alone. That drift is noise on a "not slower" claim,
+    // not a regression.
+    private static double SweepVariance(RunningStatistics.Variance stat, int obs)
+    {
+        var sum = 0.0;
+        for (var i = 0; i < obs; i++)
+        {
+            sum += stat.Value;
+            sum += stat.StandardDeviation;
+        }
+
+        return sum % 1_000_000.0;
     }
 }

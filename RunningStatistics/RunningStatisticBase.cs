@@ -73,11 +73,11 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
     public abstract void Merge(TSelf other);
 
     /// <summary>
-    /// Merge one or more running statistics together into a new instance. If only a source statistic
-    /// is supplied, then this is equivalent to creating a clone of the source statistic.
+    /// Merge one or more running statistics together into a new instance. If you supply only a source
+    /// statistic, the method returns a clone of that statistic.
     /// </summary>
     /// <param name="sourceStatistic">The running statistic which acts as the base for the returned statistic.</param>
-    /// <param name="stats">Other statistics to be merged.</param>
+    /// <param name="stats">Other statistics to merge into the new instance.</param>
     /// <returns>A new instance of a running statistic.</returns>
     public static TSelf Merge(TSelf sourceStatistic, params TSelf[] stats)
     {

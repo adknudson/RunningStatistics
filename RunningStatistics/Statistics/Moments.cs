@@ -5,9 +5,9 @@ namespace RunningStatistics;
 /// <summary>
 /// The <c>Moments</c> class calculates and maintains running statistics for the first four central
 /// moments: mean, variance, skewness, and kurtosis. The variance is the unbiased sample variance.
-/// Internally it keeps the central sums of deviations about the running mean (Chan's pairwise
-/// update), which stays accurate on badly offset streams where raw power sums would lose all
-/// significant digits.
+/// Internally it keeps the central sums of deviations about the running mean, with Chan's
+/// pairwise update. That update stays accurate on badly offset streams where raw power sums
+/// would lose all significant digits.
 /// </summary>
 public sealed class Moments : RunningStatisticBase<double, Moments>
 {
@@ -84,7 +84,8 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     {
         checked { _nobs += count; }
 
-        // First block of observations: zero spread, exact mean; nothing to update against.
+        // The first block of observations sets the mean exactly and leaves zero spread,
+        // so there is no earlier state to update against.
         if (_nobs == count)
         {
             _mean = value;
@@ -94,8 +95,9 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
             return;
         }
 
-        // Merge the constant block (value, count) into the current state: B has meanB = value and
-        // zero central sums. s/t are the signed shifts of A's and B's mean into the joint mean.
+        // Merge the constant block of identical observations into the current state: the
+        // block's mean is the fitted value and its central sums are zero. The shifts
+        // computed below measure how far each side's mean sits from the combined mean.
         var n = (double)_nobs;
         var nA = (double)(_nobs - count);
         var nB = (double)count;
