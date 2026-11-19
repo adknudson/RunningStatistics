@@ -86,6 +86,84 @@ public partial class TestEmpiricalCdf
         Assert.Equal(0, cdf.Nobs);
     }
 
+    // CloneEmpty's interface contract for parameterized statistics: the clone keeps the same
+    // internal parameters but zero observations. For EmpiricalCdf the parameter is the batch size:
+    // Merge THROWS on a NumBins mismatch (Merge_ThrowsOnDifferentNumBins), so the standard
+    // clone-then-merge accumulation only works if the clone carries NumBins through. NumBins is
+    // private; pinned via ToString and by Merge accepting the pair.
+    [Fact]
+    public void CloneEmpty_PreservesNumBinsMergeRoundTrip()
+    {
+        RunningStatistics.EmpiricalCdf cdf = new(37);
+        Random rng = new(20251118);
+        for (var i = 0; i < 111; i++)
+        {
+            cdf.Fit(rng.NextDouble());
+        }
+
+        Assert.Equal(111, cdf.Nobs);
+
+        var clone = cdf.CloneEmpty();
+        Assert.Equal(0, clone.Nobs);
+        Assert.Matches("NumBins=37,", clone.ToString());
+
+        // merging into the configuration-carrying empty clone must not throw (batch sizes
+        // still match) and must reproduce the source's readouts
+        clone.Merge(cdf);
+        Assert.Equal(111, clone.Nobs);
+        Utils.AssertIsApproximate(cdf.Min, clone.Min, 0);
+        Utils.AssertIsApproximate(cdf.Max, clone.Max, 0);
+        foreach (var p in new[] { 0.25, 0.5, 0.75 })
+        {
+            Utils.AssertIsApproximate(cdf.Quantile(p), clone.Quantile(p), 0);
+        }
+    }
+
+    // Reset clears the observation state (Values, buffer, extrema) but must leave the batch size
+    // alone, so re-fitting a reset CDF replays the exact same flush history a fresh one would:
+    // bitwise-identical quantile tables.
+    [Fact]
+    public void Reset_PreservesNumBinsRefitsIdentically()
+    {
+        var values = new List<double>();
+        var rng = new Random(20251119);
+        for (var i = 0; i < 1000; i++)
+        {
+            values.Add(rng.NextDouble());
+        }
+
+        RunningStatistics.EmpiricalCdf reset = new(20);
+        foreach (var v in values)
+        {
+            reset.Fit(v);
+        }
+
+        Assert.Equal(1000, reset.Nobs);
+        reset.Reset();
+        Assert.Equal(0, reset.Nobs);
+        Assert.Matches("NumBins=20,", reset.ToString());
+
+        foreach (var v in values)
+        {
+            reset.Fit(v);
+        }
+
+        RunningStatistics.EmpiricalCdf fresh = new(20);
+        foreach (var v in values)
+        {
+            fresh.Fit(v);
+        }
+
+        Assert.Equal(1000, reset.Nobs);
+        Assert.Equal(1000, fresh.Nobs);
+        Assert.Equal(fresh.Min, reset.Min);
+        Assert.Equal(fresh.Max, reset.Max);
+        foreach (var p in new[] { 0.25, 0.5, 0.75 })
+        {
+            Utils.AssertIsApproximate(fresh.Quantile(p), reset.Quantile(p), 0);
+        }
+    }
+
     [Fact]
     public void Merge_WithEmptyOtherEqualsPopulated()
     {

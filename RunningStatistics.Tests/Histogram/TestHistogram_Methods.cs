@@ -160,6 +160,220 @@ public partial class TestHistogram
         }
     }
 
+    // CloneEmpty's interface contract for parameterized statistics: the clone keeps the same
+    // internal parameters but zero observations. For Histogram the parameters are the constructor's
+    // edges and closure flags — a clone that lost them would bin later observations differently
+    // (and would take the wrong branch of Merge).
+    [Fact]
+    public void CloneEmpty_PreservesEdgesAndClosureFlags()
+    {
+        // (-inf, 0], (0, 10], (10, 100]
+        RunningStatistics.Histogram hist = new(_edges, leftClosed: false, endsClosed: false);
+        hist.Fit(-1);
+        hist.Fit(5);
+        hist.Fit(1000);
+
+        var clone = hist.CloneEmpty();
+
+        // configuration survives, observations do not
+        Assert.Equal(_edges, clone.Edges);
+        Assert.False(clone.LeftClosed);
+        Assert.False(clone.EndsClosed);
+        Assert.Equal(0, clone.Nobs);
+
+        // the clone bins identically: same values -> same bins, same OOB side
+        clone.Fit(-1);
+        clone.Fit(5);
+        clone.Fit(1000);
+        // -1 lands in the (-inf,0] bin, 5 in the (0,10] bin; 1000 is above the top edge: OOB
+        Assert.Equal([1, 1, 0], BinCounts(clone));
+        Assert.Equal(0, clone.OutOfBoundsCounts.Lower);
+        Assert.Equal(1, clone.OutOfBoundsCounts.Upper);
+        Assert.Equal(3, clone.Nobs);
+    }
+
+    // The accumulate pattern from user code (total = stat.CloneEmpty(); total.Merge(chunk)):
+    // the configuration-carrying clone must land on Merge's same-bins branch and sum bin counts
+    // directly — the midpoint fallback would not produce these counts.
+    [Fact]
+    public void CloneEmpty_AccumulateMergeSumsBinsDirectly()
+    {
+        RunningStatistics.Histogram chunk1 = new(_edges, leftClosed: false, endsClosed: false);
+        chunk1.Fit(-1, 2);
+        chunk1.Fit(5);
+        chunk1.Fit(1000);
+
+        RunningStatistics.Histogram chunk2 = new(_edges, leftClosed: false, endsClosed: false);
+        chunk2.Fit(-5);
+        chunk2.Fit(15, 3);
+
+        var total = chunk1.CloneEmpty();
+        Assert.Equal(_edges, total.Edges);
+        Assert.False(total.LeftClosed);
+        Assert.False(total.EndsClosed);
+        Assert.Equal(0, total.Nobs);
+
+        total.Merge(chunk1);
+        total.Merge(chunk2);
+
+        // bins summed elementwise, OOB counters summed, nothing lost
+        Assert.Equal([3, 1, 3], BinCounts(total));
+        Assert.Equal(0, total.OutOfBoundsCounts.Lower);
+        Assert.Equal(1, total.OutOfBoundsCounts.Upper);
+        Assert.Equal(8, total.Nobs);
+
+        // equivalence with a single histogram fitted all data at once
+        RunningStatistics.Histogram all = new(_edges, leftClosed: false, endsClosed: false);
+        all.Fit(-1, 2);
+        all.Fit(5);
+        all.Fit(1000);
+        all.Fit(-5);
+        all.Fit(15, 3);
+        Assert.Equal(BinCounts(total), BinCounts(all));
+        Assert.Equal(total.Nobs, all.Nobs);
+        Assert.Equal(total.OutOfBoundsCounts.Lower, all.OutOfBoundsCounts.Lower);
+        Assert.Equal(total.OutOfBoundsCounts.Upper, all.OutOfBoundsCounts.Upper);
+    }
+
+    // Reset must clear counters while leaving the bin configuration alone: edges, closure flags
+    // and the bin list survive, OOB counters clear (not just the bins), and refitting the
+    // cleared histogram reproduces the exact bin membership it had before the reset.
+    [Fact]
+    public void Reset_PreservesEdgesRefitsSameBins()
+    {
+        // [0, 10), [10, 100]
+        RunningStatistics.Histogram h = new([0.0, 10.0, 100.0]);
+        h.Fit(-7, 2);
+        h.Fit(5);
+        h.Fit(50);
+        h.Fit(1000, 4);
+
+        // pre-reset snapshot
+        Assert.Equal([1, 1], BinCounts(h));
+        Assert.Equal(2, h.OutOfBoundsCounts.Lower);
+        Assert.Equal(4, h.OutOfBoundsCounts.Upper);
+        Assert.Equal(8, h.Nobs);
+
+        h.Reset();
+        Assert.Equal(0, h.Nobs);
+        Assert.Equal([0, 0], BinCounts(h));
+        Assert.Equal(0, h.OutOfBoundsCounts.Lower);
+        Assert.Equal(0, h.OutOfBoundsCounts.Upper);
+
+        // the bins are still there, still configured, and bin identically after reuse
+        h.Fit(-7, 2);
+        h.Fit(5);
+        h.Fit(50);
+        h.Fit(1000, 4);
+        Assert.Equal([0.0, 10.0, 100.0], h.Edges);
+        Assert.True(h.LeftClosed);
+        Assert.True(h.EndsClosed);
+        Assert.Equal([1, 1], BinCounts(h));
+        Assert.Equal(2, h.OutOfBoundsCounts.Lower);
+        Assert.Equal(4, h.OutOfBoundsCounts.Upper);
+        Assert.Equal(8, h.Nobs);
+    }
+
+    // DECISION NOTE — the mismatched-edges fallback of Histogram.Merge is PINNED AS-IS.
+    // When BinsAreMatching is false (Bins.Equals compares bounds AND closure flags, counts
+    // ignored), Merge does NOT throw: it replays each source bin's count at that bin's
+    // Midpoint — an approximation of where the observations actually were — and a midpoint
+    // outside the receiver falls into its OutOfBounds counters instead of a bin. Turning
+    // this into a throw (or a finer redistribution) would change released behavior and
+    // would need the staged correctness + benchmark gate from AGENTS.md. Cross-statistic
+    // contrast, for the record: EmpiricalCdf.Merge THROWS on a NumBins mismatch while
+    // Histogram.Merge approximates. The contrast for SAME edges AND SAME closure flags
+    // (the bin-summing branch) is already pinned by Merge_MatchingEdgesSumsBinsDirectly
+    // and CloneEmpty_AccumulateMergeSumsBinsDirectly — not duplicated below.
+    // Mismatched edge sets: no throw, no complaint — each source bin's count is refit at
+    // that bin's midpoint into the receiver. Receiver [0,10), [10,20] holds fit 5 (bin 0);
+    // source [0,5), [5,10), [10,15), [15,20] has one observation per bin (fits 1, 6, 11, 16),
+    // midpoints 2.5, 7.5, 12.5, 17.5. Refit: 2.5 and 7.5 -> receiver bin 0 [0,10); 12.5 and
+    // 17.5 -> receiver bin 1 [10,20]. Final bins [3, 2], Nobs 1+4, OOB untouched (0, 0).
+    [Fact]
+    public void Merge_MismatchedEdgesRefitsBinMidpoints()
+    {
+        RunningStatistics.Histogram receiver = new([0.0, 10.0, 20.0]);
+        receiver.Fit(5);
+
+        RunningStatistics.Histogram source = new([0.0, 5.0, 10.0, 15.0, 20.0]);
+        source.Fit(1);
+        source.Fit(6);
+        source.Fit(11);
+        source.Fit(16);
+
+        receiver.Merge(source);
+
+        Assert.Equal([3, 2], BinCounts(receiver));
+        Assert.Equal(5, receiver.Nobs);
+        Assert.Equal(0, receiver.OutOfBoundsCounts.Lower);
+        Assert.Equal(0, receiver.OutOfBoundsCounts.Upper);
+    }
+
+    // The midpoint refit reuses UncheckedFit, so a midpoint outside the receiver is routed
+    // to the OutOfBounds counters exactly like a normal Fit would. (a) Receiver [10,12] with
+    // fit 11; source [0,100] carries Fit(50, 4); the single source midpoint 50 > 12 -> upper
+    // OOB +4, Nobs 1+4, bins unchanged [1]. (b) Source edges [-inf, 0, 10, +inf] (bins [-inf,0),
+    // [0,10), [10,+inf]) refit into receiver [0,10), [10,20]: HistogramBin.Midpoint returns the
+    // infinite bound when one bound is infinite, so the infinite-edge bins refit at -Infinity
+    // (-> lower OOB) and +Infinity (-> upper OOB); only the middle bin's midpoint 5 lands in a
+    // bin. Fit guards NotNaN only, so the infinities are accepted, not thrown.
+    [Fact]
+    public void Merge_MismatchedEdgesMidpointsFallOutOfBounds()
+    {
+        RunningStatistics.Histogram narrow = new([10.0, 12.0]);
+        narrow.Fit(11);
+
+        RunningStatistics.Histogram wide = new([0.0, 100.0]);
+        wide.Fit(50, 4);
+
+        narrow.Merge(wide);
+
+        Assert.Equal([1], BinCounts(narrow));
+        Assert.Equal(5, narrow.Nobs);
+        Assert.Equal(0, narrow.OutOfBoundsCounts.Lower);
+        Assert.Equal(4, narrow.OutOfBoundsCounts.Upper);
+
+        RunningStatistics.Histogram receiver = new([0.0, 10.0, 20.0]);
+        receiver.Fit(5);
+
+        RunningStatistics.Histogram infinite = new([double.NegativeInfinity, 0.0, 10.0, double.PositiveInfinity]);
+        infinite.Fit(-1);
+        infinite.Fit(5);
+        infinite.Fit(15);
+
+        receiver.Merge(infinite);
+
+        // midpoint 5 refits into bin 0; -Infinity -> lower OOB, +Infinity -> upper OOB
+        Assert.Equal([2, 0], BinCounts(receiver));
+        Assert.Equal(4, receiver.Nobs);
+        Assert.Equal(1, receiver.OutOfBoundsCounts.Lower);
+        Assert.Equal(1, receiver.OutOfBoundsCounts.Upper);
+    }
+
+    // BinsAreMatching compares bounds AND closure flags, so identical edges with different
+    // (leftClosed, endsClosed) take the refit branch, not the bin-summing branch. Receiver
+    // [0,10), [10,20] (defaults) vs source (0,10], (10,20]: the source's fits are both at
+    // 10.0, which with leftClosed=false lands in the source's FIRST bin (0,10]. The direct
+    // sum would have put those 2 into receiver bin 1 (10,20]-positioned); the refit branch
+    // instead replays 2 observations at the first bin's midpoint 5 -> receiver bin 0. Bins
+    // [2, 0] is only reachable via the midpoint replay.
+    [Fact]
+    public void Merge_SameEdgesDifferentClosureFlagsRefitsMidpoints()
+    {
+        RunningStatistics.Histogram receiver = new([0.0, 10.0, 20.0], leftClosed: true, endsClosed: true);
+
+        RunningStatistics.Histogram source = new([0.0, 10.0, 20.0], leftClosed: false, endsClosed: false);
+        source.Fit(10.0, 2);
+
+        receiver.Merge(source);
+
+        Assert.Equal([2, 0], BinCounts(receiver));
+        Assert.Equal(2, receiver.Nobs);
+        Assert.Equal(0, receiver.OutOfBoundsCounts.Lower);
+        Assert.Equal(0, receiver.OutOfBoundsCounts.Upper);
+    }
+
     // Merging two stats fitted with the first and second halves of the same data must match
     // a stat fitted with all of the data at once.
     [Fact]

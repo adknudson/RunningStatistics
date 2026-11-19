@@ -325,5 +325,122 @@ public partial class TestMoments
         Utils.AssertIsApproximate(excessKurtosis, moments.ExcessKurtosis, 0.1);
     }
 
+    // PERMANENT merge-algebra gates (keep). Merge associativity: (a∪b)∪c and a∪(b∪c) built
+    // with fresh Clone() (CloneEmpty + Merge) receivers over three seeded KappaStream chunks
+    // (n=100, spread 1, κ = |mean|/spread = 10^0..10^8). Every getter of every grouping must
+    // match the two-pass PropertyHelpers reference on a∪b∪c, and the groupings must agree
+    // with each other, within: relTol = 1e-8 + 1e4·κ·ε on Mean/Variance/StandardDeviation;
+    // absTol = 1e-12 + 1e3·κ·ε on Skewness/Kurtosis/ExcessKurtosis (the 1e-12 floor widens
+    // the planned floorless 1e3·κ·ε at low κ: at κ=1 that margin gave only ~45x headroom
+    // over the observed 4.9E-15, the floor restores ~250x). Probe worst observed (merge
+    // errors scale ~linearly in κ, ≈1-3·κ·ε — not κ²): at κ=1e8 Variance rel 2.31E-8, StdDev
+    // rel 1.15E-8, Skewness abs 6.31E-8, Kurtosis/Excess abs 4.69E-8 → headroom ~350-470x
+    // (abs) and ~1e4x (rel); cross-grouping differences are far smaller.
+    [Fact]
+    public void Gate_MergeAssociativityMoments()
+    {
+        const int n = 100;
+        for (var d = 0; d <= 8; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var relTol = 1e-8 + 1e4 * kappa * PropertyHelpers.Epsilon;
+            var absTol = 1e-12 + 1e3 * kappa * PropertyHelpers.Epsilon;
+
+            var chunkA = PropertyHelpers.KappaStream(n, kappa, 20251118 + d);
+            var chunkB = PropertyHelpers.KappaStream(n, kappa, 40251121 + d);
+            var chunkC = PropertyHelpers.KappaStream(n, kappa, 70251123 + d);
+
+            var all = new List<double>();
+            for (var i = 0; i < n; i++) all.Add(chunkA[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkB[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkC[i]);
+            var reference = PropertyHelpers.ReferenceMoments(all);
+
+            var a = new RunningStatistics.Moments();
+            var b = new RunningStatistics.Moments();
+            var c = new RunningStatistics.Moments();
+            for (var i = 0; i < n; i++) a.Fit(chunkA[i]);
+            for (var i = 0; i < n; i++) b.Fit(chunkB[i]);
+            for (var i = 0; i < n; i++) c.Fit(chunkC[i]);
+
+            var g1 = a.Clone();
+            g1.Merge(b);
+            g1.Merge(c);
+
+            var bc = b.Clone();
+            bc.Merge(c);
+            var g2 = a.Clone();
+            g2.Merge(bc);
+
+            AssertMomentsAgainstReference("(a∪b)∪c", reference, g1, relTol, absTol);
+            AssertMomentsAgainstReference("a∪(b∪c)", reference, g2, relTol, absTol);
+            AssertMomentsGroupingsAgree("(a∪b)∪c vs a∪(b∪c)", g1, g2, relTol, absTol);
+        }
+    }
+
+    // Same merge-algebra contract, commutative direction: a∪b∪c vs c∪b∪a over the same
+    // three seeded κ-chunks, fresh Clone() receivers, same κ range (10^0..10^8) and margins
+    // relTol = 1e-8 + 1e4·κ·ε / absTol = 1e-12 + 1e3·κ·ε as Gate_MergeAssociativityMoments.
+    [Fact]
+    public void Gate_MergeCommutativityMoments()
+    {
+        const int n = 100;
+        for (var d = 0; d <= 8; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var relTol = 1e-8 + 1e4 * kappa * PropertyHelpers.Epsilon;
+            var absTol = 1e-12 + 1e3 * kappa * PropertyHelpers.Epsilon;
+
+            var chunkA = PropertyHelpers.KappaStream(n, kappa, 90251128 + d);
+            var chunkB = PropertyHelpers.KappaStream(n, kappa, 13251217 + d);
+            var chunkC = PropertyHelpers.KappaStream(n, kappa, 56251219 + d);
+
+            var all = new List<double>();
+            for (var i = 0; i < n; i++) all.Add(chunkA[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkB[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkC[i]);
+            var reference = PropertyHelpers.ReferenceMoments(all);
+
+            var a = new RunningStatistics.Moments();
+            var b = new RunningStatistics.Moments();
+            var c = new RunningStatistics.Moments();
+            for (var i = 0; i < n; i++) a.Fit(chunkA[i]);
+            for (var i = 0; i < n; i++) b.Fit(chunkB[i]);
+            for (var i = 0; i < n; i++) c.Fit(chunkC[i]);
+
+            var g1 = a.Clone();
+            g1.Merge(b);
+            g1.Merge(c);
+
+            var g3 = c.Clone();
+            g3.Merge(b);
+            g3.Merge(a);
+
+            AssertMomentsAgainstReference("a∪b∪c", reference, g1, relTol, absTol);
+            AssertMomentsAgainstReference("c∪b∪a", reference, g3, relTol, absTol);
+            AssertMomentsGroupingsAgree("a∪b∪c vs c∪b∪a", g1, g3, relTol, absTol);
+        }
+    }
+
+    private static void AssertMomentsAgainstReference(string tag, MomentsReference reference, RunningStatistics.Moments merged, double relTol, double absTol)
+    {
+        Assert.True(PropertyHelpers.Within(reference.Mean, merged.Mean, relTol), PropertyHelpers.Describe($"{tag} Mean vs reference", reference.Mean, merged.Mean));
+        Assert.True(PropertyHelpers.Within(reference.Variance, merged.Variance, relTol), PropertyHelpers.Describe($"{tag} Variance vs reference", reference.Variance, merged.Variance));
+        Assert.True(PropertyHelpers.Within(reference.StandardDeviation, merged.StandardDeviation, relTol), PropertyHelpers.Describe($"{tag} StandardDeviation vs reference", reference.StandardDeviation, merged.StandardDeviation));
+        Assert.True(PropertyHelpers.WithinAbsolute(reference.Skewness, merged.Skewness, absTol), PropertyHelpers.Describe($"{tag} Skewness vs reference", reference.Skewness, merged.Skewness));
+        Assert.True(PropertyHelpers.WithinAbsolute(reference.Kurtosis, merged.Kurtosis, absTol), PropertyHelpers.Describe($"{tag} Kurtosis vs reference", reference.Kurtosis, merged.Kurtosis));
+        Assert.True(PropertyHelpers.WithinAbsolute(reference.ExcessKurtosis, merged.ExcessKurtosis, absTol), PropertyHelpers.Describe($"{tag} ExcessKurtosis vs reference", reference.ExcessKurtosis, merged.ExcessKurtosis));
+    }
+
+    private static void AssertMomentsGroupingsAgree(string tag, RunningStatistics.Moments left, RunningStatistics.Moments right, double relTol, double absTol)
+    {
+        Assert.True(PropertyHelpers.Within(left.Mean, right.Mean, relTol), PropertyHelpers.Describe($"{tag} Mean", left.Mean, right.Mean));
+        Assert.True(PropertyHelpers.Within(left.Variance, right.Variance, relTol), PropertyHelpers.Describe($"{tag} Variance", left.Variance, right.Variance));
+        Assert.True(PropertyHelpers.Within(left.StandardDeviation, right.StandardDeviation, relTol), PropertyHelpers.Describe($"{tag} StandardDeviation", left.StandardDeviation, right.StandardDeviation));
+        Assert.True(PropertyHelpers.WithinAbsolute(left.Skewness, right.Skewness, absTol), PropertyHelpers.Describe($"{tag} Skewness", left.Skewness, right.Skewness));
+        Assert.True(PropertyHelpers.WithinAbsolute(left.Kurtosis, right.Kurtosis, absTol), PropertyHelpers.Describe($"{tag} Kurtosis", left.Kurtosis, right.Kurtosis));
+        Assert.True(PropertyHelpers.WithinAbsolute(left.ExcessKurtosis, right.ExcessKurtosis, absTol), PropertyHelpers.Describe($"{tag} ExcessKurtosis", left.ExcessKurtosis, right.ExcessKurtosis));
+    }
+
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

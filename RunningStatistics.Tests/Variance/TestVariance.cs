@@ -222,5 +222,104 @@ public partial class TestVariance()
         Assert.Equal(double.NaN, v1.Value);
     }
 
-    // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
+    // PERMANENT merge-algebra gate (keep): Variance Merge associativity. Three seeded KappaStream
+    // chunks (n=100, spread 1) per κ, κ = 10^0..10^8; (a∪b)∪c vs a∪(b∪c) with fresh Clone()
+    // (CloneEmpty + Merge) receivers. Value and StandardDeviation of both groupings must match
+    // the two-pass reference on a∪b∪c, and each other, within relTol = 1e-8 + 1e4·κ·ε.
+    // Probe worst observed: rel 2.40E-8 at κ=1e8 (~1·κ·ε; merge errors scale ~linearly in κ,
+    // not κ²) → headroom ~1e4x; cross-grouping rel ≤ 1.1E-9.
+    [Fact]
+    public void Gate_MergeAssociativityVariance()
+    {
+        const int n = 100;
+        for (var d = 0; d <= 8; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var relTol = 1e-8 + 1e4 * kappa * PropertyHelpers.Epsilon;
+
+            var chunkA = PropertyHelpers.KappaStream(n, kappa, 11251128 + d);
+            var chunkB = PropertyHelpers.KappaStream(n, kappa, 33251129 + d);
+            var chunkC = PropertyHelpers.KappaStream(n, kappa, 55251131 + d);
+
+            var all = new List<double>();
+            for (var i = 0; i < n; i++) all.Add(chunkA[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkB[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkC[i]);
+            var reference = PropertyHelpers.ReferenceMoments(all);
+
+            var a = new RunningStatistics.Variance();
+            var b = new RunningStatistics.Variance();
+            var c = new RunningStatistics.Variance();
+            for (var i = 0; i < n; i++) a.Fit(chunkA[i]);
+            for (var i = 0; i < n; i++) b.Fit(chunkB[i]);
+            for (var i = 0; i < n; i++) c.Fit(chunkC[i]);
+
+            var g1 = a.Clone();
+            g1.Merge(b);
+            g1.Merge(c);
+
+            var bc = b.Clone();
+            bc.Merge(c);
+            var g2 = a.Clone();
+            g2.Merge(bc);
+
+            AssertVarianceAgainstReference("(a∪b)∪c", reference, g1, relTol);
+            AssertVarianceAgainstReference("a∪(b∪c)", reference, g2, relTol);
+            AssertVarianceGroupingsAgree("(a∪b)∪c vs a∪(b∪c)", g1, g2, relTol);
+        }
+    }
+
+    // Same contract, commutative direction: a∪b∪c vs c∪b∪a, same κ range (10^0..10^8),
+    // fresh Clone() receivers and margins relTol = 1e-8 + 1e4·κ·ε.
+    [Fact]
+    public void Gate_MergeCommutativityVariance()
+    {
+        const int n = 100;
+        for (var d = 0; d <= 8; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var relTol = 1e-8 + 1e4 * kappa * PropertyHelpers.Epsilon;
+
+            var chunkA = PropertyHelpers.KappaStream(n, kappa, 22251138 + d);
+            var chunkB = PropertyHelpers.KappaStream(n, kappa, 44251139 + d);
+            var chunkC = PropertyHelpers.KappaStream(n, kappa, 66251141 + d);
+
+            var all = new List<double>();
+            for (var i = 0; i < n; i++) all.Add(chunkA[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkB[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkC[i]);
+            var reference = PropertyHelpers.ReferenceMoments(all);
+
+            var a = new RunningStatistics.Variance();
+            var b = new RunningStatistics.Variance();
+            var c = new RunningStatistics.Variance();
+            for (var i = 0; i < n; i++) a.Fit(chunkA[i]);
+            for (var i = 0; i < n; i++) b.Fit(chunkB[i]);
+            for (var i = 0; i < n; i++) c.Fit(chunkC[i]);
+
+            var g1 = a.Clone();
+            g1.Merge(b);
+            g1.Merge(c);
+
+            var g3 = c.Clone();
+            g3.Merge(b);
+            g3.Merge(a);
+
+            AssertVarianceAgainstReference("a∪b∪c", reference, g1, relTol);
+            AssertVarianceAgainstReference("c∪b∪a", reference, g3, relTol);
+            AssertVarianceGroupingsAgree("a∪b∪c vs c∪b∪a", g1, g3, relTol);
+        }
+    }
+
+    private static void AssertVarianceAgainstReference(string tag, MomentsReference reference, RunningStatistics.Variance merged, double relTol)
+    {
+        Assert.True(PropertyHelpers.Within(reference.Variance, merged.Value, relTol), PropertyHelpers.Describe($"{tag} Value vs reference", reference.Variance, merged.Value));
+        Assert.True(PropertyHelpers.Within(reference.StandardDeviation, merged.StandardDeviation, relTol), PropertyHelpers.Describe($"{tag} StandardDeviation vs reference", reference.StandardDeviation, merged.StandardDeviation));
+    }
+
+    private static void AssertVarianceGroupingsAgree(string tag, RunningStatistics.Variance left, RunningStatistics.Variance right, double relTol)
+    {
+        Assert.True(PropertyHelpers.Within(left.Value, right.Value, relTol), PropertyHelpers.Describe($"{tag} Value", left.Value, right.Value));
+        Assert.True(PropertyHelpers.Within(left.StandardDeviation, right.StandardDeviation, relTol), PropertyHelpers.Describe($"{tag} StandardDeviation", left.StandardDeviation, right.StandardDeviation));
+    }
 }

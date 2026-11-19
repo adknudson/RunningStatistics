@@ -292,5 +292,107 @@ public partial class TestNormal
         Assert.Equal(double.NaN, fresh.Mean);
     }
 
-    // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
+    // PERMANENT merge-algebra gate (keep): Normal Merge associativity. Three seeded KappaStream
+    // chunks (n=100, spread 1) per κ, κ = 10^0..10^8; (a∪b)∪c vs a∪(b∪c) with fresh Clone()
+    // (CloneEmpty + Merge) receivers. Mean, Variance and StandardDeviation of both groupings
+    // must match the two-pass reference on a∪b∪c, and each other, within relTol = 1e-8 +
+    // 1e4·κ·ε (all Normal getters are scale-valued, so relative margins apply).
+    // Probe worst observed: Variance rel 2.40E-8, StdDev rel 1.20E-8, Mean rel 3.7E-16 at
+    // κ=1e8 (merge errors scale ~linearly in κ, not κ²) → headroom ~1e4x.
+    [Fact]
+    public void Gate_MergeAssociativityNormal()
+    {
+        const int n = 100;
+        for (var d = 0; d <= 8; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var relTol = 1e-8 + 1e4 * kappa * PropertyHelpers.Epsilon;
+
+            var chunkA = PropertyHelpers.KappaStream(n, kappa, 14251128 + d);
+            var chunkB = PropertyHelpers.KappaStream(n, kappa, 24251129 + d);
+            var chunkC = PropertyHelpers.KappaStream(n, kappa, 34251131 + d);
+
+            var all = new List<double>();
+            for (var i = 0; i < n; i++) all.Add(chunkA[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkB[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkC[i]);
+            var reference = PropertyHelpers.ReferenceMoments(all);
+
+            var a = new RunningStatistics.Normal();
+            var b = new RunningStatistics.Normal();
+            var c = new RunningStatistics.Normal();
+            for (var i = 0; i < n; i++) a.Fit(chunkA[i]);
+            for (var i = 0; i < n; i++) b.Fit(chunkB[i]);
+            for (var i = 0; i < n; i++) c.Fit(chunkC[i]);
+
+            var g1 = a.Clone();
+            g1.Merge(b);
+            g1.Merge(c);
+
+            var bc = b.Clone();
+            bc.Merge(c);
+            var g2 = a.Clone();
+            g2.Merge(bc);
+
+            AssertNormalAgainstReference("(a∪b)∪c", reference, g1, relTol);
+            AssertNormalAgainstReference("a∪(b∪c)", reference, g2, relTol);
+            AssertNormalGroupingsAgree("(a∪b)∪c vs a∪(b∪c)", g1, g2, relTol);
+        }
+    }
+
+    // Same contract, commutative direction: a∪b∪c vs c∪b∪a, same κ range (10^0..10^8),
+    // fresh Clone() receivers and margins relTol = 1e-8 + 1e4·κ·ε.
+    [Fact]
+    public void Gate_MergeCommutativityNormal()
+    {
+        const int n = 100;
+        for (var d = 0; d <= 8; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var relTol = 1e-8 + 1e4 * kappa * PropertyHelpers.Epsilon;
+
+            var chunkA = PropertyHelpers.KappaStream(n, kappa, 41251138 + d);
+            var chunkB = PropertyHelpers.KappaStream(n, kappa, 51251139 + d);
+            var chunkC = PropertyHelpers.KappaStream(n, kappa, 61251141 + d);
+
+            var all = new List<double>();
+            for (var i = 0; i < n; i++) all.Add(chunkA[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkB[i]);
+            for (var i = 0; i < n; i++) all.Add(chunkC[i]);
+            var reference = PropertyHelpers.ReferenceMoments(all);
+
+            var a = new RunningStatistics.Normal();
+            var b = new RunningStatistics.Normal();
+            var c = new RunningStatistics.Normal();
+            for (var i = 0; i < n; i++) a.Fit(chunkA[i]);
+            for (var i = 0; i < n; i++) b.Fit(chunkB[i]);
+            for (var i = 0; i < n; i++) c.Fit(chunkC[i]);
+
+            var g1 = a.Clone();
+            g1.Merge(b);
+            g1.Merge(c);
+
+            var g3 = c.Clone();
+            g3.Merge(b);
+            g3.Merge(a);
+
+            AssertNormalAgainstReference("a∪b∪c", reference, g1, relTol);
+            AssertNormalAgainstReference("c∪b∪a", reference, g3, relTol);
+            AssertNormalGroupingsAgree("a∪b∪c vs c∪b∪a", g1, g3, relTol);
+        }
+    }
+
+    private static void AssertNormalAgainstReference(string tag, MomentsReference reference, RunningStatistics.Normal merged, double relTol)
+    {
+        Assert.True(PropertyHelpers.Within(reference.Mean, merged.Mean, relTol), PropertyHelpers.Describe($"{tag} Mean vs reference", reference.Mean, merged.Mean));
+        Assert.True(PropertyHelpers.Within(reference.Variance, merged.Variance, relTol), PropertyHelpers.Describe($"{tag} Variance vs reference", reference.Variance, merged.Variance));
+        Assert.True(PropertyHelpers.Within(reference.StandardDeviation, merged.StandardDeviation, relTol), PropertyHelpers.Describe($"{tag} StandardDeviation vs reference", reference.StandardDeviation, merged.StandardDeviation));
+    }
+
+    private static void AssertNormalGroupingsAgree(string tag, RunningStatistics.Normal left, RunningStatistics.Normal right, double relTol)
+    {
+        Assert.True(PropertyHelpers.Within(left.Mean, right.Mean, relTol), PropertyHelpers.Describe($"{tag} Mean", left.Mean, right.Mean));
+        Assert.True(PropertyHelpers.Within(left.Variance, right.Variance, relTol), PropertyHelpers.Describe($"{tag} Variance", left.Variance, right.Variance));
+        Assert.True(PropertyHelpers.Within(left.StandardDeviation, right.StandardDeviation, relTol), PropertyHelpers.Describe($"{tag} StandardDeviation", left.StandardDeviation, right.StandardDeviation));
+    }
 }

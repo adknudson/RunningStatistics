@@ -380,7 +380,41 @@ public partial class TestCountMap()
         Assert.False(clone.ContainsKey(9));
         Assert.Equal(107, clone.Nobs);
     }
-    
+
+    // CloneEmpty's interface contract for parameterized statistics: the clone keeps the same
+    // internal parameters but zero observations. For CountMap(TObs) built with a custom comparer,
+    // the comparer IS the ordering configuration: a clone that dropped it would silently degrade
+    // the clone's MinKey()/MaxKey() to the default ordering.
+    [Fact]
+    public void CloneEmpty_PreservesComparerOrdering()
+    {
+        var comparer = Comparer<int>.Create((x, y) => Comparer<int>.Default.Compare(-x, -y));
+        var stat = new CountMap<int>(comparer);
+        stat.Fit(1, 2);
+        stat.Fit(3, 5);
+
+        var clone = stat.CloneEmpty();
+
+        // the clone carries the same comparer object (new(Comparer)), not a default
+        Assert.Same(comparer, clone.Comparer);
+        Assert.Empty(clone);
+        Assert.Equal(0, clone.Nobs);
+
+        // ordering on the clone follows the comparer: with only key {2} min and max coincide,
+        // and after the merge it is reversed, so MinKey is the LARGEST int and MaxKey the smallest
+        clone.Fit(2, 4);
+        Assert.Equal(2, clone.MinKey());
+        Assert.Equal(2, clone.MaxKey());
+
+        // and it survives the clone-then-merge accumulation as well
+        clone.Merge(stat);
+        Assert.Equal(3, clone.MinKey());
+        Assert.Equal(1, clone.MaxKey());
+        Assert.Equal(11, clone.Nobs);
+        Assert.Equal(3, clone.Count);
+        Assert.Equal(7, stat.Nobs);
+    }
+
     // Merge-into-self observed: the base foreach reads each entry (key, count) at its visit and
     // Fit accumulates into the same dictionary entry, so every key is doubled exactly once,
     // Nobs doubles, and the map stays stable (no new keys, no throw, no skipped key).
