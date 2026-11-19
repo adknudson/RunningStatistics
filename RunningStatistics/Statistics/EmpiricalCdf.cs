@@ -69,23 +69,26 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     }
 
     /// <summary>
-    /// Fits the value a given number of times. The value is replayed in the same order as a
-    /// loop of single fits, and the resulting state is bitwise identical to that loop.
+    /// Fits the value the given number of times.
     ///
-    /// <b>The cost of this overload grows with count / NumBins, not with count.</b> When the
-    /// internal buffer flushes, it blends every bin with a weight. That weight equals the batch
-    /// size divided by the running observation count at that flush, and that count advances
-    /// inside the batch. So no single blend can stand in for the chain of flush blends, and the
-    /// method keeps one blend per flush, in replay order. What it skips is the bookkeeping that
-    /// a constant run repeats for every observation: the buffer index math, the sort of a window
-    /// that holds one repeated value, and the per-observation extrema update, which folds to a
-    /// constant segment in closed form.
+    /// <b>The cost of this overload grows with count / NumBins, not with count.</b> A loop of
+    /// single fits pays one step per observation. This overload folds that step and blends the
+    /// bins once per buffer flush.
     ///
-    /// The cost is O(count / NumBins) flush blends plus O(NumBins) boundary bookkeeping.
-    /// Because the blend arithmetic still happens at the same points in the same order, a
-    /// weighted fit leaves exactly the same state, bit for bit, as a loop of the same number of
+    /// The call leaves exactly the same state, bit for bit, as a loop of the same number of
     /// single-observation fits in the same order.
     /// </summary>
+    /// <remarks>
+    /// Each flush blends the bins with NumBins / Nobs, evaluated with the observation count
+    /// at that flush. That count advances inside a batch, so flushes inside one call blend
+    /// with different weights, and no single closed-form blend can replace the chain. The
+    /// method therefore replays the blend chain, one blend per flush, in the order the
+    /// flushes would happen. That blend order is what keeps the state bitwise exact. What
+    /// the batching skips is only the bookkeeping a constant run repeats per observation:
+    /// buffer index math, the sort of a window holding one repeated value, and the
+    /// per-observation extrema update. The extrema fold of a constant segment is proven
+    /// bitwise equal to the single-fit loop by Gate_ExtremaWeightedFitBitwiseEqualsLoop.
+    /// </remarks>
     /// <param name="value">The value to fit. Must be finite.</param>
     /// <param name="count">The number of times to fit <paramref name="value"/>. Must be non-negative.</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="value"/> is NaN or infinite.</exception>
