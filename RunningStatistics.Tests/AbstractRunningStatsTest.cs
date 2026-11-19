@@ -520,6 +520,19 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         Assert.Equal(3, stat.Nobs);
     }
     
+    // Decision note: element-level guards are DELIBERATELY class-specific, not shared. Extrema.cs
+    // guards elements with Require.NotNaN (±Infinity fits, NaN throws) and Extrema.Generic.cs with
+    // Require.NotNull (a null boxed double in a generic sequence throws ArgumentNullException); the
+    // numeric families (Mean/Sum/Variance/Normal .cs) guard per element with Require.Finite, so a
+    // null element there is compile-time impossible for double, or NPEs on unboxing in the leading
+    // values.ToList() before any guard runs. Validation TIMING differs too: Mean/Sum/Variance/Normal
+    // iterable overloads pre-validate the whole iterable before applying anything (all-or-nothing),
+    // Beta.cs counts bools per element then validates the batched counts, and the base RunningStatisticBase.cs
+    // foreach families validate per element with preceding elements already applied - non-atomic,
+    // pinned for pairs by FitPairsWithNegativeCount_ThrowsPrecedingPairsApplied below. Only null
+    // COLLECTION rejection is shared, asserted here by FitNullCollections_ThrowsStateUntouched above.
+    // Do not "generalize" the element guards in a refactor without re-gating each class's iterable facts.
+    
     // The pairs overload resolves to the base for every statistic (none overrides it), so its
     // behavior is uniform: pairs ahead of a rejected one stay applied — pair batches are
     // non-atomic on rejection, unlike the pre-validated values overload. Pinned as-is.
