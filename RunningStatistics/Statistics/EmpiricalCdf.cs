@@ -68,6 +68,27 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         UncheckedFit(value);
     }
 
+    /// <summary>
+    /// Fits <paramref name="value"/> <paramref name="count"/> times, replaying it observation by
+    /// observation.
+    ///
+    /// <b>Cost: O(<paramref name="count"/>) — per observation, not O(1) in the count.</b> Unlike the
+    /// other statistics' weighted overloads (e.g. <see cref="Extrema"/> or <see cref="Moments"/>,
+    /// which fold a count into their state in closed form), this one replays the observation one
+    /// <see cref="Fit(double)"/>-sized step at a time, so a large <paramref name="count"/> costs
+    /// proportionally more. It cannot be batched: when a buffer flushes, the blend weight applied
+    /// to each bin is <c>alpha = NumBins / Nobs</c>, which depends on the running observation
+    /// count — and that count advances with every replay inside the batch, so different replays
+    /// of the same call get different alphas.
+    ///
+    /// Because of that, the weighted fit is equivalent to a loop of <paramref name="count"/>
+    /// identical single-observation fits, bitwise: the replay performs the same arithmetic in the
+    /// same order, one observation at a time.
+    /// </summary>
+    /// <param name="value">The value to fit. Must be finite.</param>
+    /// <param name="count">The number of times to fit <paramref name="value"/>. Must be non-negative.</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="value"/> is NaN or infinite.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count"/> is negative.</exception>
     public override void Fit(double value, long count)
     {
         Require.Finite(value);

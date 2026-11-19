@@ -714,5 +714,129 @@ public partial class TestEmpiricalCdf
         Utils.AssertIsApproximate(1.0, cdf.Cdf(11.0), 0);
     }
 
+    // EmpiricalCdf.Fit(value, count) is documented as O(count): the weighted overload replays the
+    // observation one single-observation fit at a time, because the blend weight a flush applies to
+    // each bin is alpha = NumBins / Nobs — a function of the RUNNING observation count, which
+    // advances inside the batch, so replays of one call cannot share a closed-form update. This
+    // fact pins that contract in both directions:
+    //   EQUIVALENCE: feeding bins = 25 with Fit(value, 200) per value leaves a state bitwise
+    //   identical to a loop of 200 single Fit(value) calls per value (same fixed-seed data, same
+    //   order, same arithmetic — so exact Assert.Equal, no tolerance), including the bin-blend
+    //   readouts (Quantile/Median) and ToString.
+    //   COST: ns per REPLAYED observation must be within [0.5, 2.0] between the two workloads,
+    //   i.e. the weighted call really pays ~count single fits. A red run here means someone changed
+    //   Fit(value, count) to batch (an O(1)-in-count candidate): either the state stopped matching
+    //   the replay (alpha bookkeeping changed => semantics change) or the ratio dropped far below
+    //   0.5 (fewer than count updates per call). Per AGENTS.md, do not "fix" that by touching
+    //   semantics: re-run the correctness gates before adopting any batching candidate.
+    // Measured here: weighted ~74 ns and loop ~84 ns per replayed observation, ratio ~0.88 —
+    // the weighted call is marginally cheaper only because it pays one interface dispatch and
+    // one finite-value check per count instead of per observation.
+    [Fact]
+    public void Bench_EmpiricalCdfWeightedFitIsPerObservationCost()
+    {
+        const int bins = 25;
+        const int count = 200;
+        const int repeats = 4;
+        const int nValues = 10;
+
+        // Fixed-seed data, built once and shared by the equivalence check and both timed workloads.
+        var values = PropertyHelpers.UniformUnit(nValues, 20251118L);
+
+        // ---- EQUIVALENCE: replayed weighted fit vs a literal loop of single fits ----
+        RunningStatistics.EmpiricalCdf weighted = new(bins);
+        RunningStatistics.EmpiricalCdf perObsLoop = new(bins);
+        foreach (var value in values)
+        {
+            weighted.Fit(value, count);
+            for (var k = 0; k < count; k++)
+            {
+                perObsLoop.Fit(value);
+            }
+        }
+
+        Assert.Equal(2000, weighted.Nobs);
+        Assert.Equal(perObsLoop.Nobs, weighted.Nobs);
+        // NumBins is private; pin it through ToString (as CloneEmpty_PreservesNumBinsMergeRoundTrip does).
+        Assert.Matches("NumBins=25,", weighted.ToString());
+        Assert.Matches("NumBins=25,", perObsLoop.ToString());
+        Assert.Equal(perObsLoop.Min, weighted.Min);
+        Assert.Equal(perObsLoop.Max, weighted.Max);
+        Assert.Equal(perObsLoop.Median, weighted.Median);
+        foreach (var p in new[] { 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95 })
+        {
+            Assert.Equal(perObsLoop.Quantile(p), weighted.Quantile(p));
+        }
+
+        foreach (var x in new[] { 0.1, 0.25, 0.5, 0.75, 0.9 })
+        {
+            Assert.Equal(perObsLoop.Cdf(x), weighted.Cdf(x));
+        }
+
+        // NumBins, Min, Max and Nobs all appear in ToString: one string pins the whole blend.
+        Assert.Equal(perObsLoop.ToString(), weighted.ToString());
+
+        // ---- COST: both workloads replay the same number of observations, so the two ns/obs
+        // numbers are per replayed observation and directly comparable (data generation stays
+        // outside the timed region; the interface-dispatch factory is the same for both).
+        const int passes = 500;
+        const int obs = passes * nValues * count;
+        Func<IRunningStatistic<double>> factory = () => new RunningStatistics.EmpiricalCdf(bins);
+
+        var weightedNsPerObs = BenchmarkHarness.Measure(
+            "WeightedFit(value, count), ns per replayed observation",
+            obs,
+            repeats,
+            () => {
+                var sum = 0.0;
+                for (var p = 0; p < passes; p++)
+                {
+                    var stat = factory();
+                    for (var i = 0; i < values.Count; i++)
+                    {
+                        stat.Fit(values[i], count);
+                    }
+
+                    sum += stat.Nobs;
+                }
+
+                return sum;
+            });
+
+        var loopNsPerObs = BenchmarkHarness.Measure(
+            "Loop of count single Fit(value) calls, ns per replayed observation",
+            obs,
+            repeats,
+            () => {
+                var sum = 0.0;
+                for (var p = 0; p < passes; p++)
+                {
+                    var stat = factory();
+                    for (var i = 0; i < values.Count; i++)
+                    {
+                        for (var k = 0; k < count; k++)
+                        {
+                            stat.Fit(values[i]);
+                        }
+                    }
+
+                    sum += stat.Nobs;
+                }
+
+                return sum;
+            });
+
+        var ratio = BenchmarkHarness.Compare(
+            "Fit(value, count) vs per-observation loop, ns per replayed observation",
+            loopNsPerObs,
+            weightedNsPerObs);
+
+        Assert.True(ratio >= 0.5 && ratio <= 2.0,
+                    $"weighted/loop ns per replayed observation {ratio:F3} outside [0.5, 2.0] " +
+                    $"({weightedNsPerObs:F4} vs {loopNsPerObs:F4} ns/obs): the weighted fit no " +
+                    $"longer costs about count single fits, so the documented O(count) model is " +
+                    $"stale (re-gate before adopting any batching candidate)");
+    }
+
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }
