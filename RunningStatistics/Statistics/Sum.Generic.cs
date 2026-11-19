@@ -30,10 +30,11 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
 
     private static Func<TObs, long, TObs>? TryCreateMultiplyDelegate()
     {
-        // Try the multiplier types in priority order. Multiplying by double and by decimal
-        // widens the whole-number count implicitly. Multiplying by float narrows it and
-        // loses precision for counts above roughly 16.7 million, but is accepted here to
-        // give sums of float values a fast path.
+        // Try the multiplier types in priority order. Multiplying by double and by
+        // decimal widens the whole-number count implicitly. Multiplying by float
+        // narrows the count and loses precision for counts above roughly 16.7
+        // million. The code still accepts float to give sums of float values a
+        // fast path.
         return TryCreate<long>()
             ?? TryCreate<double>()
             ?? TryCreate<decimal>()
@@ -41,10 +42,10 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
 
         Func<TObs, long, TObs>? TryCreate<TMultiplier>()
         {
-            // MakeGenericType cannot be used here: the multiply-operator interface carries a
-            // self-referential constraint that the runtime enforces even at reflection time.
-            // Scanning the interfaces the type already implements avoids that enforcement,
-            // because those interfaces have all been validated.
+            // Do not use MakeGenericType here: the multiply-operator interface carries a
+            // self-referential constraint that the runtime enforces even at reflection
+            // time. Scanning the interfaces the type already implements avoids that
+            // enforcement, because those interfaces already passed validation.
             var hasMultiply = Array.Exists(typeof(TObs).GetInterfaces(), i =>
                 i.IsGenericType &&
                 i.GetGenericTypeDefinition() == typeof(IMultiplyOperators<,,>) &&
@@ -57,7 +58,7 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
             var valueParam = Expression.Parameter(typeof(TObs), "value");
             var countParam = Expression.Parameter(typeof(long), "count");
 
-            // Insert an implicit widening conversion when the operator doesn't take long directly.
+            // Insert an implicit widening conversion when the operator does not take long directly.
             Expression multiplierExpr = typeof(TMultiplier) == typeof(long)
                 ? countParam
                 : Expression.Convert(countParam, typeof(TMultiplier));
@@ -114,11 +115,12 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
         }
         else
         {
-            // Fallback when no multiplication by a count is available: build the contribution
-            // by reading the count's bits. Each bit stands for a block of the value doubled
-            // once per position, and the blocks for the set bits are gathered into an
-            // accumulator. The last doubling is skipped: no higher bits remain, and doubling
-            // there could overflow even when the exact product would fit.
+            // Fallback when no multiplication by a count is available: build the
+            // contribution by reading the count's bits. Each bit stands for a
+            // block of the value doubled once per position. The loop gathers
+            // blocks for the set bits into an accumulator. The loop skips the
+            // last doubling, because no higher bits remain. Doubling there
+            // could overflow even when the exact product would fit.
             var contribution = TObs.AdditiveIdentity;
             var block = value;
             for (var n = count; n > 0; n >>= 1)

@@ -65,7 +65,7 @@ internal static class RootFinding
         root = upperBound;
         var xMid = double.NaN;
 
-        // Root must be bracketed.
+        // The root must lie between the bounds.
         if (Math.Sign(fMin) == Math.Sign(fMax))
         {
             return false;
@@ -73,7 +73,7 @@ internal static class RootFinding
 
         for (var i = 0; i <= maxIterations; i++)
         {
-            // adjust bounds
+            // Adjust the bounds.
             if (Math.Sign(fRoot) == Math.Sign(fMax))
             {
                 upperBound = lowerBound;
@@ -91,7 +91,7 @@ internal static class RootFinding
                 fMax = fMin;
             }
 
-            // convergence check
+            // Check for convergence.
             var xAcc1 = Precision.PositiveDoublePrecision * Math.Abs(root) + 0.5 * accuracy;
             var xMidOld = xMid;
             xMid = (upperBound - root) / 2.0;
@@ -103,13 +103,13 @@ internal static class RootFinding
 
             if (xMid == xMidOld)
             {
-                // accuracy not sufficient, but cannot be improved further
+                // The accuracy is not sufficient, and it cannot improve further.
                 return false;
             }
 
             if (Math.Abs(e) >= xAcc1 && Math.Abs(fMin) > Math.Abs(fRoot))
             {
-                // Attempt inverse quadratic interpolation
+                // Try inverse quadratic interpolation.
                 var s = fRoot / fMin;
                 double p;
                 double q;
@@ -128,27 +128,27 @@ internal static class RootFinding
 
                 if (p > 0.0)
                 {
-                    // Check whether in bounds
+                    // Check whether the interpolated step is in bounds.
                     q = -q;
                 }
 
                 p = Math.Abs(p);
                 if (2.0 * p < Math.Min(3.0 * xMid * q - Math.Abs(xAcc1 * q), Math.Abs(e * q)))
                 {
-                    // Accept interpolation
+                    // Accept the interpolation.
                     e = d;
                     d = p / q;
                 }
                 else
                 {
-                    // Interpolation failed, use bisection
+                    // The interpolation failed. Use bisection instead.
                     d = xMid;
                     e = d;
                 }
             }
             else
             {
-                // Bounds decreasing too slowly, use bisection
+                // The bounds decrease too slowly. Use bisection instead.
                 d = xMid;
                 e = d;
             }

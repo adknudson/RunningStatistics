@@ -59,7 +59,7 @@ public abstract class TestSumGenericMethods<TObs>
 }
 
 // ---------------------------------------------------------------------------
-// Concrete subclasses — one per supported type
+// Concrete subclasses, one per supported type
 // ---------------------------------------------------------------------------
 
 public class TestSumGenericMethods_Int : TestSumGenericMethods<int>
@@ -151,7 +151,7 @@ public class TestSumGenericMethods_Double : TestSumGenericMethods<double>
 
 public class TestSumGenericMethods_Float : TestSumGenericMethods<float>
 {
-    // float has no Mean() extension — only Sum/Value tests from the base apply.
+    // float has no Mean() extension, so only Sum/Value tests from the base apply.
     protected override float From(int value) => value;
 }
 
@@ -219,16 +219,16 @@ public class TestSumGenericMethods_MyNum : TestSumGenericMethods<MyNum>
         Assert.Equal(6.67m, sum.Mean().Value, 2);
     }
 
-    // The multiply-capable path: MyNum knows how to multiply itself by a count, so the
-    // weighted fit asks the type for value times count in one step. MyNum stores its
-    // numbers as decimals, so a product of whole numbers must come out exact.
+    // This fact covers the multiply-capable path. MyNum knows how to multiply itself by a
+    // count, so the weighted fit asks the type for value times count in one step. MyNum
+    // stores its numbers as decimals, so a product of whole numbers must come out exact.
 
     [Fact] public void DelegatePath_ExactCountProduct()
     {
-        // Deliberately the same count and value the fallback tests use, so the paths can
-        // be compared: 1,000,003 is odd with a mixed pattern of set bits, and one step of
-        // the type's own multiplication must equal the exact product 5,000,015, which the
-        // decimal storage holds exactly.
+        // The fact uses the same count and value the fallback tests use, so a reader can
+        // compare the two paths. The count 1,000,003 is odd with a mixed pattern of set bits.
+        // One step of the type's own multiplication must equal the exact product 5,000,015,
+        // which the decimal storage holds exactly.
         const long count = 1_000_003L;
         var sum = new Sum<MyNum>();
         sum.Fit(From(5), count);
@@ -258,15 +258,16 @@ public class TestSumGenericMethods_MyNum : TestSumGenericMethods<MyNum>
 
     [Fact] public void CrossAgreement_DelegateEqualsFallback()
     {
-        // The multiply-capable path (MyNum) and the doubling fallback used by the types
-        // that can only add (MyBigAddOnlyNum stored as long, MyAddOnlyNum stored as int)
-        // must agree exactly for the same exact whole-number observations, because every
-        // product used here is exactly representable in all three storages. The checks
-        // compare the stored sums and the observation counts. The counts are chosen to
-        // cover a power of two, where the fallback adds one doubled block, an odd count
-        // with a mixed set of bits, and a count of one. Products for floating-point-like
-        // types are deliberately not pinned bit for bit here, because the way additions
-        // group together would change their results.
+        // This fact compares the multiply-capable path of MyNum with the doubling fallback
+        // that the add-only types use. MyBigAddOnlyNum stores whole numbers as long, and
+        // MyAddOnlyNum stores them as int. Both paths must agree exactly for the same exact
+        // whole-number observations, because every product used here is exactly
+        // representable in all three storages. The checks compare the stored sums and the
+        // observation counts. The counts cover three shapes. One is a power of two, where
+        // the fallback adds one doubled block. One is an odd count with a mixed set of
+        // bits. One is a count of one. The fact deliberately does not pin the products of
+        // floating-point types bit for bit. The grouping of additions would change those
+        // results.
         const long powerOfTwo = 1_048_576L;
         const long odd = 1_000_003L;
 
@@ -301,14 +302,14 @@ public class TestSumGenericMethods_MyNum : TestSumGenericMethods<MyNum>
 
 public class TestSumGenericMethods_MyAddOnlyNum : TestSumGenericMethods<MyAddOnlyNum>
 {
-    // MyAddOnlyNum has no Mean() extension — only Sum/Value tests from the base apply.
+    // MyAddOnlyNum has no Mean() extension, so only Sum/Value tests from the base apply.
     protected override MyAddOnlyNum From(int value) => new(value);
 
     [Fact] public void FallbackFit_ModerateCount_ExactSum()
     {
-        // The count 1,000,003 is odd with a mixed pattern of set bits, so the doubling
-        // fallback walks a general route through the bits of the count and must still
-        // produce the exact product of count and value: three million nine, which sits
+        // The count 1,000,003 is odd with a mixed pattern of set bits. The doubling fallback
+        // therefore walks a general route through the bits of the count. It must still
+        // produce the exact product of count and value, three million nine. That value sits
         // comfortably inside the int-backed helper's storage.
         const long count = 1_000_003L;
         var sum = new Sum<MyAddOnlyNum>();
@@ -320,18 +321,18 @@ public class TestSumGenericMethods_MyAddOnlyNum : TestSumGenericMethods<MyAddOnl
 
 public class TestSumGenericMethods_MyBigAddOnlyNum : TestSumGenericMethods<MyBigAddOnlyNum>
 {
-    // MyBigAddOnlyNum has no average extension, so only the sum and value tests from the
-    // base apply here. Unlike the int-stored MyAddOnlyNum, it stores whole numbers as
-    // longs, so a product like the largest long count times a value of one is still
+    // MyBigAddOnlyNum has no average extension, so only the sum and value tests from the base
+    // apply here. Unlike MyAddOnlyNum, which stores whole numbers as int, it stores them as
+    // longs. A product like the largest long count times a value of one is therefore still
     // exactly representable.
     protected override MyBigAddOnlyNum From(int value) => new(value);
 
     [Fact] public void FallbackFit_HugeCountCompletes()
     {
-        // The fallback must handle huge counts without one iteration per observation:
-        // fitting one with the largest long count finishes quickly and lands on exactly
-        // that count both as the observation count and as the stored sum, which the long
-        // storage represents exactly.
+        // The fallback must handle huge counts without one iteration per observation. Fitting a
+        // value with the largest long count finishes quickly and lands on exactly that count.
+        // That count is both the observation count and the stored sum, which the long storage
+        // represents exactly.
         var sum = new Sum<MyBigAddOnlyNum>();
         sum.Fit(From(1), long.MaxValue);
         Assert.Equal(long.MaxValue, sum.Nobs);
@@ -356,8 +357,9 @@ public class TestSumGenericMethods_MyBigAddOnlyNum : TestSumGenericMethods<MyBig
 
     [Fact] public void FallbackPath_ZeroCountShortCircuit()
     {
-        // Same shared guard as the delegate pin: count 0 returns before either path runs,
-        // so the doubling loop never executes and the state stays at the identities.
+        // The fact uses the same shared guard as the delegate pin. A count of 0 returns before
+        // either path runs, so the doubling loop never executes and the state stays at the
+        // identities.
         var sum = new Sum<MyBigAddOnlyNum>();
         sum.Fit(From(7), 0L);
         Assert.Equal(0L, sum.Nobs);

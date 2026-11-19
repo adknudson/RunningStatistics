@@ -222,18 +222,19 @@ public partial class TestVariance()
         Assert.Equal(double.NaN, v1.Value);
     }
 
-    // Permanent merge-algebra gate, keep it: merging variances is associative. For each condition
-    // number, walking powers of ten from one to one hundred million, three seeded KappaStream
-    // chunks of one hundred observations with spread one are built. The grouping of a merged with
-    // b, then merged with c, is compared against a merged with the result of b merged with c, each
-    // into a fresh copy made through CloneEmpty and Merge. The value and the standard deviation of
-    // both groupings must match the two-pass reference over all three chunks together, and match
-    // each other, within a relative margin of a hundred-millionth plus ten thousand times the
-    // condition number times machine epsilon. The worst error the probe found was a relative
-    // 2.40E-8 at condition number 1e8, about one times the condition number times machine epsilon:
-    // merge errors grow roughly linearly in the condition number, not its square, so the margin
-    // keeps about ten thousand times headroom, while the two groupings differ by at most a
-    // relative 1.1E-9.
+    // This merge-algebra gate is permanent, so keep it. Merging variances is associative. The
+    // fact builds three seeded KappaStream chunks for each condition number. The walk runs
+    // powers of ten from one to one hundred million. Each chunk holds one hundred observations
+    // with spread one. The grouping of a merged with b, then merged with c, is compared against
+    // a merged with the result of b merged with c. Each grouping runs on a fresh copy made
+    // through CloneEmpty and Merge. The value and the standard deviation of both groupings must
+    // match the two-pass reference over all three chunks together, and match each other. The
+    // relative margin is a hundred-millionth plus ten thousand times the condition number
+    // times machine epsilon. The worst error the probe found was a relative 2.40E-8 at
+    // condition number 1e8, about one times the condition number times machine epsilon. Merge
+    // errors grow roughly linearly in the condition number, not its square, so the margin
+    // keeps about ten thousand times headroom. The two groupings differ by at most a relative
+    // 1.1E-9.
     [Fact]
     public void Gate_MergeAssociativityVariance()
     {
@@ -275,9 +276,10 @@ public partial class TestVariance()
         }
     }
 
-    // The same contract in the commutative direction: merging a, b, c against c, b, a over the
-    // same condition-number range, into fresh copies as receivers, with the same margins as the
-    // associativity gate above.
+    // This fact checks the same contract in the commutative direction. It merges a,
+    // b, c against c, b, a over the same condition-number range. Both sides merge
+    // into fresh copies as receivers, with the same margins as the associativity
+    // gate above.
     [Fact]
     public void Gate_MergeCommutativityVariance()
     {
@@ -330,32 +332,36 @@ public partial class TestVariance()
         Assert.True(PropertyHelpers.Within(left.StandardDeviation, right.StandardDeviation, relTol), PropertyHelpers.Describe($"{tag} StandardDeviation", left.StandardDeviation, right.StandardDeviation));
     }
 
-    // What this checks: reading the getters must not get slower as the statistic sees more
-    // observations. The getters only look at a fixed amount of state, so reading them on a
-    // statistic that has seen 2^62 observations should cost the same as on one that has seen
-    // 6. The test builds both statistics, times millions of reads of Value and StandardDeviation
-    // on each, and requires the big one to be within [0.5, 1.05] of the small one. The band is
-    // deliberately tight: a getter is a dispatch plus a few arithmetic operations, so the honest
-    // claim is "not slower", and anything outside about 1% is noise, not a real gain or
-    // regression. If this fact ever goes red, a getter has picked up work that grows with the
-    // observation count - fix the algorithm, do not widen the band.
+    // This fact checks that reading the getters does not get slower as the statistic sees
+    // more observations. The getters look at a fixed amount of state. Reading them should
+    // therefore cost the same on a huge statistic as on a small one. The test builds one
+    // statistic that has seen 2 to the 62nd power observations, and one that has seen 6.
+    // The test times millions of reads of Value and StandardDeviation on each statistic. It
+    // requires the big one to be within [0.5, 1.05] of the small one. The band is
+    // deliberately tight. A getter is one interface dispatch plus a few arithmetic
+    // operations, so the honest claim here is "not slower". Measurement noise of about 1%
+    // straddles 1.00, so a ratio outside about 1% is noise, not a real gain or regression.
+    // If this fact ever goes red, a getter has picked up work that grows with the
+    // observation count. Fix the algorithm, and do not widen the band.
     //
-    // How the big statistic is built: fit two distinct values, then merge the statistic with
-    // itself 61 times, which doubles the count each time up to 2^62. Two distinct values are
-    // needed on the way in: doubling a single observation keeps the data constant, which leaves
-    // the variance at 0 and makes the standard-deviation getter read the square root of a zero
-    // variance - a degenerate value the sweep could time as an early exit instead of a real
-    // readout. From two distinct values both readouts stay finite and positive at 2^62
-    // (measured: Value ~1e-2, StandardDeviation ~1e-1), and the big and the small statistic go
-    // through exactly the same getter code paths. Variance exposes only Value (the unbiased
-    // sample variance) and StandardDeviation, so the sweep reads those two.
+    // The code builds the big statistic in one way. It fits two distinct values, then merges
+    // the statistic with itself 61 times. Each merge doubles the count, up to 2 to the 62nd
+    // power. Two distinct values are needed at the start. Doubling a single observation keeps
+    // the data constant, which leaves the variance at 0. The standard-deviation getter then
+    // reads the square root of a zero variance. That value is degenerate, so the sweep could
+    // time an early exit instead of a real readout. From two distinct values both readouts
+    // stay finite and positive at 2 to the 62nd power. The measured values are Value about
+    // 1e-2 and StandardDeviation about 1e-1. The big and the small statistic go through
+    // exactly the same getter code paths. Variance exposes only Value, the unbiased sample
+    // variance, and StandardDeviation, so the sweep reads those two.
     [Fact]
     public void Bench_GetterCostIndependentOfNobs_Variance()
     {
-        // Five million getter reads per measured run, four measured runs: the harness's default
-        // workload size. Both sides of the comparison run the same sweep body (see the helper
-        // below), so the ratio compares identical machine code, and the [0.5, 1.05] band is
-        // expected at the default size rather than at a bigger workload chosen to make it pass.
+        // The harness default is five million getter reads per measured run, over four
+        // measured runs. Both sides of the comparison run the same sweep body, which the
+        // helper below provides. The ratio therefore compares identical machine code. The
+        // [0.5, 1.05] band is expected at the default size, not at a bigger workload
+        // chosen to make it pass.
         const int obs = 5_000_000;
         const int repeats = 4;
 
@@ -401,11 +407,12 @@ public partial class TestVariance()
                     $"do not widen the band.");
     }
 
-    // A single compiled sweep body serves both sides of the comparison: the statistic is passed
-    // in as a parameter, so the 2^62-scale and the small-Nobs workloads run literally the same
-    // machine code (same JIT tier, same code layout). This matters because two separately compiled
-    // copies of the same loop drifted 7-8% on code layout alone, which is noise on a "not slower"
-    // claim, not a regression.
+    // One compiled sweep body serves both sides of the comparison. The statistic is passed in
+    // as a parameter. Both workloads therefore run literally the same machine code, with the
+    // same JIT tier and code layout. The two workloads are the 2 to the 62nd-power one and
+    // the small-Nobs one. This matters because two separately compiled copies of the same
+    // loop drifted 7-8% on code layout alone. That drift is noise on a "not slower" claim,
+    // not a regression.
     private static double SweepVariance(RunningStatistics.Variance stat, int obs)
     {
         var sum = 0.0;

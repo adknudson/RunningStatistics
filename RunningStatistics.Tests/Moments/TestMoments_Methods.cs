@@ -16,16 +16,17 @@ public partial class TestMoments
         Assert.Equal(long.MaxValue / 2 + 1, m.Nobs);
     }
 
-    // Accuracy of the stable central-sum update now in Moments, the Chan pairwise one, on jittered
-    // data at the one-million scale, against a two-pass reference: the stable update shows errors
-    // of about the condition number times machine epsilon, roughly two ten-billionths relative, on
-    // variance and standard deviation, and about one billionth absolute on skewness and kurtosis.
-    // The tolerances below, around a millionth absolute on skewness and a hundred-thousandth on
-    // kurtosis, keep margins of one hundred to one thousand times, while the raw-power-sums
-    // implementation this replaced could never come close: its observed errors were a relative
-    // 1.7e-4 on variance, an absolute 4e4 on skewness and an absolute 2.1e11 on kurtosis, the
-    // values the original pins of 1e5 and 1e12 documented. The seed is fixed on purpose: these
-    // facts are the accuracy net for the swap.
+    // These facts check the accuracy of the stable central-sum update now in Moments, the
+    // Chan pairwise one. The data is jittered, at the one-million scale, and the reference is a
+    // two-pass computation. The stable update shows errors of about the condition number times
+    // machine epsilon, roughly two ten-billionths relative, on variance and standard deviation.
+    // On skewness and kurtosis the errors are about one billionth absolute. The tolerances
+    // below are around a millionth absolute on skewness and a hundred-thousandth on kurtosis.
+    // They keep margins of one hundred to one thousand times. The raw-power-sums
+    // implementation this replaced could never come close. Its observed errors were a relative
+    // 1.7e-4 on variance, an absolute 4e4 on skewness, and an absolute 2.1e11 on kurtosis. The
+    // original pins of 1e5 and 1e12 documented those values. The seed is fixed on purpose.
+    // These facts are the accuracy net for the swap.
     [Fact]
     public void Accuracy_StableMomentsNearOffset()
     {
@@ -185,8 +186,8 @@ public partial class TestMoments
         Assert.Equal(double.NaN, a.Kurtosis);
     }
 
-    // Merging two stats fitted with the first and second halves of the same data must match
-    // a stat fitted with all of the data at once.
+    // The fact merges the data as two stats, one for the first half and one for the second
+    // half. Their merge must match a stat fitted with all of the data at once.
     [Fact]
     public void Merge_PartsEqualsAll()
     {
@@ -241,10 +242,10 @@ public partial class TestMoments
         Assert.Equal(a.Nobs + b.Nobs + 1, c.Nobs);
     }
 
-    // Fits 10M samples of the distribution and compares the statistic against its known
-    // properties. The generator is seeded on purpose: an unseeded stream makes this fact flaky at
-    // the 0.01 tolerances, because the excess-kurtosis estimator alone varies by about three
-    // standard deviations across fresh streams.
+    // The fact fits 10M samples of the distribution and compares the statistic against its
+    // known properties. The generator is seeded on purpose. An unseeded stream makes this fact
+    // flaky at the 0.01 tolerances, because the excess-kurtosis estimator alone varies by about
+    // three standard deviations across fresh streams.
     [Fact]
     public void UnitUniformSample_MomentsMatchTheory()
     {
@@ -330,25 +331,26 @@ public partial class TestMoments
         Utils.AssertIsApproximate(excessKurtosis, moments.ExcessKurtosis, 0.1);
     }
 
-    // Permanent merge-algebra gates, keep them. Merging moments is associative: the grouping of a
-    // merged with b, then merged with c, is compared against a merged with the result of b merged
-    // with c, each into a fresh copy made through CloneEmpty and Merge, over three seeded KappaStream
-    // chunks of one hundred observations with spread one, one grouping per condition number walking
-    // powers of ten from one to one hundred million. Every getter of every grouping must match the
-    // two-pass PropertyHelpers reference over all three chunks together, and the groupings must
-    // agree with each other, within a relative margin of a hundred-millionth plus ten thousand
-    // times the condition number times machine epsilon on mean, variance and standard deviation,
-    // and an absolute margin of one trillionth plus one thousand times the condition number times
-    // machine epsilon on skewness, kurtosis and excess kurtosis. The floor of one trillionth widens
-    // the floorless version at low condition numbers: at condition number one the bare margin left
-    // only about forty-five times headroom over the observed error of 4.9E-15, and the floor
-    // restores about two hundred and fifty times. The worst errors the probe found, with merge
-    // errors growing about linearly in the condition number at roughly one to three times it
-    // times machine epsilon rather than its square, were at condition number 1e8: a relative
-    // 2.31E-8 on variance, 1.15E-8 on standard deviation, an absolute 6.31E-8 on skewness and
-    // 4.69E-8 on kurtosis and excess kurtosis, leaving three hundred and fifty to four hundred
-    // and seventy times headroom in absolute terms and about ten thousand times in relative
-    // terms. The differences between the groupings are far smaller.
+    // These merge-algebra gates are permanent, so keep them. Merging moments is associative.
+    // The grouping of a merged with b, then merged with c, is compared against a merged with
+    // the result of b merged with c. Each grouping runs on a fresh copy made through CloneEmpty
+    // and Merge. The data is three seeded KappaStream chunks, each with one hundred observations
+    // and spread one. One grouping runs per condition number, walking powers of ten from one to
+    // one hundred million. Every getter of every grouping must match the two-pass PropertyHelpers
+    // reference over all three chunks together. The groupings must also agree with each other.
+    // The relative margin is a hundred-millionth plus ten thousand times the condition number
+    // times machine epsilon, on mean, variance and standard deviation. The absolute margin is
+    // one trillionth plus one thousand times the condition number times machine epsilon, on
+    // skewness, kurtosis and excess kurtosis. The floor of one trillionth widens the floorless
+    // version at low condition numbers. At condition number one, the bare margin left only about
+    // forty-five times headroom over the observed error of 4.9E-15. The floor restores about
+    // two hundred and fifty times there. The probe found the worst errors at condition number
+    // 1e8. Merge errors grow about linearly in the condition number, at roughly one to three
+    // times it times machine epsilon rather than its square. The errors there were a relative
+    // 2.31E-8 on variance and 1.15E-8 on standard deviation. They were an absolute 6.31E-8 on
+    // skewness and 4.69E-8 on kurtosis and excess kurtosis. That leaves three hundred and fifty
+    // to four hundred and seventy times headroom in absolute terms, and about ten thousand times
+    // in relative terms. The differences between the groupings are far smaller.
     [Fact]
     public void Gate_MergeAssociativityMoments()
     {
@@ -391,9 +393,10 @@ public partial class TestMoments
         }
     }
 
-    // The same merge-algebra contract in the commutative direction: merging a, b, c against c, b, a
-    // over the same three seeded chunks and condition-number range, into fresh copies as receivers,
-    // with the same margins as Gate_MergeAssociativityMoments.
+    // This fact checks the same merge-algebra contract in the commutative direction. It merges
+    // a, b, c against c, b, a over the same three seeded chunks and the same condition-number
+    // range. Both sides merge into fresh copies as receivers, and the margins match those of
+    // Gate_MergeAssociativityMoments.
     [Fact]
     public void Gate_MergeCommutativityMoments()
     {
@@ -455,32 +458,33 @@ public partial class TestMoments
         Assert.True(PropertyHelpers.WithinAbsolute(left.ExcessKurtosis, right.ExcessKurtosis, absTol), PropertyHelpers.Describe($"{tag} ExcessKurtosis", left.ExcessKurtosis, right.ExcessKurtosis));
     }
 
-    // What this checks: reading the getters must not get slower as the statistic sees more
-    // observations. The getters only look at a fixed amount of state, so reading them on a
-    // statistic that has seen 2^62 observations should cost the same as on one that has seen
-    // 6. The test builds both statistics, times millions of reads of Mean, Variance,
-    // StandardDeviation, Skewness and Kurtosis on each, and requires the big one to be within
-    // [0.5, 1.05] of the small one. The band is deliberately tight: a getter is a dispatch
-    // plus a few arithmetic operations, so the honest claim is "not slower", and anything
-    // outside ~1% is noise, not a real gain or regression. If this fact ever goes red, a
-    // getter has picked up work that grows with the observation count - fix the algorithm,
-    // do not widen the band.
+    // This fact checks that reading the getters does not get slower as the statistic sees more
+    // observations. The getters look at a fixed amount of state. Reading them should therefore
+    // cost the same on a huge statistic as on a small one. The test builds one statistic that
+    // has seen 2 to the 62nd power observations, and one that has seen 6. The test times
+    // millions of reads of Mean, Variance, StandardDeviation, Skewness and Kurtosis on each
+    // statistic. It requires the big one to be within [0.5, 1.05] of the small one. The band
+    // is deliberately tight. A getter is one interface dispatch plus a few arithmetic
+    // operations, so the honest claim here is "not slower". Measurement noise of about 1%
+    // straddles 1.00, so a ratio outside about 1% is noise, not a real gain or regression. If
+    // this fact ever goes red, a getter has picked up work that grows with the observation
+    // count. Fix the algorithm, and do not widen the band.
     //
-    // How the big statistic is built: fit two distinct values, then merge the statistic with
-    // itself 61 times, which doubles the count each time up to 2^62. Two distinct values
-    // (instead of one) are needed on the way in: a single observation has zero spread, which
-    // leaves Variance/StandardDeviation at 0 and sends Skewness/Kurtosis into their
-    // not-enough-data NaN path, so the timed sweep would measure early exits instead of the
-    // real getter work. From two distinct values every getter returns a finite number at
-    // 2^62-scale, and both the big and the small statistic go through exactly the same
-    // getter code paths.
+    // The code builds the big statistic in one way. It fits two distinct values, then merges
+    // the statistic with itself 61 times. Each merge doubles the count, up to 2 to the 62nd
+    // power. Two distinct values are needed at the start. A single observation has zero spread,
+    // which leaves Variance and StandardDeviation at 0. It sends Skewness and Kurtosis into
+    // their not-enough-data NaN path. The timed sweep would then measure early exits instead of
+    // the real getter work. At the scale of 2 to the 62nd power, every getter returns a finite
+    // number. The big and the small statistic go through exactly the same getter code paths.
     [Fact]
     public void Bench_GetterCostIndependentOfNobs_Moments()
     {
-        // Five million getter reads per measured run, four measured runs: the harness's default
-        // workload size. Both sides of the comparison run the same sweep body (see the helper
-        // below), so the ratio compares identical machine code, and the [0.5, 1.05] band is
-        // expected at the default size rather than at a bigger workload chosen to make it pass.
+        // The harness default is five million getter reads per measured run, over four
+        // measured runs. Both sides of the comparison run the same sweep body, which the helper
+        // below provides. The ratio therefore compares identical machine code. The [0.5, 1.05]
+        // band is expected at the default size, not at a bigger workload chosen to make it
+        // pass.
         const int obs = 5_000_000;
         const int repeats = 4;
 
@@ -531,11 +535,12 @@ public partial class TestMoments
                     $"do not widen the band.");
     }
 
-    // A single compiled sweep body serves both sides of the comparison: the statistic is passed
-    // in as a parameter, so the 2^62-scale and the small-Nobs workloads run literally the same
-    // machine code (same JIT tier, same code layout). This is what makes the tight band
-    // meaningful: two separately compiled copies of the same loop drifted 7-8% on code layout
-    // alone, which is noise on a "not slower" claim, not a regression.
+    // One compiled sweep body serves both sides of the comparison. The statistic is passed in
+    // as a parameter. Both workloads therefore run literally the same machine code, with the
+    // same JIT tier and code layout. The two workloads are the 2 to the 62nd-power one and the
+    // small-Nobs one. That is what makes the tight band meaningful. Two separately compiled
+    // copies of the same loop drifted 7-8% on code layout alone. That drift is noise on a "not
+    // slower" claim, not a regression.
     private static double SweepMoments(RunningStatistics.Moments stat, int obs)
     {
         var sum = 0.0;
@@ -548,10 +553,10 @@ public partial class TestMoments
             sum += stat.Kurtosis;
         }
 
-        // At the 2^62 scale, Kurtosis is about 2.3e18, so adding up all the samples directly
-        // would take the total out of the range that BenchmarkHarness folds its checksum into.
-        // The remainder keeps it in range while still depending on every getter read, and it
-        // costs one modulo per call, outside the timed sweep.
+        // At the scale of 2 to the 62nd power, Kurtosis is about 2.3e18. Adding up all the
+        // samples directly would take the total out of the range that BenchmarkHarness folds its
+        // checksum into. The remainder keeps the total in that range while still depending on
+        // every getter read. It costs one modulo per call, outside the timed sweep.
         return sum % 1_000_000.0;
     }
 

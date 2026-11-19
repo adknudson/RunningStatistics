@@ -131,13 +131,13 @@ public partial class TestNormal
     }
     
     // --------------------------------------------------------------------
-    // Pinned: the degenerate-spread behavior of Normal as the current code has
-    // it. A Normal keeps its readouts as a mean and a variance, and the
-    // smoothing helper blends two values by a weighted path between them, so
-    // blending equal values is exact and the variance terms collapse to exact
-    // zero on all-equal data. The values below are exact except where pinned
-    // with the approximate assertion, which allows a relative hundred-
-    // millionth where square roots and divisions are involved.
+    // The facts below pin the degenerate-spread behavior of Normal as the current code
+    // has it. A Normal keeps its readouts as a mean and a variance. The smoothing
+    // helper blends two values by a weighted path between them. Blending equal
+    // values is therefore exact, so the variance terms collapse to exact zero on
+    // all-equal data. The values below are exact except where the fact pins
+    // them with the approximate assertion. That assertion allows a relative
+    // hundred-millionth where square roots and divisions are involved.
     // --------------------------------------------------------------------
     
     [Fact]
@@ -179,9 +179,9 @@ public partial class TestNormal
     [Fact]
     public void Degenerate_TwoPointSpread_MatchesSampleSD()
     {
-        // Fitting 2 and 8: the mean is 5, the internal spread sum works out to exactly 9, and the
-        // unbiased variance to exactly 18, half the squared gap of 6; the standard deviation is
-        // that gap over the square root of two.
+        // The fact fits 2 and 8. The mean is 5. The internal spread sum works out to
+        // exactly 9. The unbiased variance is exactly 18, half the squared gap of 6. The
+        // standard deviation is that gap over the square root of two.
         var normal = new RunningStatistics.Normal();
         normal.Fit(2.0);
         normal.Fit(8.0);
@@ -194,7 +194,7 @@ public partial class TestNormal
     [Fact]
     public void Degenerate_TwoPointWeightedSpread_MatchesPooledSD()
     {
-        // The values 2, 2, 2, 8, 8, 8, 8, 8: the mean 5.75 is exact; the spread sum is 67.5, so
+        // The values 2, 2, 2, 8, 8, 8, 8, 8: the mean 5.75 is exact. The spread sum is 67.5, so
         // the unbiased variance is 67.5 over 7, not exactly representable, and the sample
         // standard deviation its square root.
         var normal = new RunningStatistics.Normal();
@@ -209,8 +209,9 @@ public partial class TestNormal
     [Fact]
     public void Degenerate_MergeTwoConstantStats_SpreadStaysZero()
     {
-        // Both statistics hold only 7s: the merge sees no shift between the means, both internal
-        // spread sums are zero, so the spread stays exactly zero and the mean exactly 7.
+        // Both statistics hold only 7s. The merge therefore sees no shift between the
+        // means, and both internal spread sums are zero. The spread stays exactly zero
+        // and the mean stays exactly 7.
         var left = new RunningStatistics.Normal();
         left.Fit(7.0, 3);
         var right = new RunningStatistics.Normal();
@@ -225,7 +226,7 @@ public partial class TestNormal
     [Fact]
     public void Degenerate_MergeTwoConstants_PooledSpreadMatchesReference()
     {
-        // The pair 7, 7 merged with the pair 5, 5: the mean 6 is exact; pooling leaves a spread of
+        // The pair 7, 7 merged with the pair 5, 5: the mean 6 is exact. Pooling leaves a spread of
         // four over the other three observations, 4/3, and a standard deviation of two over the
         // square root of three.
         var left = new RunningStatistics.Normal();
@@ -300,18 +301,22 @@ public partial class TestNormal
         Assert.Equal(double.NaN, fresh.Mean);
     }
 
-    // Permanent merge-algebra gate, keep it: merging normal statistics is associative. For each
-    // condition number, walking powers of ten from one to one hundred million, three seeded
-    // KappaStream chunks of one hundred observations with spread one are built. The grouping of a
-    // merged with b, then merged with c, is compared against a merged with the result of b merged
-    // with c, each into a fresh copy made through CloneEmpty and Merge. The mean, variance and
-    // standard deviation of both groupings must match the two-pass reference over all three
-    // chunks together, and match each other, within a relative margin of a hundred-millionth plus
-    // ten thousand times the condition number times machine epsilon; every readout of Normal
-    // carries the data's units, so relative margins are the right shape. The worst errors the
-    // probe found were a relative 2.40E-8 on variance, 1.20E-8 on standard deviation and 3.7E-16
-    // on mean at condition number 1e8: merge errors grow roughly linearly in the condition
-    // number, not its square, leaving about ten thousand times headroom.
+    // This merge-algebra gate is permanent, so keep it. Merging normal statistics is
+    // associative. The fact builds three seeded KappaStream chunks for each
+    // condition number. The walk runs powers of ten from one to one hundred million.
+    // Each chunk holds one hundred observations with spread one. The grouping of a
+    // merged with b, then merged with c, is compared against a merged with the
+    // result of b merged with c. Each grouping runs on a fresh copy made through
+    // CloneEmpty and Merge. The mean, variance and standard deviation of both
+    // groupings must match the two-pass reference over all three chunks together.
+    // The groupings must also match each other. The relative margin is a
+    // hundred-millionth plus ten thousand times the condition number times
+    // machine epsilon. Every readout of Normal carries the data's units, so a
+    // relative margin is the right shape. The probe found the worst errors at
+    // condition number 1e8. They were a relative 2.40E-8 on variance, 1.20E-8
+    // on standard deviation and 3.7E-16 on mean. Merge errors grow roughly
+    // linearly in the condition number, not its square. That leaves about ten
+    // thousand times headroom.
     [Fact]
     public void Gate_MergeAssociativityNormal()
     {
@@ -353,9 +358,10 @@ public partial class TestNormal
         }
     }
 
-    // The same contract in the commutative direction: merging a, b, c against c, b, a over the
-    // same condition-number range, into fresh copies as receivers, with the same margins as the
-    // associativity gate above.
+    // This fact checks the same contract in the commutative direction. It merges a,
+    // b, c against c, b, a over the same condition-number range. Both sides merge
+    // into fresh copies as receivers, with the same margins as the associativity
+    // gate above.
     [Fact]
     public void Gate_MergeCommutativityNormal()
     {
@@ -410,34 +416,40 @@ public partial class TestNormal
         Assert.True(PropertyHelpers.Within(left.StandardDeviation, right.StandardDeviation, relTol), PropertyHelpers.Describe($"{tag} StandardDeviation", left.StandardDeviation, right.StandardDeviation));
     }
 
-    // What this checks: reading the getters must not get slower as the statistic sees more
-    // observations. The getters only look at a fixed amount of state, so reading them on a
-    // statistic that has seen 2^62 observations should cost the same as on one that has seen
-    // 6. The test builds both statistics, times millions of reads of Mean, Variance and
-    // StandardDeviation on each, and requires the big one to be within [0.5, 1.05] of the small
-    // one. The band is deliberately tight: a getter is a dispatch plus a few arithmetic
-    // operations, so the honest claim is "not slower", and anything outside about 1% is noise,
-    // not a real gain or regression. If this fact ever goes red, a getter has picked up work
-    // that grows with the observation count - fix the algorithm, do not widen the band.
+    // This fact checks that reading the getters does not get slower as the statistic sees
+    // more observations. The getters look at a fixed amount of state. Reading them should
+    // therefore cost the same on a huge statistic as on a small one. The test builds one
+    // statistic that has seen 2 to the 62nd power observations, and one that has seen 6.
+    // The test times millions of reads of Mean, Variance and StandardDeviation on each
+    // statistic. It requires the big one to be within [0.5, 1.05] of the small one. The
+    // band is deliberately tight. A getter is one interface dispatch plus a few
+    // arithmetic operations, so the honest claim here is "not slower". Measurement noise
+    // of about 1% straddles 1.00, so a ratio outside about 1% is noise, not a real gain
+    // or regression. If this fact ever goes red, a getter has picked up work that grows
+    // with the observation count. Fix the algorithm, and do not widen the band.
     //
-    // How the big statistic is built: fit two distinct values, then merge the statistic with
-    // itself 61 times, which doubles the count each time up to 2^62. Two distinct values are
-    // needed on the way in: doubling a single observation keeps the data constant, which leaves
-    // the variance at 0 and makes the standard-deviation getter read the square root of a zero
-    // variance - a degenerate value the sweep could time as an early exit instead of a real
-    // readout. From two distinct values all three readouts stay finite at 2^62 (measured:
-    // Mean ~0.5, Variance ~1e-2, StandardDeviation ~1e-1), and the big and the small statistic
-    // go through exactly the same getter code paths. Normal computes its readouts from internal
-    // Mean and Variance statistics, so each read is a hop into a component plus that component's
-    // arithmetic; the sweep reads Mean, Variance and StandardDeviation, because those are
-    // Normal's readout getters (Pdf/Cdf/Quantile are not).
+    // The code builds the big statistic in one way. It fits two distinct values, then
+    // merges the statistic with itself 61 times. Each merge doubles the count, up to
+    // 2 to the 62nd power. Two distinct values are needed at the start. Doubling a
+    // single observation keeps the data constant, which leaves the variance at 0. The
+    // standard-deviation getter then reads the square root of a zero variance. That
+    // value is degenerate, so the sweep could time an early exit instead of a real
+    // readout. From two distinct values all three readouts stay finite at 2 to the
+    // 62nd power. The measured values are Mean about 0.5, Variance about 1e-2 and
+    // StandardDeviation about 1e-1. The big and the small statistic go through
+    // exactly the same getter code paths. Normal computes its readouts from its
+    // internal Mean and Variance statistics, so each read is a hop into a
+    // component plus that component's arithmetic. The sweep reads Mean, Variance
+    // and StandardDeviation. Those are Normal's readout getters, and Pdf, Cdf
+    // and Quantile are not.
     [Fact]
     public void Bench_GetterCostIndependentOfNobs_Normal()
     {
-        // Five million getter reads per measured run, four measured runs: the harness's default
-        // workload size. Both sides of the comparison run the same sweep body (see the helper
-        // below), so the ratio compares identical machine code, and the [0.5, 1.05] band is
-        // expected at the default size rather than at a bigger workload chosen to make it pass.
+        // The harness default is five million getter reads per measured run, over four
+        // measured runs. Both sides of the comparison run the same sweep body, which the
+        // helper below provides. The ratio therefore compares identical machine code. The
+        // [0.5, 1.05] band is expected at the default size, not at a bigger workload
+        // chosen to make it pass.
         const int obs = 5_000_000;
         const int repeats = 4;
 
@@ -483,11 +495,12 @@ public partial class TestNormal
                     $"do not widen the band.");
     }
 
-    // A single compiled sweep body serves both sides of the comparison: the statistic is passed
-    // in as a parameter, so the 2^62-scale and the small-Nobs workloads run literally the same
-    // machine code (same JIT tier, same code layout). This matters because two separately compiled
-    // copies of the same loop drifted 7-8% on code layout alone, which is noise on a "not slower"
-    // claim, not a regression.
+    // One compiled sweep body serves both sides of the comparison. The statistic is passed in
+    // as a parameter. Both workloads therefore run literally the same machine code, with the
+    // same JIT tier and code layout. The two workloads are the 2 to the 62nd-power one and
+    // the small-Nobs one. This matters because two separately compiled copies of the same
+    // loop drifted 7-8% on code layout alone. That drift is noise on a "not slower" claim,
+    // not a regression.
     private static double SweepNormal(RunningStatistics.Normal stat, int obs)
     {
         var sum = 0.0;

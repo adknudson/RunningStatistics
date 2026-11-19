@@ -140,10 +140,11 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
                                 $"Got {NumBins} and {empiricalCdf.NumBins}.");
         }
 
-        // Only observations fully flushed into each object's Values array may carry weight in
-        // the blend: slots of empiricalCdf beyond its flushed region are stale (zeros until its
-        // first flush), and observations still sitting in its buffer have to be replayed into
-        // this object instead of being represented by those slots.
+        // Only observations fully flushed into each object's Values array may carry
+        // weight in the blend. Slots of empiricalCdf beyond its flushed region
+        // are stale, and they hold zeros until the first flush. This object
+        // must instead replay observations still sitting in that buffer, rather
+        // than represent them through those slots.
         var otherPartial = empiricalCdf.Nobs % NumBins;
         var thisFlushed = Nobs - (Nobs % NumBins);
         var otherFlushed = empiricalCdf.Nobs - otherPartial;
@@ -224,7 +225,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
             return Utils.Smooth(Values[Values.Length - 1], Max, r);
         }
         
-        // Otherwise the position falls between two neighboring bins; interpolate between them.
+        // Otherwise the position falls between two neighboring bins. Interpolate between them.
         var fi = (int)Math.Floor(i) - 1;
         var ci = (int)Math.Ceiling(i) - 1;
         return Utils.Smooth(Values[fi], Values[ci], r);

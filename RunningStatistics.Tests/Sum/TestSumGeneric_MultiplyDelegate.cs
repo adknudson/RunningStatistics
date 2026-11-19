@@ -129,17 +129,18 @@ public class TestSumGeneric_MultiplyDelegate
     public void FitWithCount_Float_PrecisionBreaks_AbovePow2_24()
     {
         // A float keeps twenty-four bits of mantissa, so counting by ones only stays exact up to
-        // 2^24. Adding 1f to an accumulator already at or past that point has no effect: the
-        // addition rounds back to the same value, so the loop path saturates there.
+        // 2 to the 24th power. Adding 1f to an accumulator already at or past that point has
+        // no effect. The addition rounds back to the same value, so the loop path saturates
+        // there.
         //
-        // At a count of 2^25:
-        //   The delegate path multiplies 1f by the float of that count, 33554432f, and the product
-        //   is exact because it is representable.
-        //   The loop path saturates at 2^24, the value 16777216f: once the sum reaches it, every
-        //   further 1f rounds back and contributes nothing.
+        // The fact then uses a count of 2 to the 25th power. The delegate path multiplies 1f by
+        // the float of that count, 33554432f. The product is exact, because the float represents
+        // it exactly. The loop path saturates at 2 to the 24th power, the value 16777216f. Once
+        // the sum reaches that value, every further 1f rounds back and contributes nothing.
         //
-        // Note that at a count of 2^24 plus one both paths give the same wrong answer, 2^24,
-        // because the float of 2^24 plus one also rounds to 2^24; there is nothing to diverge.
+        // At a count of 2 to the 24th power plus one, both paths give the same wrong answer,
+        // 2 to the 24th power. The float of 2 to the 24th power plus one also rounds to that
+        // value. The two paths therefore have nothing to diverge over.
         const float value = 1f;
         const long count = 1L << 25; // 33,554,432 observations
 

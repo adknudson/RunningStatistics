@@ -907,9 +907,9 @@ internal static partial class SpecialFunctions
             //     x = p(p+10)(Y + R(p))
             //
             // where Y is a constant and R(p) is a correction tuned to keep a small
-            // absolute error next to Y. Measured accuracy: a maximum error of
-            // 2.001849e-18 for double, 1.017064e-20 for the extended long double,
-            // and an actual error term at infinite precision of at most 8.030e-21.
+            // absolute error next to Y. The measured maximum error is
+            // 2.001849e-18 for double and 1.017064e-20 for the extended long
+            // double. The error term at infinite precision is at most 8.030e-21.
             const float y = 0.0891314744949340820313f;
             var g = p * (p + 10);
             var r = Polynomial.Evaluate(p, ErvInvImpAn) / Polynomial.Evaluate(p, ErvInvImpAd);
@@ -922,9 +922,9 @@ internal static partial class SpecialFunctions
             //     x = sqrt(-2 log q) / (Y + R(q))
             //
             // where Y is a constant and R(q) is a correction tuned to keep a small
-            // absolute error next to Y. Measured accuracy: a maximum error of
-            // 7.403372e-17 for double, 6.084616e-20 for the extended long double,
-            // and an error term of 4.811e-20 at infinite precision.
+            // absolute error next to Y. The measured maximum error is
+            // 7.403372e-17 for double and 6.084616e-20 for the extended long
+            // double. The error term at infinite precision is 4.811e-20.
             const float y = 2.249481201171875f;
             var g = Math.Sqrt(-2 * Math.Log(q));
             var xs = q - 0.25;
@@ -933,18 +933,18 @@ internal static partial class SpecialFunctions
         }
         else
         {
-            // Below q of 0.25 there is a series of rational approximations, all of
-            // the same general shape. Writing x for the square root of minus the
-            // natural log of q, the result has the form
+            // Below q of 0.25 the code uses a series of rational approximations
+            // of one general shape. Write x for the square root of minus the
+            // natural log of q. The result has the form
             //
             //     x (Y + R(x - B))
             //
-            // where Y is a constant, B is the smallest value of x for which the
-            // approximation is valid, and R is a correction tuned to keep a small
+            // The notation above has three parts. Y is a constant. B is the smallest value of x
+            // for which the approximation is valid. R is a correction tuned to keep a small
             // absolute error next to Y. Almost every input goes through the first
-            // approximation, sometimes the second; only after those are the inputs
-            // extremely small, and extended-precision formats reach values down to
-            // about 1e-5000, so that tail is long.
+            // approximation, and some inputs go through the second.
+            // Only extremely small inputs fall past those. Extended-precision
+            // formats reach values down to about 1e-5000, so that tail is long.
             var x = Math.Sqrt(-Math.Log(q));
             
             if (x < 3)

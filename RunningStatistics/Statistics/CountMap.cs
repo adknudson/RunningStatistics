@@ -81,8 +81,8 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     {
         checked { _nobs += count; }
         
-        // Defensive: the per-key counts are already bounded by the checked total, but the
-        // per-key accumulation is kept explicitly checked as well, so it reports overflow
+        // The checked total already bounds the per-key counts. The code still
+        // checks the per-key accumulation explicitly, so it reports overflow
         // rather than wrapping quietly.
 #if NET5_0_OR_GREATER
         ref var valueCount = ref CollectionsMarshal.GetValueRefOrAddDefault(_dict, value, out _);

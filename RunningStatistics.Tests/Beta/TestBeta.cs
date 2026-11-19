@@ -45,7 +45,7 @@ public partial class TestBeta()
         Assert.Throws<ArgumentOutOfRangeException>(() => new RunningStatistics.Beta(-1, -1));
     }
     
-    // The (bool, count) negative-count guard lives in AbstractRunningStatsTest; this fact
+    // The (bool, count) negative-count guard lives in AbstractRunningStatsTest. This fact
     // keeps the Beta-specific (successes, failures) overload guards.
     [Fact]
     public void FitSf_GuardsAgainstNegativeSuccessesAndFailures()
@@ -56,9 +56,9 @@ public partial class TestBeta()
     }
 
     // CloneEmpty on a Beta built with the constructor that takes starting successes and failures
-    // must give a true zero state: those counts are state, not configuration, so a clone that
-    // leaked them would double-count through the usual pattern of accumulating into a clone with
-    // Merge.
+    // must give a true zero state. Those counts are state, not configuration. A clone that
+    // leaked them would double-count through the usual pattern of accumulating into a clone
+    // with Merge.
     [Fact]
     public void CloneEmpty_IsTrueZeroState()
     {
@@ -78,8 +78,9 @@ public partial class TestBeta()
         Assert.True(double.IsNaN(clone.Mode));
         Assert.Matches("Nobs=0\\) \\| α=0, β=0", clone.ToString());
 
-        // round-trip: merging the source into the empty clone rebuilds it exactly — the
-        // counters are exact longs, so every getter evaluates bitwise identically
+        // Round-trip: merging the source into the empty clone rebuilds it exactly.
+        // The counters are exact longs, so every getter evaluates bitwise
+        // identically.
         clone.Merge(beta);
         Assert.Equal(7L, clone.Successes);
         Assert.Equal(7L, clone.Failures);
@@ -95,8 +96,9 @@ public partial class TestBeta()
     {
         // A lopsided scenario: three billion successes and one failure. The mean and
         // variance still match the values computed in double arithmetic, and this pins
-        // them so a later change cannot move them. (The old getter bug, multiplying the
-        // counts before converting them, would not have shown here: the product fits.)
+        // them so a later change cannot move them. The old getter bug multiplied the
+        // counts before converting them. That product fits, so the bug would not
+        // have shown here.
         RunningStatistics.Beta beta = new();
         beta.Fit(true, 3_000_000_000L);
         beta.Fit(false, 1L);
@@ -107,14 +109,13 @@ public partial class TestBeta()
         Assert.Equal(3_000_000_000L, beta.Successes);
         Assert.Equal(1L, beta.Failures);
         
-        // The regression this fact guards against: if the Variance getter multiplied the
-        // two counts as whole numbers before converting them, 3.1 billion times 3.1
-        // billion is 9.61e18, larger than the biggest long, so the product would wrap to
-        // about -8.8e18 and the variance would come out negative (about -3.708e-11)
-        // instead of the correct positive value (about 4.032e-11). The getter converts
-        // first, so the positive value is required here. These counts total 6.2 billion,
-        // which is far below the overflow threshold in Fit, so this state is reachable
-        // through the public API alone.
+        // This fact guards a regression. Consider a Variance getter that multiplied the two
+        // counts as whole numbers before it converted them. Here 3.1 billion times 3.1 billion
+        // is 9.61e18, which is larger than the biggest long. Such a product would wrap to
+        // about -8.8e18. The variance would then read about -3.708e-11, instead of the
+        // correct value, about 4.032e-11. The real getter converts first, so it must return
+        // the positive value. These counts total 6.2 billion. That total stays far below the
+        // overflow threshold in Fit, so the public API alone can reach this state.
         RunningStatistics.Beta overflow = new();
         overflow.Fit(true, 3_100_000_000L);
         overflow.Fit(false, 3_100_000_000L);
@@ -128,24 +129,24 @@ public partial class TestBeta()
     [Fact]
     public void Getters_ExactAtSmallCounts()
     {
-        // At small counts, the getters must match the documented formulas exactly: the
-        // mean is successes divided by the total count, and the variance is the
-        // documented Beta formula on the two counts.
+        // At small counts, the getters must match the documented formulas exactly. The mean is
+        // successes divided by the total count. The variance uses the documented Beta formula
+        // on the two counts.
         RunningStatistics.Beta beta = new(7, 3);
         Assert.Equal(0.7, beta.Mean);
         Utils.AssertIsApproximate(21.0 / (Math.Pow(10.0, 2) * 11.0), beta.Variance, 0);
         Utils.AssertIsApproximate(7.0 * 3.0 / (Math.Pow(7.0 + 3.0, 2) * (7.0 + 3.0 + 1)), beta.Variance, 0);
     }
 
-    // The batch path for bool collections is pinned against hand-counted truths from the
-    // same collection: fitting a whole collection must agree with counting its true
-    // values and fitting those two counts, several batches in a row must agree with
-    // fitting them one at a time, a batch must agree with the element-by-element loop,
-    // and the empty collection, all-true and all-false runs are pinned too. Beta's
-    // counters are exact whole numbers, so both paths land on identical state and the
-    // double getters compute bit-for-bit identical results. These facts therefore assert
-    // exact equality, which is stronger than (and satisfies) the 1e-8 relative
-    // tolerance that would also be acceptable.
+    // These facts pin the batch path for bool collections against hand-counted truths from the
+    // same collection. Fitting a whole collection must agree with counting its true values,
+    // then fitting those two counts. Several batches in a row must agree with fitting the
+    // same values one at a time. A single batch must agree with the element-by-element loop.
+    // These facts also pin the empty collection, the all-true collection and the all-false
+    // collection. Beta's counters are exact whole numbers, so both paths land on identical
+    // state. The double getters therefore compute bit-for-bit identical results. These facts
+    // therefore assert exact equality, which is stronger than the 1e-8 relative tolerance
+    // that would also be acceptable.
 
     [Fact]
     public void BatchFit_CountsMatchHandCount()
@@ -154,9 +155,9 @@ public partial class TestBeta()
         var successes = CountTrue(values);
         var failures = values.Count - successes;
 
-        // Sanity check on the seeded stream: the one thousand random booleans from seed 20251114
-        // are a mix of outcomes, so both successes and failures are present and the variance
-        // getter, which needs at least one of each, has a value.
+        // This is a sanity check on the seeded stream. The one thousand random booleans from
+        // seed 20251114 mix both outcomes, so the stream holds successes and failures. The
+        // variance getter needs at least one of each, so it has a value here.
         Assert.True(successes > 0);
         Assert.True(failures > 0);
 
@@ -187,10 +188,10 @@ public partial class TestBeta()
             loop.Fit(v);
         }
 
-        // The counters are exact whole numbers, so fitting the collection as one batch and
-        // fitting the same values one at a time end on exactly the same success and
-        // failure counts. The two statistics therefore report exactly equal counts and
-        // bit-for-bit identical mean and variance.
+        // The counters are exact whole numbers. Fitting the collection as one batch and fitting
+        // the same values one at a time must end on the same counts. Both paths land on exactly
+        // the same success and failure counts. The two statistics therefore report exactly equal
+        // counts, and bit-for-bit identical mean and variance.
         Assert.Equal(batch.Nobs, loop.Nobs);
         Assert.Equal(batch.Successes, loop.Successes);
         Assert.Equal(batch.Failures, loop.Failures);
@@ -230,11 +231,10 @@ public partial class TestBeta()
     [Fact]
     public void BatchFit_EmptyIterableIsNoOp()
     {
-        // Fitting an empty collection turns into "zero successes and zero failures", and
-        // the guards accept zero and the checked addition simply adds nothing, so the
-        // call is a clean no-op. (Unlike Normal's collection path, which would crash
-        // computing an average of nothing.) The library needed no special guard for
-        // this; the fact just pins the behavior.
+        // Fitting an empty collection reads as "zero successes and zero failures". The guards
+        // accept zero, and the checked addition adds nothing, so the call is a clean no-op.
+        // Normal's collection path would crash computing an average of nothing, unlike this
+        // one. The library needed no special guard here. This fact only pins the behavior.
         var fresh = new RunningStatistics.Beta();
         fresh.Fit(new List<bool>());
         Assert.Equal(0, fresh.Nobs);

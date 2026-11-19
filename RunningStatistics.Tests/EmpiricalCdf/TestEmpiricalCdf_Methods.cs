@@ -86,12 +86,14 @@ public partial class TestEmpiricalCdf
         Assert.Equal(0, cdf.Nobs);
     }
 
-    // The CloneEmpty promise for statistics that carry internal parameters: the clone keeps
-    // the same parameters but starts with zero observations. For the empirical cumulative
-    // distribution the parameter is the batch size. Merging refuses a pair whose batch sizes
-    // differ, so the usual pattern of accumulating into a clone only works if the clone carries
-    // that size along. The batch size is private, so this fact checks the text form of the
-    // statistic and lets a successful merge stand as proof the size was carried.
+    // These facts check the CloneEmpty promise for statistics that carry internal
+    // parameters: the clone keeps the same parameters but starts with zero
+    // observations. For the empirical cumulative distribution the parameter is the
+    // batch size. Merging refuses a pair whose batch sizes differ. The usual
+    // pattern of accumulating into a clone therefore only works if the clone
+    // carries that size along. The batch size is private, so this fact checks the
+    // text form of the statistic. A successful merge stands as proof that the
+    // size was carried.
     [Fact]
     public void CloneEmpty_PreservesNumBinsMergeRoundTrip()
     {
@@ -120,10 +122,10 @@ public partial class TestEmpiricalCdf
         }
     }
 
-    // Reset clears the observations, the internal buffer and the extremes, but must leave
-    // the batch size alone. Fitting again into a reset statistic therefore goes through
-    // exactly the same sequence of flushes as fitting into a brand-new one, and the two
-    // end with bit-for-bit identical quantile tables.
+    // Reset clears the observations, the internal buffer and the extremes, but must
+    // leave the batch size alone. Fitting again into a reset statistic therefore
+    // goes through exactly the same sequence of flushes as fitting into a brand-new
+    // one. The two end with bit-for-bit identical quantile tables.
     [Fact]
     public void Reset_PreservesNumBinsRefitsIdentically()
     {
@@ -192,8 +194,8 @@ public partial class TestEmpiricalCdf
         Assert.Equal(b.Quantile(0.75), bMergeA.Quantile(0.75));
     }
 
-    // Merging two stats fitted with the first and second halves of the same data must match
-    // a stat fitted with all of the data at once.
+    // The fact merges the data as two stats, one for the first half and one for the
+    // second half. Their merge must match a stat fitted with all of the data at once.
     [Fact]
     public void Merge_PartsEqualsAll()
     {
@@ -271,7 +273,7 @@ public partial class TestEmpiricalCdf
         }
 
         // Scenario 2: the merge source has one flushed block plus an unflushed tail of 5,
-        // and all values share one support — the unflushed tail must be replayed into the
+        // and all values share one support. The unflushed tail must be replayed into the
         // merged stat without corrupting either side's state.
         RunningStatistics.EmpiricalCdf a2 = new(bins);
         double[] values2 = new double[115];
@@ -458,12 +460,12 @@ public partial class TestEmpiricalCdf
     [Fact]
     public void Quantile_DuplicateOrderStatsInterpolatesHonestly()
     {
-        // The sample has exact duplicates and its count is one full batch, so the single
-        // flush, with blend weight one, writes the bins as the sorted sample itself: 1,
-        // 2, 2 and 2, with the minimum 1 and maximum 2. The interpolation window adds the
-        // minimum in front and the maximum behind, giving the six slots 1, 1, 2, 2, 2, 2,
-        // and each quantile query reads a fractional position in that window: the batch
-        // size plus one, times the queried probability.
+        // The sample has exact duplicates and its count is one full batch. The single
+        // flush, with blend weight one, writes the bins as the sorted sample itself:
+        // 1, 2, 2 and 2. The minimum is 1 and the maximum is 2. The interpolation
+        // window adds the minimum in front and the maximum behind, giving the six
+        // slots 1, 1, 2, 2, 2, 2. Each quantile query reads a fractional position in
+        // that window: the batch size plus one, times the queried probability.
         RunningStatistics.EmpiricalCdf cdf = new(4);
         foreach (var v in new[] { 1.0, 2.0, 2.0, 2.0 })
         {
@@ -514,16 +516,17 @@ public partial class TestEmpiricalCdf
         Utils.AssertIsApproximate(1.0, cdf.Cdf(2.0), 0);
         Utils.AssertIsApproximate(1.0, cdf.Cdf(10.0), 0);
 
-        // A query exactly at the minimum, which the window repeats in the next slot: the
-        // scan for the first window value greater than the query passes over the equal
-        // values and lands two slots along, a positive span. With no fraction, the answer
-        // is that slot's position, one, over the window length, six.
+        // A query sits exactly at the minimum, which the window repeats in the next
+        // slot. The scan for the first window value greater than the query passes over
+        // the equal values and lands two slots along, a positive span. With no
+        // fraction, the answer is that slot's position, one, over the window length,
+        // six.
         Utils.AssertIsApproximate(1.0 / 6.0, cdf.Cdf(1.0), 0);
 
-        // A query strictly inside the only gap that spans two different window values, the
-        // one between the slot holding 1 and the run of 2s: the answer interpolates the
-        // position, so the query 1.5, halfway across, gives one and a half slots over the
-        // window length of six.
+        // A query sits strictly inside the only gap that spans two different window
+        // values, between the slot holding 1 and the run of 2s. The answer
+        // interpolates the position, so the query 1.5, halfway across, gives one and
+        // a half slots over the window length of six.
         Utils.AssertIsApproximate(0.25, cdf.Cdf(1.5), 0);
         Utils.AssertIsApproximate(1.99 / 6.0, cdf.Cdf(1.99), 0);
 
@@ -555,10 +558,10 @@ public partial class TestEmpiricalCdf
         Utils.AssertIsApproximate(cdf.Max, cdf.Quantile(1.0), 0);
         Utils.AssertIsApproximate(cdf.Min, cdf.Quantile(-0.0), 0);
 
-        // Queries just inside the bounds: after a flush, the minimum equals the first bin
-        // and the last bin equals the maximum, so the spans at the head and tail of the
-        // window have zero width. The only honest answer there is the endpoint value
-        // itself, never a NaN.
+        // Queries just inside the bounds: after a flush, the minimum equals the first
+        // bin and the last bin equals the maximum. The spans at the head and tail of
+        // the window have zero width. The only honest answer there is the endpoint
+        // value itself, never a NaN.
         Utils.AssertIsApproximate(1.0, cdf.Quantile(0.002), 0);
         Utils.AssertIsApproximate(2.0, cdf.Quantile(0.998), 0);
     }
@@ -566,10 +569,10 @@ public partial class TestEmpiricalCdf
     [Fact]
     public void SmallBuffer_CdfThrowsContract()
     {
-        // The under-filled buffer, with fewer observations than the batch size: the
+        // The buffer is under-filled, with fewer observations than the batch size. The
         // cumulative-distribution query throws its small-buffer error for every input,
-        // including values that would be perfectly valid questions once the statistic
-        // fills up, such as below the minimum, inside the range or at the maximum. The
+        // including inputs below the minimum, inside the range or at the maximum. Those
+        // inputs would be perfectly valid questions once the statistic fills up. The
         // small-buffer check runs before the NaN check and the range logic.
         RunningStatistics.EmpiricalCdf cdf = new(10);
         for (var v = 1.0; v <= 9.0; v++)
@@ -578,9 +581,9 @@ public partial class TestEmpiricalCdf
         }
 
         Assert.Equal(9, cdf.Nobs);
-        // The readouts stay current even while the buffer is under-filled: the minimum and
-        // maximum cover every observation so far, including those no flush has ever mixed
-        // into the bins.
+        // The readouts stay current even while the buffer is under-filled. The
+        // minimum and maximum cover every observation so far, including those no
+        // flush has ever mixed into the bins.
         Utils.AssertIsApproximate(1.0, cdf.Min, 0);
         Utils.AssertIsApproximate(9.0, cdf.Max, 0);
 
@@ -590,9 +593,9 @@ public partial class TestEmpiricalCdf
         Assert.Throws<InvalidOperationException>(() => cdf.Cdf(9.0));
         Assert.Throws<InvalidOperationException>(() => cdf.Cdf(10.0));
 
-        // The small-buffer check runs before the NaN check, so a query of NaN here reports
-        // the small-buffer error, not the bad-value error a filled statistic gives, pinned
-        // by QuantileAndCdf_RejectNaN.
+        // The small-buffer check runs before the NaN check. A query of NaN here
+        // reports the small-buffer error, not the bad-value error a filled statistic
+        // gives. The fact QuantileAndCdf_RejectNaN pins the filled-statistic case.
         Assert.Throws<InvalidOperationException>(() => cdf.Cdf(double.NaN));
     }
 
@@ -605,17 +608,18 @@ public partial class TestEmpiricalCdf
             cdf.Fit(v);
         }
 
-        // Probabilities that would be valid queries once the statistic is filled, including
-        // the end points 0 and 1, which on a filled statistic answer with the minimum and
-        // the maximum. The small-buffer fact above already pins an interior probability and
-        // the median.
+        // These probabilities would be valid queries once the statistic is filled. On
+        // a filled statistic, the end points 0 and 1 answer with the minimum and the
+        // maximum. The small-buffer fact above already pins an interior probability
+        // and the median.
         Assert.Throws<InvalidOperationException>(() => cdf.Quantile(0.0));
         Assert.Throws<InvalidOperationException>(() => cdf.Quantile(0.75));
         Assert.Throws<InvalidOperationException>(() => cdf.Quantile(1.0));
 
-        // The small-buffer check runs before the probability-range check, so even an
-        // impossible probability here reports the small-buffer error, not the out-of-range
-        // error a filled statistic would give, pinned by Quantile_EdgeCases.
+        // The small-buffer check runs before the probability-range check. Even an
+        // impossible probability here reports the small-buffer error, not the out-of-
+        // range error a filled statistic would give. The fact Quantile_EdgeCases pins
+        // the filled-statistic case.
         Assert.Throws<InvalidOperationException>(() => cdf.Quantile(-0.1));
         Assert.Throws<InvalidOperationException>(() => cdf.Quantile(1.1));
         Assert.Throws<InvalidOperationException>(() => cdf.Quantile(double.NaN));
@@ -624,11 +628,11 @@ public partial class TestEmpiricalCdf
     [Fact]
     public void SmallBuffer_ExactlyNumBinsSucceeds()
     {
-        // The exact transition between throwing and working: one observation short of a
-        // full batch still throws, and at exactly one full batch the first flush happens,
-        // with blend weight one, and both queries succeed. The sample is deliberately
-        // unsorted so the flush's own sorting gets exercised, and its values are 1, 2, 3
-        // and 4.
+        // This pins the exact transition between throwing and working. One observation
+        // short of a full batch still throws. At exactly one full batch the first flush
+        // happens, with blend weight one, and both queries succeed. The sample is
+        // deliberately unsorted, which exercises the flush's own sorting. Its values
+        // are 1, 2, 3 and 4.
         RunningStatistics.EmpiricalCdf cdf = new(4);
         foreach (var v in new[] { 3.0, 1.0, 4.0 })
         {
@@ -644,16 +648,16 @@ public partial class TestEmpiricalCdf
         Utils.AssertIsApproximate(cdf.Min, cdf.Quantile(0.0), 0);
         Utils.AssertIsApproximate(cdf.Max, cdf.Quantile(1.0), 0);
         // The bins hold the sorted sample, 1 through 4. The median sits at the position
-        // five times one half, two and a half, which interpolates between the second bin,
+        // five times one half, two and a half. It interpolates between the second bin,
         // 2, and the third bin, 3.
         Utils.AssertIsApproximate(2.5, cdf.Quantile(0.5), 0);
 
-        // The window adds the minimum in front and the maximum behind the bins, giving six
-        // slots: 1, 1, 2, 3, 4, 4. A query at the minimum repeats there and the first
-        // larger value sits two slots along with no fraction, so the answer is one slot
-        // over six. A query of 2.5 sits halfway between the bins holding 2 and 3, at the
-        // fractional position two and a half, giving two and a half over six. At or above
-        // the maximum the answer is one, below the minimum it is zero.
+        // The window adds the minimum in front and the maximum behind the bins, giving
+        // six slots: 1, 1, 2, 3, 4, 4. A query at the minimum repeats there, and the
+        // first larger value sits two slots along with no fraction. The answer is one
+        // slot over six. A query of 2.5 sits halfway between the bins holding 2 and 3,
+        // at the fractional position two and a half. It gives two and a half over six.
+        // At or above the maximum the answer is one, below the minimum it is zero.
         Utils.AssertIsApproximate(0.0, cdf.Cdf(0.0), 0);
         Utils.AssertIsApproximate(1.0 / 6.0, cdf.Cdf(1.0), 0);
         Utils.AssertIsApproximate(2.5 / 6.0, cdf.Cdf(2.5), 0);
@@ -663,9 +667,10 @@ public partial class TestEmpiricalCdf
     [Fact]
     public void SmallBuffer_MergeThresholdTransition()
     {
-        // Merging statistics that are each below one batch: the merged statistic's count is
-        // the sum of the two, and whether it still throws the small-buffer error depends on
-        // that combined count alone, not on whether either source ever completed a flush.
+        // This merges statistics that are each below one batch. The merged statistic's
+        // count is the sum of the two. Whether it still throws the small-buffer error
+        // depends on that combined count alone, not on whether either source ever
+        // completed a flush.
         const int bins = 10;
         RunningStatistics.EmpiricalCdf a = new(bins);
         foreach (var v in new[] { 4.0, 3.0, 2.0, 1.0 })
@@ -687,9 +692,10 @@ public partial class TestEmpiricalCdf
         Assert.Equal(9, a.Nobs);
         Assert.Equal(5, b.Nobs);
 
-        // The combined count, four plus five, is still short of a full batch, so the merged
-        // statistic keeps throwing the small-buffer error even for inputs that would
-        // otherwise be valid. The statistic being merged stays untouched and still small.
+        // The combined count, four plus five, is still short of a full batch. The
+        // merged statistic keeps throwing the small-buffer error even for inputs that
+        // would otherwise be valid. The merge leaves the source statistic untouched
+        // and still small.
         Assert.Throws<InvalidOperationException>(() => a.Cdf(1.0));
         Assert.Throws<InvalidOperationException>(() => a.Quantile(0.0));
         Assert.Throws<InvalidOperationException>(() => a.Quantile(1.0));
@@ -700,9 +706,9 @@ public partial class TestEmpiricalCdf
 
         a.Merge(c);
 
-        // The combined count is now exactly one full batch: the last replayed observation,
-        // 10.0, closes the buffer and triggers the flush, so the queries that just threw
-        // now succeed over the merged sample of 1 through 10.
+        // The combined count is now exactly one full batch. The last replayed
+        // observation, 10.0, closes the buffer and triggers the flush. The queries
+        // that just threw now succeed over the merged sample of 1 through 10.
         Assert.Equal(10, a.Nobs);
         Assert.Equal(1, c.Nobs);
         Utils.AssertIsApproximate(1.0, a.Min, 0);
@@ -719,11 +725,11 @@ public partial class TestEmpiricalCdf
     [Fact]
     public void SmallBuffer_NobsBeyondNumBinsRemainderSucceeds()
     {
-        // The neighboring state, pinned for contrast: more observations than a batch with
-        // a partially filled buffer, two observations past the last whole batch. Only
-        // fewer-than-a-batch throws, so both methods answer here, and the minimum and
-        // maximum already cover the unflushed tail observations, 0.5 and 10.5, even though
-        // the bins only reflect the last completed flush.
+        // This pins the neighboring state for contrast: more observations than a batch,
+        // with two observations past the last whole batch. Only a statistic with fewer
+        // than a batch throws, so both methods answer here. The minimum and maximum
+        // already cover the unflushed tail observations, 0.5 and 10.5. The bins only
+        // reflect the last completed flush.
         RunningStatistics.EmpiricalCdf cdf = new(10);
         for (var v = 10.0; v >= 1.0; v--)
         {
@@ -744,24 +750,27 @@ public partial class TestEmpiricalCdf
         Utils.AssertIsApproximate(1.0, cdf.Cdf(11.0), 0);
     }
 
-    // The weighted fit of the empirical cumulative distribution is documented to cost one
-    // step per observation, and this fact pins that promise in both directions. The weighted
-    // overload replays single-observation fits, one per counted observation, because the
-    // blend weight a flush gives its bins, the batch size divided by the running observation
-    // count, changes as the batch progresses; no closed-form shortcut can serve a whole
-    // batch without changing what a flush means.
+    // The weighted fit of the empirical cumulative distribution is documented to cost
+    // one step per observation, and this fact pins that promise in both directions.
+    // The weighted overload replays single-observation fits, one per counted
+    // observation. The blend weight a flush gives its bins, the batch size divided by
+    // the running observation count, changes as the batch progresses. No closed-form
+    // shortcut can serve a whole batch without changing what a flush means.
     //
-    // The equivalence half: with a batch size of 25, fitting each value with one weighted
-    // call of count 200 must leave state bit-for-bit identical to a loop of 200 single fits
-    // of that value, on the same fixed-seed data in the same order. The comparison is exact,
-    // with no tolerance, and it covers the quantile and median readouts and the text form.
+    // This is the equivalence half. With a batch size of 25, one weighted call
+    // for a value must match a loop of 200 single fits of that value. The match is
+    // bit-for-bit. Both sides run on the same fixed-seed data, in the same order.
+    // The comparison is exact, with no tolerance, and it covers the quantile and
+    // median readouts and the text form.
     //
-    // The cost half: the nanoseconds per replayed observation must stay between a half and
-    // a double between the two workloads, which is what a true replay costs. A red run here
-    // means someone has changed the weighted overload to process a count in fewer steps:
-    // either the state stopped matching the replay, which would change behavior, or the
-    // ratio fell far below a half, meaning fewer updates per call than the documented replay.
-    // Per the house rules, do not adjust behavior to make this green: re-run the correctness
+    // The cost half checks the speed promise. The nanoseconds per replayed
+    // observation must stay between a half and a double between the two workloads.
+    // That range is what a true replay costs. A red run here means someone has
+    // changed the weighted overload to process a count in fewer steps. That
+    // change shows in one of two ways. The state stopped matching the replay,
+    // which would change behavior. Or the ratio fell far below a half, which
+    // means fewer updates per call than the documented replay. Per the house
+    // rules, do not adjust behavior to make this green. Re-run the correctness
     // gates before adopting any batching candidate.
     //
     // Measured here: about 74 nanoseconds per replayed observation through the weighted

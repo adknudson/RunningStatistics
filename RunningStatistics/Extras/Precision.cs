@@ -80,11 +80,12 @@ internal static partial class Precision
             return Decrement(value, -count);
         }
 
-        // Translate the bit pattern of the double into a whole number. Positive doubles then
-        // map to positive whole numbers that grow as the value grows, while negative doubles
-        // map to negative whole numbers whose magnitude grows as the value gets closer to
-        // zero. Just below zero, for instance at zero minus one machine epsilon, the pattern
-        // reaches its largest magnitude.
+        // Convert the bit pattern of the double to a whole number. A
+        // positive double maps to a positive whole number that grows with
+        // the value. A negative double maps to a negative whole number
+        // whose magnitude grows as the value approaches zero. The
+        // pattern reaches its largest magnitude just below zero, at zero
+        // minus one machine epsilon.
         var intValue = BitConverter.DoubleToInt64Bits(value);
         if (intValue < 0)
         {
@@ -101,8 +102,8 @@ internal static partial class Precision
             return 0;
         }
 
-        // Note that not all long values can be translated into double values. There's a whole bunch of them
-        // which return weird values like infinity and NaN
+        // Not every long value converts to a double value. Some long values convert to
+        // infinity or NaN.
         return BitConverter.Int64BitsToDouble(intValue);
     }
 
@@ -128,15 +129,17 @@ internal static partial class Precision
             return Increment(value, -count);
         }
 
-        // Translate the bit pattern of the double into a whole number. Positive doubles then
-        // map to positive whole numbers that grow as the value grows, while negative doubles
-        // map to negative whole numbers whose magnitude grows as the value gets closer to
-        // zero. Just below zero, for instance at zero minus one machine epsilon, the pattern
-        // reaches its largest magnitude.
+        // Convert the bit pattern of the double to a whole number. A
+        // positive double maps to a positive whole number that grows with
+        // the value. A negative double maps to a negative whole number
+        // whose magnitude grows as the value approaches zero. The
+        // pattern reaches its largest magnitude just below zero, at zero
+        // minus one machine epsilon.
         var intValue = BitConverter.DoubleToInt64Bits(value);
 
-        // If the value is zero then we'd really like the value to be -0. So we'll make it -0
-        // and then everything else should work out.
+        // When the input is zero, the method still needs the value -0.
+        // The code sets the value to -0, so the rest of the logic should
+        // work.
         if (intValue == 0)
         {
             // Note that long.MinValue has the same bit pattern as -0.0.
@@ -152,8 +155,8 @@ internal static partial class Precision
             intValue -= count;
         }
 
-        // Note that not all long values can be translated into double values. There's a whole bunch of them
-        // which return weird values like infinity and NaN
+        // Not every long value converts to a double value. Some long values convert to
+        // infinity or NaN.
         return BitConverter.Int64BitsToDouble(intValue);
     }
 }
