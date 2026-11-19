@@ -205,14 +205,5 @@ public partial class TestExtremaGenericComparableType
         Assert.Equal(4, a.Nobs);
     }
 
-    // Null iterable Fit contract — Extrema<TObs> has no iterable Fit override
-    // (only the value overloads got Require.NotNull), so the iterable call
-    // resolves to the base RunningStatisticBase.Fit(IEnumerable<TObs>).
-    [Fact]
-    public void Fit_RejectsNullIterable()
-    {
-        Extrema<MyComparable> extrema = new();
-        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<MyComparable>)null));
-        Assert.Equal(0, extrema.Nobs);
-    }
+    // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

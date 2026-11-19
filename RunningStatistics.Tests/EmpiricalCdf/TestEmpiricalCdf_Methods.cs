@@ -636,12 +636,5 @@ public partial class TestEmpiricalCdf
         Utils.AssertIsApproximate(1.0, cdf.Cdf(11.0), 0);
     }
 
-    // Null iterable Fit contract — EmpiricalCdf has no iterable Fit override.
-    [Fact]
-    public void Fit_RejectsNullIterable()
-    {
-        RunningStatistics.EmpiricalCdf cdf = new(10);
-        Assert.Throws<ArgumentNullException>(() => cdf.Fit((IEnumerable<double>)null));
-        Assert.Equal(0, cdf.Nobs);
-    }
+    // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

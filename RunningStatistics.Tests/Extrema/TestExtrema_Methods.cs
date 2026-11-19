@@ -646,14 +646,7 @@ public partial class TestExtrema
         Assert.Equal(3, g.MaxCount);
     }
 
-    // Null iterable Fit contract — Extrema (double) has no iterable Fit override.
-    [Fact]
-    public void Fit_RejectsNullIterable()
-    {
-        var extrema = new RunningStatistics.Extrema();
-        Assert.Throws<ArgumentNullException>(() => extrema.Fit((IEnumerable<double>)null));
-        Assert.Equal(0, extrema.Nobs);
-    }
+    // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 
     /// <summary>
     /// Bit-level sign check: IEEE division sends -0.0 to -Infinity and +0.0 to +Infinity, whereas

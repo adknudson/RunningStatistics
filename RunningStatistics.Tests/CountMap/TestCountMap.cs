@@ -399,15 +399,6 @@ public partial class TestCountMap()
         Assert.Equal(14, a.Nobs);
     }
 
-    // Null iterable Fit contract — CountMap has no iterable Fit override:
-    // both the KeyValuePairs overload (the one Merge uses) and the plain-iterable overload
-    // resolve to the base RunningStatisticBase defaults.
-    [Fact]
-    public void Fit_RejectsNullIterable()
-    {
-        var countMap = new CountMap<int>();
-        Assert.Throws<ArgumentNullException>(() => countMap.Fit((IEnumerable<KeyValuePair<int, long>>)null));
-        Assert.Throws<ArgumentNullException>(() => countMap.Fit((IEnumerable<int>)null));
-        Assert.Equal(0, countMap.Nobs);
-    }
+    // Null-collection rejection (both collection overloads) lives in
+    // AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

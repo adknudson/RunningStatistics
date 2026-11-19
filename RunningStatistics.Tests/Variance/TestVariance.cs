@@ -29,23 +29,10 @@ public partial class TestVariance()
         });
     }
     
-    [Fact]
-    public void Fit_GuardsAgainstNegativeCount()
-    {
-        var v = new RunningStatistics.Variance();
-        Assert.Throws<ArgumentOutOfRangeException>(() => v.Fit(1.0, -1));
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-        {
-            var keyValuePairs = new List<KeyValuePair<double, long>>
-            {
-                new(1.0, 1),
-                new(2.0, -2)
-            };
-
-            v.Fit(keyValuePairs);
-        });
-    }
-
+    // Scalar negative-count and pairs-with-negative-count guards now live in
+    // AbstractRunningStatsTest (Fit_NegativeCountThrowsStateUntouched and
+    // FitPairsWithNegativeCount_ThrowsPrecedingPairsApplied).
+    
     [Fact]
     public void Fit_GuardsAgainstInfiniteValues()
     {
@@ -235,11 +222,5 @@ public partial class TestVariance()
         Assert.Equal(double.NaN, v1.Value);
     }
 
-    [Fact]
-    public void Fit_RejectsNullIterable()
-    {
-        var variance = new RunningStatistics.Variance();
-        Assert.Throws<ArgumentNullException>(() => variance.Fit((IEnumerable<double>)null));
-        Assert.Equal(0, variance.Nobs);
-    }
+    // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

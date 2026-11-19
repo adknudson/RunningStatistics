@@ -292,11 +292,5 @@ public partial class TestNormal
         Assert.Equal(double.NaN, fresh.Mean);
     }
 
-    [Fact]
-    public void Fit_RejectsNullIterable()
-    {
-        var normal = new RunningStatistics.Normal();
-        Assert.Throws<ArgumentNullException>(() => normal.Fit((IEnumerable<double>)null));
-        Assert.Equal(0, normal.Nobs);
-    }
+    // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

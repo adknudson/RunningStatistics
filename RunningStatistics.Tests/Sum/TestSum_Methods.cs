@@ -206,11 +206,5 @@ public partial class TestSum
         Assert.Equal(double.PositiveInfinity, fitSaturated.Value);
     }
 
-    [Fact]
-    public void Fit_RejectsNullIterable()
-    {
-        var sum = new RunningStatistics.Sum();
-        Assert.Throws<ArgumentNullException>(() => sum.Fit((IEnumerable<double>)null));
-        Assert.Equal(0, sum.Nobs);
-    }
+    // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

@@ -481,4 +481,143 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         Assert.Equal(6, stat.Nobs);
         Assert.Equal(10, clone.Nobs);
     }
+    
+    // Guard contract common to every running statistic (every Fit(value, count) override calls
+    // Require.NonNegative, the base null-checks both collection overloads, and every Nobs
+    // accumulation is checked). Asserting these here once replaces the per-class duplicates
+    // that only existed on a minority of statistics.
+    [Fact]
+    public void Fit_NegativeCountThrowsStateUntouched()
+    {
+        IRunningStatistic<TObs> stat = GenerateStatistic();
+        
+        stat.Fit(GenerateObservation(), 3);
+        
+        // pre-condition
+        Assert.Equal(3, stat.Nobs);
+        
+        Assert.Throws<ArgumentOutOfRangeException>(() => stat.Fit(GenerateObservation(), -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => stat.Fit(GenerateObservation(), long.MinValue));
+        
+        // post-condition: rejected counts never touch state
+        Assert.Equal(3, stat.Nobs);
+    }
+    
+    [Fact]
+    public void FitNullCollections_ThrowsStateUntouched()
+    {
+        IRunningStatistic<TObs> stat = GenerateStatistic();
+        
+        stat.Fit(GenerateObservation(), 3);
+        
+        // pre-condition
+        Assert.Equal(3, stat.Nobs);
+        
+        Assert.Throws<ArgumentNullException>(() => stat.Fit((IEnumerable<TObs>)null));
+        Assert.Throws<ArgumentNullException>(() => stat.Fit((IEnumerable<KeyValuePair<TObs, long>>)null));
+        
+        // post-condition: rejected collections never touch state
+        Assert.Equal(3, stat.Nobs);
+    }
+    
+    // The pairs overload resolves to the base for every statistic (none overrides it), so its
+    // behavior is uniform: pairs ahead of a rejected one stay applied — pair batches are
+    // non-atomic on rejection, unlike the pre-validated values overload. Pinned as-is.
+    [Fact]
+    public void FitPairsWithNegativeCount_ThrowsPrecedingPairsApplied()
+    {
+        IRunningStatistic<TObs> stat = GenerateStatistic();
+        
+        Assert.Throws<ArgumentOutOfRangeException>(() => stat.Fit(new List<KeyValuePair<TObs, long>>
+        {
+            new(GenerateObservation(), 2L),
+            new(GenerateObservation(), -1)
+        }));
+        
+        // post-condition: the valid pair before the bad one was applied, the bad one was not
+        Assert.Equal(2, stat.Nobs);
+    }
+    
+    [Fact]
+    public void FitEmptyIterable_FreshIsNoOp()
+    {
+        IRunningStatistic<TObs> stat = GenerateStatistic();
+        
+        stat.Fit(new List<TObs>());
+        Assert.Equal(0, stat.Nobs);
+    }
+    
+    [Fact]
+    public void FitEmptyIterable_FittedKeepsState()
+    {
+        IRunningStatistic<TObs> stat = GenerateStatistic();
+        
+        stat.Fit(GenerateObservation(), 3);
+        
+        // pre-condition
+        Assert.Equal(3, stat.Nobs);
+        
+        stat.Fit(new List<TObs>());
+        
+        // post-condition: an empty batch leaves the existing state alone
+        Assert.Equal(3, stat.Nobs);
+    }
+    
+    // Nobs overflow via the merge path: every Merge adds counts with checked arithmetic.
+    // (Fit-path overflow stays per-class: statistics whose Fit(value, count) loops per
+    // observation, e.g. EmpiricalCdf, cannot fit a 2^62-sized batch at all.)
+    [Fact]
+    public void MergeSelf_NobsOverflowThrows()
+    {
+        var stat = GenerateStatistic();
+        
+        stat.Fit(GenerateObservation());
+        Assert.Equal(1, stat.Nobs);
+        
+        // self-merge doubles Nobs in lockstep: 2^62 after 62 merges, one more addition overflows
+        for (var i = 0; i < 62; i++)
+        {
+            stat.Merge(stat);
+            Assert.Equal(1L << i + 1, stat.Nobs);
+        }
+        
+        var big = long.MaxValue / 2 + 1;
+        
+        Assert.Throws<OverflowException>(() => stat.Merge(stat));
+        
+        // post-condition: the overflowed merge leaves Nobs at its pre-merge value
+        Assert.Equal(big, stat.Nobs);
+    }
+    
+    [Fact]
+    public void Reset_FreshIsNoOp()
+    {
+        IRunningStatistic<TObs> stat = GenerateStatistic();
+        
+        Assert.Equal(0, stat.Nobs);
+        
+        stat.Reset();
+        Assert.Equal(0, stat.Nobs);
+    }
+    
+    [Fact]
+    public void ToString_NobsMatchesLiveState()
+    {
+        var stat = GenerateStatistic();
+        
+        Assert.Matches(ToStringWithNobs(0), stat.ToString());
+        
+        stat.Fit(GenerateObservation(), 3);
+        Assert.Matches(ToStringWithNobs(3), stat.ToString());
+        
+        var clone = stat.Clone();
+        clone.Fit(GenerateObservation(), 2);
+        Assert.Matches(ToStringWithNobs(5), clone.ToString());
+        Assert.DoesNotMatch(ToStringWithNobs(5), stat.ToString());
+    }
+    
+    private static Regex ToStringWithNobs(long nobs)
+    {
+        return new Regex($@"^\S+{{{typeof(TObs).Name}}}\(Nobs={nobs:N0}\).*");
+    }
 }

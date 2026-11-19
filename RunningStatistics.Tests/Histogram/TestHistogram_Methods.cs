@@ -591,13 +591,5 @@ public partial class TestHistogram
         }
     }
 
-    // Null iterable Fit contract — Histogram has no iterable Fit override;
-    // the call resolves to the base RunningStatisticBase.Fit(IEnumerable<double>).
-    [Fact]
-    public void Fit_RejectsNullIterable()
-    {
-        RunningStatistics.Histogram h = new([0.0, 1.0, 2.0]);
-        Assert.Throws<ArgumentNullException>(() => h.Fit((IEnumerable<double>)null));
-        Assert.Equal(0, h.Nobs);
-    }
+    // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

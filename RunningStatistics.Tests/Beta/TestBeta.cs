@@ -45,12 +45,12 @@ public partial class TestBeta()
         Assert.Throws<ArgumentOutOfRangeException>(() => new RunningStatistics.Beta(-1, -1));
     }
     
+    // The (bool, count) negative-count guard lives in AbstractRunningStatsTest; this fact
+    // keeps the Beta-specific (successes, failures) overload guards.
     [Fact]
-    public void Fit_GuardsAgainstNegativeCount()
+    public void FitSf_GuardsAgainstNegativeSuccessesAndFailures()
     {
         RunningStatistics.Beta beta = new();
-        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(true, -1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(false, -1));
         Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(1, -1));
         Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(-1, 1));
     }
@@ -270,14 +270,7 @@ public partial class TestBeta()
         Assert.Equal(ctor.Variance, batch.Variance);
     }
 
-    // Null iterable Fit contract — bool iterables.
-    [Fact]
-    public void Fit_RejectsNullIterable()
-    {
-        var beta = new RunningStatistics.Beta();
-        Assert.Throws<ArgumentNullException>(() => beta.Fit((IEnumerable<bool>)null));
-        Assert.Equal(0, beta.Nobs);
-    }
+    // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 
     private static List<bool> SeededBooleans()
     {

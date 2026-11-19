@@ -29,22 +29,7 @@ public partial class TestNormal()
         });
     }
 
-    [Fact]
-    public void Fit_GuardsAgainstNegativeCount()
-    {
-        var normal = new RunningStatistics.Normal();
-        Assert.Throws<ArgumentOutOfRangeException>(() => normal.Fit(1.0, -1));
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-        {
-            var keyValuePairs = new List<KeyValuePair<double, long>>
-            {
-                new(1.0, 1),
-                new(2.0, -2)
-            };
-
-            normal.Fit(keyValuePairs);
-        });
-    }
+    // Scalar and pairs negative-count guards live in AbstractRunningStatsTest.
 
     [Fact]
     public void Fit_GuardsAgainstInfiniteValues()
