@@ -69,23 +69,26 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     }
 
     /// <summary>
-    /// Fits the value a given number of times. The method replays it one observation at a time.
+    /// Fits the value the given number of times.
     ///
-    /// <b>The cost of this overload grows with the count.</b> The method pays one fitting step
-    /// per observation, not one step per call. The weighted overloads of other statistics, such
-    /// as the extrema or the moments, fold a count into their state in closed form. This
-    /// overload cannot.
+    /// <b>The cost of this overload grows with count / NumBins, not with count.</b> A loop of
+    /// single fits pays one step per observation. This overload folds that step and blends the
+    /// bins once per buffer flush.
     ///
-    /// When its internal buffer flushes, it blends each bin with a weight. That weight equals the
-    /// batch size divided by the running observation count. That count advances with every
-    /// replayed observation inside the batch. So different replays of the same call blend with
-    /// different weights. No shortcut can serve a whole batch without changing what a flush
-    /// means.
-    ///
-    /// Because of that, a weighted fit leaves exactly the same state, bit for bit, as a loop of
-    /// the same number of single-observation fits in the same order. The replay performs the
-    /// same arithmetic at the same points, one observation at a time.
+    /// The call leaves exactly the same state, bit for bit, as a loop of the same number of
+    /// single-observation fits in the same order.
     /// </summary>
+    /// <remarks>
+    /// Each flush blends the bins with NumBins / Nobs, evaluated with the observation count
+    /// at that flush. That count advances inside a batch, so flushes inside one call blend
+    /// with different weights, and no single closed-form blend can replace the chain. The
+    /// method therefore replays the blend chain, one blend per flush, in the order the
+    /// flushes would happen. That blend order is what keeps the state bitwise exact. What
+    /// the batching skips is only the bookkeeping a constant run repeats per observation:
+    /// buffer index math, the sort of a window holding one repeated value, and the
+    /// per-observation extrema update. The extrema fold of a constant segment is proven
+    /// bitwise equal to the single-fit loop by Gate_ExtremaWeightedFitBitwiseEqualsLoop.
+    /// </remarks>
     /// <param name="value">The value to fit. Must be finite.</param>
     /// <param name="count">The number of times to fit <paramref name="value"/>. Must be non-negative.</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="value"/> is NaN or infinite.</exception>
@@ -97,10 +100,78 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         
         if (count == 0) return;
         
-        for (var i = 0; i < count; i++)
+        var numBins = NumBins;
+        var windowPos = (int)(Nobs % numBins);
+        var valuesView = Values;
+        
+        // Prefix: fill the rest of the current circular-buffer window with the value.
+        var prefix = Math.Min(count, (long)numBins - windowPos);
+        var prefixEnd = windowPos + (int)prefix;
+        for (var s = windowPos; s < prefixEnd; s++)
         {
-            UncheckedFit(value);
+            _buffer[s] = value;
         }
+        
+        _extrema.Fit(value, prefix);
+        count -= prefix;
+        
+        if (prefixEnd == numBins)
+        {
+            // The prefix completed a window, so replay blends now.
+            if (windowPos != 0)
+            {
+                // The window mixes slots this call did not write, so replay sorts them.
+                Array.Sort(_buffer);
+                for (var k = 0; k < numBins; k++)
+                {
+                    valuesView[k] = Utils.Smooth(valuesView[k], _buffer[k], (double)numBins / Nobs);
+                }
+            }
+            else
+            {
+                // The window is all this value, so replay's sort is an observed no-op
+                // and every sorted slot equals value.
+                for (var k = 0; k < numBins; k++)
+                {
+                    valuesView[k] = Utils.Smooth(valuesView[k], value, (double)numBins / Nobs);
+                }
+            }
+        }
+        
+        // Full windows: every whole window is this value repeated, so replay's sort is a
+        // no-op and the blend uses the value directly. The blends stay one per flush, in
+        // replay order; that sequential chain is what keeps the result bitwise exact. The
+        // extrema fold all whole windows at once, a form proven bitwise equal to the
+        // single-fit loop by the Extrema gate (Gate_ExtremaWeightedFitBitwiseEqualsLoop).
+        var windows = count / numBins;
+        if (windows > 0)
+        {
+            var flushed = Nobs;
+            _extrema.Fit(value, windows * numBins);
+            for (var j = 1L; j <= windows; j++)
+            {
+                var alpha = (double)numBins / (flushed + j * (long)numBins);
+                for (var s = 0; s < numBins; s++)
+                {
+                    _buffer[s] = value;
+                }
+                
+                for (var k = 0; k < numBins; k++)
+                {
+                    valuesView[k] = Utils.Smooth(valuesView[k], value, alpha);
+                }
+            }
+            
+            count -= windows * numBins;
+        }
+        
+        // Tail: a partial window, stored for a later flush. No blend fires here.
+        for (var s = 0; s < (int)count; s++)
+        {
+            _buffer[s] = value;
+        }
+        
+        _extrema.Fit(value, count);
     }
 
     private void UncheckedFit(double value)
