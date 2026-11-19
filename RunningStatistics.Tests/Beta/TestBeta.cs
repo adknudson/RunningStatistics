@@ -54,7 +54,41 @@ public partial class TestBeta()
         Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(1, -1));
         Assert.Throws<ArgumentOutOfRangeException>(() => beta.Fit(-1, 1));
     }
-    
+
+    // CloneEmpty on a Beta built with the parameterized (successes, failures) constructor must
+    // produce the TRUE zero state: those counts are state, not configuration, so a leaking clone
+    // would double-count through the standard clone-then-merge accumulation.
+    [Fact]
+    public void CloneEmpty_IsTrueZeroState()
+    {
+        var beta = new RunningStatistics.Beta(7, 3);
+        beta.Fit(false, 4);
+        Assert.Equal(7L, beta.Successes);
+        Assert.Equal(7L, beta.Failures);
+        Assert.Equal(14L, beta.Nobs);
+
+        var clone = beta.CloneEmpty();
+        Assert.Equal(0L, clone.Nobs);
+        Assert.Equal(0L, clone.Successes);
+        Assert.Equal(0L, clone.Failures);
+        Assert.Equal(double.NaN, clone.Mean);
+        Assert.True(double.IsNaN(clone.Variance));
+        Assert.True(double.IsNaN(clone.Median));
+        Assert.True(double.IsNaN(clone.Mode));
+        Assert.Matches("Nobs=0\\) \\| α=0, β=0", clone.ToString());
+
+        // round-trip: merging the source into the empty clone rebuilds it exactly — the
+        // counters are exact longs, so every getter evaluates bitwise identically
+        clone.Merge(beta);
+        Assert.Equal(7L, clone.Successes);
+        Assert.Equal(7L, clone.Failures);
+        Assert.Equal(14L, clone.Nobs);
+        Assert.Equal(beta.Mean, clone.Mean);
+        Assert.Equal(beta.Variance, clone.Variance);
+        Assert.Equal(beta.Median, clone.Median);
+        Assert.Equal(beta.Mode, clone.Mode);
+    }
+
     [Fact]
     public void Getters_AccurateAt3E9()
     {
