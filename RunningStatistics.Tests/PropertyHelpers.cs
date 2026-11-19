@@ -4,16 +4,16 @@ using System.Collections.Generic;
 namespace RunningStatistics.Tests;
 
 /// <summary>
-/// Deterministic datasets and reference calculations shared by the correctness gates; the workflow
-/// they follow is described in the house-rules file at the root of the repository. Datasets come
-/// from a fixed-seed random generator so a failing gate reproduces exactly, and they cover the
-/// shapes an incremental algorithm has to survive: streams whose mean sits far off zero, from
-/// equal to its spread up to twelve orders of magnitude beyond it, constant data, and small counts.
+/// The correctness gates share these helpers. The house-rules file at the repository root
+/// describes the workflow they follow. A fixed-seed random generator builds every dataset, so
+/// a failing gate reproduces exactly. The datasets cover the shapes an incremental algorithm
+/// must survive. They include streams whose mean sits far off zero, from equal to its spread
+/// up to twelve orders of magnitude beyond it. They also include constant data and small counts.
 ///
-/// The reference values here are computed in two passes, the mean first and then the central sums,
-/// with compensated summation. They are correct to within machine epsilon on every dataset these
-/// helpers generate. A candidate running statistic is judged against those references, not
-/// against the production implementation.
+/// A two-pass method computes each reference value: the mean first, then the central sums,
+/// with compensated summation. Each reference matches its dataset to within machine epsilon.
+/// The gates judge a candidate running statistic against these references, not against the
+/// production implementation.
 /// </summary>
 internal static class PropertyHelpers
 {
@@ -58,8 +58,8 @@ internal static class PropertyHelpers
 
     /// <summary>
     /// Draws <paramref name="n"/> uniform values from <c>offset</c> up to, but not including,
-    /// <c>offset</c> plus <c>spread</c>. How many times larger the offset is than the spread is
-    /// the condition number that makes naive raw-power-sum algorithms blow up.
+    /// <c>offset</c> plus <c>spread</c>. The ratio of the offset to the spread is the condition
+    /// number. A high condition number makes naive raw-power-sum algorithms blow up.
     /// </summary>
     public static List<double> OffsetSpread(int n, double offset, double spread, long seed)
     {
@@ -85,9 +85,10 @@ internal static class PropertyHelpers
     public static List<double> KappaStream(int n, double kappa, long seed) => OffsetSpread(n, kappa, 1.0, seed);
 
     /// <summary>
-    /// Streams whose condition number, the mean measured in spreads, walks through powers of ten
-    /// from one up to ten to the <paramref name="decades"/>th power: the range where an accurate
-    /// algorithm must stay accurate and a raw-power-sum algorithm does not.
+    /// Each stream sets a condition number: the mean measured in spreads. The condition number
+    /// walks through powers of ten, from one up to ten to the <paramref name="decades"/>th power.
+    /// This range is where an accurate algorithm must stay accurate and a raw-power-sum algorithm
+    /// does not.
     /// </summary>
     public static List<List<double>> KappaSweep(int n, int decades, long seed)
     {
@@ -171,11 +172,11 @@ internal static class PropertyHelpers
     // ---- Tolerant comparison helpers ----
 
     /// <summary>
-    /// Compares two values with a relative tolerance, treating two NaNs as agreeing. The tolerance
-    /// is usually derived from the condition number of the data: for a stable algorithm whose
-    /// worst error is a small multiple of the condition number times machine epsilon, a margin
-    /// built as a billionth plus one hundred times the condition number times machine epsilon
-    /// is a typical choice.
+    /// Compares two values with a relative tolerance. Two NaNs agree. The caller usually derives
+    /// the tolerance from the condition number of the data. Consider a stable algorithm whose
+    /// worst error is a small multiple of the condition number times machine epsilon. For that
+    /// algorithm, a good margin is a billionth plus one hundred times the condition number
+    /// times machine epsilon.
     /// </summary>
     public static bool Within(double expected, double actual, double relTol)
     {
@@ -189,12 +190,13 @@ internal static class PropertyHelpers
     }
 
     /// <summary>
-    /// Compares two values with an absolute tolerance, treating two NaNs as agreeing. Use it for
-    /// the standardized moments, skewness and kurtosis: their true values are small ratios, while
-    /// the error a stable algorithm makes lives on the data's own scale, a small multiple of the
-    /// condition number times machine epsilon measured in units of the standard deviation to the
-    /// third and fourth powers. A relative tolerance on those small ratios would demand accuracy
-    /// beyond what the stored mean can represent.
+    /// Compares two values with an absolute tolerance. Two NaNs agree. Use it for the
+    /// standardized moments, skewness and kurtosis. Their true values are small ratios.
+    ///
+    /// A stable algorithm makes its error on the data's own scale. That error is a small
+    /// multiple of the condition number times machine epsilon. The units for that multiple are
+    /// the standard deviation to the third and fourth powers. A relative tolerance on those
+    /// small ratios would demand accuracy beyond what the stored mean can represent.
     /// </summary>
     public static bool WithinAbsolute(double expected, double actual, double absTol)
     {

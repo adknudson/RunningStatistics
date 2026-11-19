@@ -29,7 +29,7 @@ internal struct HistogramOutOfBounds
     /// <summary>
     /// Adds the specified count to the appropriate out-of-bounds side.
     /// </summary>
-    /// <param name="lower">If true, the lower side is incremented. If false, the upper side is incremented.</param>
+    /// <param name="lower">If true, the method increments the lower side. If false, it increments the upper side.</param>
     /// <param name="count">The number of observations to add.</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the specified side is not valid.</exception>
     public void Fit(bool lower, long count)

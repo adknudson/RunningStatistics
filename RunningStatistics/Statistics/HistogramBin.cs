@@ -14,8 +14,8 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
     /// </summary>
     /// <param name="lower">The lower bound of the bin.</param>
     /// <param name="upper">The upper bound of the bin.</param>
-    /// <param name="closedLeft">Indicates if the bin is closed on the left side.</param>
-    /// <param name="closedRight">Indicates if the bin is closed on the right side.</param>
+    /// <param name="closedLeft">Shows if the bin has a closed left side.</param>
+    /// <param name="closedRight">Shows if the bin has a closed right side.</param>
     /// <exception cref="ArgumentException">Thrown when the lower bound is not strictly less than
     /// the upper bound or both bounds are infinite.</exception>
     public HistogramBin(double lower, double upper, bool closedLeft, bool closedRight)
@@ -50,8 +50,8 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
     public long Nobs { get; private set; }
 
     /// <summary>
-    /// Gets the representation of the bin. For example, a bin with lower bound 0 and upper bound 1
-    /// with closed left and open right would be represented as "[0.00, 1.00)".
+    /// Gets the representation of the bin. For example, a bin with lower bound 0 and upper bound 1,
+    /// closed left and open right, has the representation "[0.00, 1.00)".
     /// </summary>
     private string BinRep { get; }
 
@@ -66,12 +66,12 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
     public double Upper { get; }
 
     /// <summary>
-    /// Gets a value indicating whether the bin is closed on the left side.
+    /// Gets a value that shows if the bin has a closed left side.
     /// </summary>
     public bool ClosedLeft { get; }
 
     /// <summary>
-    /// Gets a value indicating whether the bin is closed on the right side.
+    /// Gets a value that shows if the bin has a closed right side.
     /// </summary>
     public bool ClosedRight { get; }
 
@@ -91,11 +91,11 @@ public sealed class HistogramBin : IEquatable<HistogramBin>
 
 
     /// <summary>
-    /// Determines whether the specified value falls within the bin.
+    /// Determines if the specified value falls within the bin.
     /// </summary>
     /// <param name="value">The value to check.</param>
     /// <returns>True if the bin contains the value, otherwise false.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when an unexpected state is encountered.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the bin encounters an unexpected state.</exception>
 
     public bool Contains(double value)
     {

@@ -75,12 +75,12 @@ internal static partial class Precision
     }
 
     /// <summary>
-    /// Checks whether two real numbers are almost equal.
+    /// Checks if two real numbers are almost equal.
     /// </summary>
     /// <param name="a">The first number</param>
     /// <param name="b">The second number</param>
     /// <returns>True when the two values differ by no more than ten times two to the minus
-    /// 52nd power; false otherwise.</returns>
+    /// 52nd power. In all other cases the method returns false.</returns>
     public static bool AlmostEqualRelative(this double a, double b)
     {
         return AlmostEqualNormRelative(a, b, a - b, DefaultDoubleAccuracy);

@@ -5,9 +5,9 @@ namespace RunningStatistics;
 /// <summary>
 /// The <c>Moments</c> class calculates and maintains running statistics for the first four central
 /// moments: mean, variance, skewness, and kurtosis. The variance is the unbiased sample variance.
-/// Internally it keeps the central sums of deviations about the running mean (Chan's pairwise
-/// update), which stays accurate on badly offset streams where raw power sums would lose all
-/// significant digits.
+/// Internally it keeps the central sums of deviations about the running mean, with Chan's
+/// pairwise update. That update stays accurate on badly offset streams where raw power sums
+/// would lose all significant digits.
 /// </summary>
 public sealed class Moments : RunningStatisticBase<double, Moments>
 {

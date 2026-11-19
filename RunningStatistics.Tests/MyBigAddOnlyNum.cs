@@ -4,11 +4,11 @@ using System.Numerics;
 namespace RunningStatistics.Tests;
 
 /// <summary>
-/// A long-backed numeric type that supports only addition and additive identity, so it does not
-/// implement the multiply operators. Unlike <see cref="MyAddOnlyNum" />, whose int backing cannot
-/// hold products of huge counts, this type's long backing lets the counting fallback path of
-/// <see cref="Sum{TObs}" /> be tested at counts up to <c>long.MaxValue</c> with exact results,
-/// for example fitting the value one with a count of <c>long.MaxValue</c>.
+/// A long-backed numeric type that supports only addition and additive identity. It does
+/// not implement the multiply operators. <see cref="MyAddOnlyNum" /> has an int backing
+/// that cannot hold products of huge counts. This type's long backing lets you test
+/// the counting fallback path of <see cref="Sum{TObs}" /> at counts up to <c>long.MaxValue</c>.
+/// One example fits the value one with a count of <c>long.MaxValue</c>.
 /// </summary>
 public readonly struct MyBigAddOnlyNum(long value) :
     IAdditionOperators<MyBigAddOnlyNum, MyBigAddOnlyNum, MyBigAddOnlyNum>,

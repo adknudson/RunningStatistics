@@ -666,15 +666,15 @@ public partial class TestExtrema
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 
     /// <summary>
-    /// Tells an ordinary zero from a negative zero. Comparing with equals cannot tell the
-    /// two apart, but dividing one by the zero sends negative zero to negative infinity,
-    /// which this check uses.
+    /// Tells an ordinary zero from a negative zero. Equals cannot tell the two apart.
+    /// One divided by the zero sends negative zero to negative infinity. This check uses
+    /// that difference.
     /// </summary>
     private static bool IsNegativeZero(double value) => value == 0.0 && 1.0 / value < 0.0;
 
     /// <summary>
-    /// The matching check that a zero is the ordinary positive zero rather than the
-    /// negative one, using the same division trick.
+    /// Matches the check for the ordinary positive zero, not the negative zero. It divides
+    /// one by the zero and applies the same division trick.
     /// </summary>
     private static bool IsPositiveZero(double value) => value == 0.0 && 1.0 / value > 0.0;
 }

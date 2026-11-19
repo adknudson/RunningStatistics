@@ -34,8 +34,8 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
 
 
     /// <summary>
-    /// A reference to the values excluding the min and max. The min and max are handled by the
-    /// <see cref="Extrema"/> object.
+    /// A reference to the values excluding the min and max. The <see cref="Extrema"/> object
+    /// handles the min and max.
     /// </summary>
     private Span<double> Values => _values.AsSpan(1, NumBins);
     
@@ -69,19 +69,21 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     }
 
     /// <summary>
-    /// Fits the value a given number of times, replaying it one observation at a time.
+    /// Fits the value a given number of times. The method replays it one observation at a time.
     ///
-    /// <b>The cost of this overload grows with the count: it pays one fitting step per
-    /// observation, not one step per call.</b> That sets it apart from the weighted overloads of
-    /// other statistics, such as the extrema or the moments, which fold a count straight into
-    /// their state in closed form. This one cannot: when the internal buffer flushes, each bin
-    /// is blended with a weight equal to the batch size divided by the running observation
-    /// count, and that count advances with every replayed observation inside the batch. So
-    /// different replays of the same call would blend with different weights, and no shortcut
-    /// can serve a whole batch without changing what a flush means.
+    /// <b>The cost of this overload grows with the count.</b> The method pays one fitting step
+    /// per observation, not one step per call. The weighted overloads of other statistics, such
+    /// as the extrema or the moments, fold a count into their state in closed form. This
+    /// overload cannot.
+    ///
+    /// When its internal buffer flushes, it blends each bin with a weight. That weight equals the
+    /// batch size divided by the running observation count. That count advances with every
+    /// replayed observation inside the batch. So different replays of the same call blend with
+    /// different weights. No shortcut can serve a whole batch without changing what a flush
+    /// means.
     ///
     /// Because of that, a weighted fit leaves exactly the same state, bit for bit, as a loop of
-    /// the same number of single-observation fits in the same order: the replay performs the
+    /// the same number of single-observation fits in the same order. The replay performs the
     /// same arithmetic at the same points, one observation at a time.
     /// </summary>
     /// <param name="value">The value to fit. Must be finite.</param>
@@ -184,7 +186,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     /// <summary>
     /// Finds the pth quantile of the empirical CDF.
     /// </summary>
-    /// <param name="p">The probability for which to find the quantile. Must be between 0 and 1.</param>
+    /// <param name="p">The probability for which to find the quantile. The value must lie between 0 and 1.</param>
     /// <returns>The pth quantile.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the number of observations is less than the number of bins.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="p"/> is not a valid probability.</exception>

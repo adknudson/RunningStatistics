@@ -61,8 +61,8 @@ internal static partial class Precision
     /// <summary>
     /// Increments a floating point number to the next bigger number representable by the data type.
     /// </summary>
-    /// <param name="value">The value which needs to be incremented.</param>
-    /// <param name="count">How many times the number should be incremented.</param>
+    /// <param name="value">The value to increment.</param>
+    /// <param name="count">The number of times to increment the value.</param>
     /// <remarks>
     /// The incrementation step length depends on the provided value.
     /// Increment(double.MaxValue) will return positive infinity.
@@ -110,8 +110,8 @@ internal static partial class Precision
     /// <summary>
     /// Decrements a floating point number to the next smaller number representable by the data type.
     /// </summary>
-    /// <param name="value">The value which should be decremented.</param>
-    /// <param name="count">How many times the number should be decremented.</param>
+    /// <param name="value">The value to decrement.</param>
+    /// <param name="count">The number of times to decrement the value.</param>
     /// <remarks>
     /// The decrementation step length depends on the provided value.
     /// Decrement(double.MinValue) will return negative infinity.

@@ -709,7 +709,7 @@ internal static partial class SpecialFunctions
     /// Implementation of the error function.
     /// </summary>
     /// <param name="z">Where to evaluate the error function.</param>
-    /// <param name="invert">Whether to compute 1 - the error function.</param>
+    /// <param name="invert">True to compute 1 - the error function.</param>
     /// <returns>the error function.</returns>
     private static double ErfImp(double z, bool invert)
     {
@@ -850,11 +850,11 @@ internal static partial class SpecialFunctions
 
     /// <summary>Calculates the complementary inverse error function evaluated at z.</summary>
     /// <returns>The complementary inverse error function evaluated at given value.</returns>
-    /// <remarks> We have tested this implementation against the arbitrary precision mpmath library
+    /// <remarks> We tested this implementation against the arbitrary precision mpmath library
     /// and found cases where we can only guarantee 9 significant figures correct.
     ///     <list type="bullet">
-    ///         <item>returns double.PositiveInfinity if <c>z &lt;= 0.0</c>.</item>
-    ///         <item>returns double.NegativeInfinity if <c>z &gt;= 2.0</c>.</item>
+    ///         <item>Returns double.PositiveInfinity when <c>z</c> is less than or equal to 0.0.</item>
+    ///         <item>Returns double.NegativeInfinity when <c>z</c> is greater than or equal to 2.0.</item>
     ///     </list>
     /// </remarks>
     /// <summary>calculates the complementary inverse error function evaluated at z.</summary>

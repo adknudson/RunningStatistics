@@ -5,8 +5,8 @@ internal static class Utils
     /// <summary>
     /// Bessel correction for sample variance.
     /// </summary>
-    /// <param name="n"></param>
-    /// <returns></returns>
+    /// <param name="n">The number of observations in the sample.</param>
+    /// <returns>The Bessel correction factor <c>n / (n - 1)</c>.</returns>
     public static double Bessel(double n)
     {
         return n / (n - 1);
