@@ -7,8 +7,7 @@ namespace RunningStatistics.Tests.Histogram;
 
 public partial class TestHistogram
 {
-    // The shared edge list: negative infinity, 0, 10 and 100. Consecutive edges form the
-    // three bins this histogram splits the number line into.
+    // |-inf, 0|, |0, 10|, |10, 100|
     private readonly double[] _edges = [double.NegativeInfinity, 0, 10, 100];
     
     [Fact]
@@ -152,9 +151,7 @@ public partial class TestHistogram
     [Fact]
     public void FreshHistogram_NobsAndBinsAreZero()
     {
-        // The bins run from negative infinity to 0, 0 to 10, and 10 to 100. The
-        // left ends are open, so each bin excludes its lower edge and
-        // includes its upper edge.
+        // (-inf, 0], (0, 10], (10, 100]
         RunningStatistics.Histogram h = new(_edges, false, false);
 
         Assert.Equal(0, h.Nobs);
@@ -447,8 +444,7 @@ public partial class TestHistogram
     [Fact]
     public void Fit_LeftClosedBins()
     {
-        // The bins are: negative infinity to 0 excluding 0, 0 to 10 excluding 10, and 10
-        // to 100 including 100.
+        // [-inf, 0), [0, 10), [10, 100]
         RunningStatistics.Histogram h = new(_edges);
 
         h.Fit(-1);
@@ -471,8 +467,7 @@ public partial class TestHistogram
     [Fact]
     public void Fit_LeftOpenBins()
     {
-        // The bins are: negative infinity to 0 excluding 0, 0 to 10 excluding 10, and 10
-        // to 100 excluding 100.
+        // [-inf, 0), [0, 10), [10, 100)
         RunningStatistics.Histogram h = new(_edges, true, false);
 
         h.Fit(-1);
@@ -495,8 +490,7 @@ public partial class TestHistogram
     [Fact]
     public void Fit_RightClosedBins()
     {
-        // The bins are: negative infinity to 0 including 0, above 0 up to 10 including 10,
-        // and above 10 up to 100 including 100.
+        // [-inf, 0], (0, 10], (10, 100]
         RunningStatistics.Histogram h = new(_edges, false);
 
         h.Fit(double.NegativeInfinity);
@@ -519,9 +513,7 @@ public partial class TestHistogram
     [Fact]
     public void Fit_RightOpenBins()
     {
-        // The bins run from negative infinity to 0, 0 to 10, and 10 to 100. The
-        // left ends are open, so each bin excludes its lower edge and
-        // includes its upper edge.
+        // (-inf, 0], (0, 10], (10, 100]
         RunningStatistics.Histogram h = new(_edges, false, false);
 
         h.Fit(double.NegativeInfinity);
@@ -544,8 +536,7 @@ public partial class TestHistogram
     [Fact]
     public void StaticMerge_DoesNotAffectOriginals()
     {
-        // The bins are: above 0 up to and including 0.1, above 0.1 up to and including 0.5,
-        // and above 0.5 up to and including 0.9.
+        // (0, 0.1], (0.1, 0.5], (0.5, 0.9]
         RunningStatistics.Histogram a = new([0, 0.1, 0.5, 0.9], leftClosed: false, endsClosed: false);
         RunningStatistics.Histogram b = new([0, 0.1, 0.5, 0.9], leftClosed: false, endsClosed: false);
             
