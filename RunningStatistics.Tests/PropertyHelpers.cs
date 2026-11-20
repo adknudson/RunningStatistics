@@ -204,6 +204,11 @@ internal static class PropertyHelpers
     /// epsilon, measured in the magnitude of the running totals.
     public static double SumReference(List<double> xs) => CompensatedSum(xs);
 
+    /// Reference value for a mean readout: the compensated sum of the values divided by their
+    /// count. Gates for averaging algorithms compare a candidate against this, not against
+    /// the production implementation.
+    public static double MeanReference(List<double> xs) => CompensatedMean(xs);
+
     private static double CompensatedMean(List<double> xs) => CompensatedSum(xs) / xs.Count;
 
     // ---- Tolerant comparison helpers ----
