@@ -79,6 +79,35 @@ internal static class PropertyHelpers
     }
 
     /// <summary>
+    /// <paramref name="n"/> values in blocks: one large power-of-two term, a run of ones,
+    /// then the negation of that large term. Every term is an exact double and a block's
+    /// exact sum is its count of ones, so the reference carries no rounding of its own and
+    /// the difference two folds make is the fold's, not the data's. That ratio, the large
+    /// term over a block's sum, is the condition number <paramref name="kappa"/> of the
+    /// summation problem. Once the large term passes 2^53 its spacing exceeds one, so a
+    /// plain fold drops every one as it accumulates and its error is a whole block; a
+    /// compensated fold keeps them. Below 2^53 a plain fold is already exact on this data,
+    /// and the record says so. The exponent jitter keeps the datasets distinct.
+    /// </summary>
+    public static List<double> CancelingStream(int n, double kappa, long seed)
+    {
+        Seed(seed);
+        var ones = Math.Max(2, n / 4);
+        var blocks = Math.Max(1, n / (ones + 2));
+        var exponent = (int)Math.Ceiling(Math.Log2(Math.Max(ones * kappa, 1.0))) + (int)(NextUnit() * 4.0);
+        var big = Math.Pow(2.0, exponent);
+        var xs = new List<double>();
+        for (var b = 0; b < blocks; b++)
+        {
+            xs.Add(big);
+            for (var i = 0; i < ones; i++) xs.Add(1.0);
+            xs.Add(-big);
+        }
+
+        return xs;
+    }
+
+    /// <summary>
     /// A stream whose mean is about <paramref name="kappa"/> and whose spread is one, so the
     /// condition number, the mean measured in spreads, is <paramref name="kappa"/>.
     /// </summary>
@@ -166,6 +195,14 @@ internal static class PropertyHelpers
 
         return sum + compensation;
     }
+
+    /// Reference value for a sum readout: the compensated sum of the values. Gates for
+    /// summation algorithms compare a candidate against this, not against the production
+    /// implementation. The condition number of the data enters the honest tolerance the
+    /// same way it does for the moment gates: a fold that keeps about one epsilon of
+    /// error per running total spends an absolute error of a few times kappa times
+    /// epsilon, measured in the magnitude of the running totals.
+    public static double SumReference(List<double> xs) => CompensatedSum(xs);
 
     private static double CompensatedMean(List<double> xs) => CompensatedSum(xs) / xs.Count;
 
