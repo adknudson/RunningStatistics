@@ -320,6 +320,76 @@ public partial class TestVariance()
         }
     }
 
+    // This gate is the audit coverage for the Variance readout: it runs the existing KappaSweep
+    // datasets against both fit routes, the batch fold and the single-fit loop, and pins each
+    // against the two-pass PropertyHelpers reference. The margins follow the merge gates above:
+    // a relative 1e-8 plus ten thousand times the condition number times machine epsilon, over
+    // condition numbers one to one hundred million. The audit run of 2026-11-19 recorded the
+    // worst errors this machine measured: a relative 7.94E-14 for the batch fold and 1.55E-9
+    // for the loop, both at condition number 1e8, about 1.4E5 times inside the margin there.
+    // The same probe saw the loop error grow roughly linearly in the condition number, a
+    // relative 5.35E-5 at condition number 1e12. That is the stored mean's rounding, not a
+    // broken update: raw power sums read a relative 1.7E-4 already at condition number 1e6,
+    // so the audit records no failure on this family and stages no candidate. A red Gate_ fact
+    // means the update lost accuracy. Fix the algorithm, and do not widen the tolerance.
+    // The datasets are seeded, so a failure reproduces.
+    [Fact]
+    public void Gate_VarianceKappaSweepWithinTolerance()
+    {
+        const int n = 100;
+        var sets = PropertyHelpers.KappaSweep(n, 8, 20251127L);
+        for (var d = 0; d <= 8; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var relTol = 1e-8 + 1e4 * kappa * PropertyHelpers.Epsilon;
+            var xs = sets[d];
+            var reference = PropertyHelpers.ReferenceMoments(xs);
+
+            var batch = new RunningStatistics.Variance();
+            batch.Fit(xs);
+            var loop = new RunningStatistics.Variance();
+            for (var i = 0; i < n; i++) loop.Fit(xs[i]);
+
+            AssertVarianceAgainstReference($"batch at kappa {kappa:E0}", reference, batch, relTol);
+            AssertVarianceAgainstReference($"loop at kappa {kappa:E0}", reference, loop, relTol);
+
+            // The two routes must also agree with each other.
+            Assert.True(PropertyHelpers.Within(batch.Value, loop.Value, relTol),
+                        PropertyHelpers.Describe($"batch vs loop at kappa {kappa:E0}", loop.Value, batch.Value));
+            Assert.True(PropertyHelpers.Within(batch.StandardDeviation, loop.StandardDeviation, relTol),
+                        PropertyHelpers.Describe($"batch StandardDeviation vs loop at kappa {kappa:E0}", loop.StandardDeviation, batch.StandardDeviation));
+        }
+    }
+
+    // The cancellation sibling: blocks of one huge power-of-two term, a run of ones, then the
+    // negation of that term. An intermediate running mean reaches the huge terms, but the
+    // variance readout carries their square as its own scale, so the update holds both routes
+    // to within one hundred-millionth relative here. The audit run of 2026-11-19 recorded
+    // exact batch readouts and a worst loop error of a relative 3.70E-16 over kappa 1e12 to
+    // 1e18, so the margin keeps about 2.7E7 times headroom. Mean.cs needed a compensated
+    // batch fold for this family; Variance already keeps deviations about the running mean,
+    // so the audit records no failure here and stages no candidate. A red fact means the
+    // update lost accuracy; fix the algorithm, do not widen the tolerance.
+    [Fact]
+    public void Gate_VarianceCancellationWithinTolerance()
+    {
+        const int n = 100;
+        for (var d = 12; d <= 18; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var xs = PropertyHelpers.CancelingStream(n, kappa, 337_149L + d);
+            var reference = PropertyHelpers.ReferenceMoments(xs);
+
+            var batch = new RunningStatistics.Variance();
+            batch.Fit(xs);
+            AssertVarianceAgainstReference($"batch at kappa {kappa:E0}", reference, batch, 1e-8);
+
+            var loop = new RunningStatistics.Variance();
+            for (var i = 0; i < xs.Count; i++) loop.Fit(xs[i]);
+            AssertVarianceAgainstReference($"loop at kappa {kappa:E0}", reference, loop, 1e-8);
+        }
+    }
+
     private static void AssertVarianceAgainstReference(string tag, MomentsReference reference, RunningStatistics.Variance merged, double relTol)
     {
         Assert.True(PropertyHelpers.Within(reference.Variance, merged.Value, relTol), PropertyHelpers.Describe($"{tag} Value vs reference", reference.Variance, merged.Value));
