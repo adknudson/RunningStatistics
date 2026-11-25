@@ -513,4 +513,148 @@ public partial class TestNormal
 
         return sum % 1_000_000.0;
     }
+
+    // The audit gate for the Normal estimator on the one-sign condition-number family.
+    // Normal composes the audited Mean and Variance, so the audit expects the margins the
+    // sibling gates already recorded: a relative 1e-8 plus ten thousand times the
+    // condition number times machine epsilon, over condition numbers one to one hundred
+    // million. The audit run of 2026-11-19 found no failure on this composition and staged
+    // no candidate. A red fact here means the composition lost accuracy; fix the
+    // algorithm, do not widen the tolerance. The datasets are seeded, so a failure
+    // reproduces.
+    [Fact]
+    public void Gate_NormalKappaSweepWithinTolerance()
+    {
+        const int n = 100;
+        var sets = PropertyHelpers.KappaSweep(n, 8, 71251147L);
+        for (var d = 0; d <= 8; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var relTol = 1e-8 + 1e4 * kappa * PropertyHelpers.Epsilon;
+            var xs = sets[d];
+            var reference = PropertyHelpers.ReferenceMoments(xs);
+
+            var batch = new RunningStatistics.Normal();
+            batch.Fit(xs);
+            var loop = new RunningStatistics.Normal();
+            for (var i = 0; i < n; i++) loop.Fit(xs[i]);
+
+            AssertNormalAgainstReference($"batch at kappa {kappa:E0}", reference, batch, relTol);
+            AssertNormalAgainstReference($"loop at kappa {kappa:E0}", reference, loop, relTol);
+            AssertNormalGroupingsAgree($"batch vs loop at kappa {kappa:E0}", batch, loop, relTol);
+        }
+    }
+
+    // The cancellation sibling of the audit. On canceling blocks the spread readouts
+    // keep their own scale, the huge terms' powers, so the audit holds Variance and
+    // StandardDeviation to the same relative 1e-8 the Variance gate holds. The batch
+    // Mean is asserted with Mean's own absolute-tolerance shape, a hundredth of a
+    // percent of the exact mean of the ones, because the compensated batch fold keeps
+    // the low-order bits a plain fold drops. The single-fit Mean is NOT asserted here:
+    // the Mean and Moments audits both recorded that the incremental route absorbs
+    // unit-in-the-last-place errors of the huge intermediate means, reaching a relative
+    // 1.10E+3 at condition number 1e18. The audit run of 2026-11-19 found no failure on
+    // the routes this gate asserts. A red fact means a route lost accuracy; fix the
+    // algorithm, do not widen a tolerance.
+    [Fact]
+    public void Gate_NormalCancellationWithinTolerance()
+    {
+        const int n = 100;
+        for (var d = 12; d <= 18; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var xs = PropertyHelpers.CancelingStream(n, kappa, 837_923L + d);
+            var reference = PropertyHelpers.ReferenceMoments(xs);
+
+            var batch = new RunningStatistics.Normal();
+            batch.Fit(xs);
+            var meanTol = 1e-8 * Math.Abs(reference.Mean);
+            Assert.True(Math.Abs(batch.Mean - reference.Mean) <= meanTol,
+                        PropertyHelpers.Describe($"batch mean at kappa {kappa:E0} vs reference", reference.Mean, batch.Mean));
+            Assert.True(PropertyHelpers.Within(reference.Variance, batch.Variance, 1e-8),
+                        PropertyHelpers.Describe($"batch variance at kappa {kappa:E0} vs reference", reference.Variance, batch.Variance));
+            Assert.True(PropertyHelpers.Within(reference.StandardDeviation, batch.StandardDeviation, 1e-8),
+                        PropertyHelpers.Describe($"batch standard deviation at kappa {kappa:E0} vs reference", reference.StandardDeviation, batch.StandardDeviation));
+
+            var loop = new RunningStatistics.Normal();
+            for (var i = 0; i < xs.Count; i++) loop.Fit(xs[i]);
+            Assert.True(PropertyHelpers.Within(reference.Variance, loop.Variance, 1e-8),
+                        PropertyHelpers.Describe($"loop variance at kappa {kappa:E0} vs reference", reference.Variance, loop.Variance));
+            Assert.True(PropertyHelpers.Within(reference.StandardDeviation, loop.StandardDeviation, 1e-8),
+                        PropertyHelpers.Describe($"loop standard deviation at kappa {kappa:E0} vs reference", reference.StandardDeviation, loop.StandardDeviation));
+            Assert.True(PropertyHelpers.Within(batch.Variance, loop.Variance, 1e-8),
+                        PropertyHelpers.Describe($"batch vs loop variance at kappa {kappa:E0}", loop.Variance, batch.Variance));
+        }
+    }
+
+    // Degenerate shapes and the distribution readouts. Below two observations the
+    // spread readouts must read NaN. Constant data at every scale must keep the
+    // variance at exact zero on all three fit routes, and must keep the mean at the
+    // fitted value bit for bit. The distribution readouts are checked for internal
+    // consistency on fixed seed data: the CDF at the fitted mean is one half, and the
+    // CDF undoes the quantile function at fixed probabilities.
+    [Fact]
+    public void Gate_NormalDegeneratePathsAndDistributionConsistency()
+    {
+        var one = new RunningStatistics.Normal();
+        one.Fit(12.5);
+        Assert.True(double.IsNaN(one.Variance));
+        Assert.True(double.IsNaN(one.StandardDeviation));
+        Assert.Equal(12.5, one.Mean);
+
+        foreach (var c in new[] { 7.5, -3.25, 1e12 })
+        {
+            var xs = PropertyHelpers.Constant(1000, c);
+            var loop = new RunningStatistics.Normal();
+            for (var i = 0; i < xs.Count; i++) loop.Fit(xs[i]);
+            var batch = new RunningStatistics.Normal();
+            batch.Fit(xs);
+            var weighted = new RunningStatistics.Normal();
+            weighted.Fit(c, 1000);
+
+            Assert.Equal(0.0, loop.Variance);
+            Assert.Equal(0.0, batch.Variance);
+            Assert.Equal(0.0, weighted.Variance);
+            Assert.Equal(c, loop.Mean);
+            Assert.Equal(c, batch.Mean);
+            Assert.Equal(c, weighted.Mean);
+            Assert.Equal(1000, loop.Nobs);
+            Assert.Equal(1000, batch.Nobs);
+            Assert.Equal(1000, weighted.Nobs);
+        }
+
+        var sample = PropertyHelpers.NormalSamples(500, 3.5, 2.0, 20251201L);
+        var stat = new RunningStatistics.Normal();
+        for (var i = 0; i < sample.Count; i++) stat.Fit(sample[i]);
+
+        Assert.True(PropertyHelpers.WithinAbsolute(0.5, stat.Cdf(stat.Mean), 1e-12),
+                    PropertyHelpers.Describe("Cdf at the fitted mean", 0.5, stat.Cdf(stat.Mean)));
+        foreach (var p in new[] { 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95 })
+        {
+            Assert.True(PropertyHelpers.WithinAbsolute(p, stat.Cdf(stat.Quantile(p)), 1e-9),
+                        PropertyHelpers.Describe($"Cdf after Quantile at p {p}", p, stat.Cdf(stat.Quantile(p))));
+        }
+    }
+
+    // A weighted fit must agree with the loop of that many single fits, and the
+    // constant-value case must keep the mean at the value itself. Same shape as the
+    // Mean gate's weighted clause.
+    [Fact]
+    public void Gate_NormalWeightedEqualsLoop()
+    {
+        foreach (var value in new[] { 0.1, 1.0 / 3.0, 1.7, 1e6 })
+        {
+            const long count = 10_003;
+            var loop = new RunningStatistics.Normal();
+            for (var k = 0L; k < count; k++) loop.Fit(value);
+            var weighted = new RunningStatistics.Normal();
+            weighted.Fit(value, count);
+
+            Assert.Equal(loop.Nobs, weighted.Nobs);
+            Assert.True(PropertyHelpers.Within(loop.Mean, weighted.Mean, 1e-8),
+                        PropertyHelpers.Describe($"weighted vs loop mean for {value}", loop.Mean, weighted.Mean));
+            Assert.Equal(0.0, weighted.Variance);
+            Assert.Equal(0.0, loop.Variance);
+        }
+    }
 }

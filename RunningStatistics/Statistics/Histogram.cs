@@ -247,6 +247,14 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
         }
         else
         {
+            // The out-of-bounds counters were folded into this histogram above, but
+            // those observations never go through the replay below, which only walks
+            // the source's bins. The total has to pick them up here. Without this,
+            // a mismatched merge drops the source's out-of-bounds observations from
+            // Nobs while its counters still report them, so the count identity
+            // Nobs = bins + counters no longer holds.
+            checked { _nobs += histogram.OutOfBoundsCounts.Lower + histogram.OutOfBoundsCounts.Upper; }
+
             // Using midpoints of source bins as approximate locations for merging
             foreach (var bin in histogram.Bins)
             {

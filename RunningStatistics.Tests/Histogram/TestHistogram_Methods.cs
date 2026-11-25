@@ -943,5 +943,154 @@ public partial class TestHistogram
         return string.Join("", pieces);
     }
 
+    // Edge accuracy at the scales where one representable step is the whole story.
+    // The three edges are consecutive doubles, so bin boundaries meet at unit-in-the-
+    // last-place distances. The scales reach 1e18, past 2^53, where that step is 128
+    // wide. Each observation must land on the closed side of the edge that owns it,
+    // and the counts must be conserved: Nobs equals the bins plus both out-of-bounds
+    // counters. The audit run of 2026-11-19 found no disagreement and staged no
+    // candidate. A red fact means the routing drifted; fix the routing, do not move
+    // the edges closer together.
+    [Fact]
+    public void Gate_HistogramAdjacentEdgesSplitAtEveryScale()
+    {
+        foreach (var scale in new[] { 1.0, 1e15, 1e18 })
+        {
+            var e0 = scale;
+            var e1 = NextAfter(e0, 1);
+            var e2 = NextAfter(e1, 1);
+            foreach (var leftClosed in new[] { true, false })
+            {
+                foreach (var endsClosed in new[] { true, false })
+                {
+                    var hist = new RunningStatistics.Histogram([e0, e1, e2], leftClosed, endsClosed);
+                    hist.Fit(e0, 1);
+                    hist.Fit(e1, 2);
+                    hist.Fit(e2, 3);
+
+                    // The first bin covers its lower edge when LeftClosed picks the left
+                    // side, and when right-closed bins let the ends switch instead.
+                    var firstSideClosed = leftClosed || endsClosed;
+                    // The last bin covers its upper edge when LeftClosed picks the right
+                    // side, which it always does, except that right-closed bins already
+                    // close it from the inside.
+                    var lastSideClosed = !leftClosed || endsClosed;
+                    // The interior edge goes to the bin above with a closed left, and
+                    // to the bin below with a closed right.
+                    var interiorToFirst = leftClosed ? 0 : 2;
+                    var interiorToLast = leftClosed ? 2 : 0;
+                    var expectedFirst = (firstSideClosed ? 1 : 0) + interiorToFirst;
+                    var expectedLast = interiorToLast + (lastSideClosed ? 3 : 0);
+
+                    Assert.Equal([expectedFirst, expectedLast], BinCounts(hist));
+                    Assert.Equal(6, hist.Nobs);
+                    Assert.Equal(firstSideClosed ? 0 : 1, hist.OutOfBoundsCounts.Lower);
+                    Assert.Equal(lastSideClosed ? 0 : 3, hist.OutOfBoundsCounts.Upper);
+                    Assert.Equal(6, SumBins(hist) + hist.OutOfBoundsCounts.Lower + hist.OutOfBoundsCounts.Upper);
+                }
+            }
+        }
+    }
+
+    // The weighted overload must route every value to the same bin the per-
+    // observation loop picks, and its counts must be the exact multiple of the
+    // weights. The dataset puts values exactly on every edge, just inside and just
+    // outside the outer edges, and at interior points, over all four closure shapes.
+    // The audit run of 2026-11-19 found no drift. A red fact means the weighted
+    // route no longer matches the loop; fix the route, do not resample the data.
+    [Fact]
+    public void Gate_HistogramWeightedFitEqualsLoopAcrossEdges()
+    {
+        var values = new[] { 0.0, 0.25, 0.5, 0.75, 1.0, 0.3, 0.6, -0.25, 1.25 };
+        foreach (var leftClosed in new[] { true, false })
+        {
+            foreach (var endsClosed in new[] { true, false })
+            {
+                var loop = new RunningStatistics.Histogram([0.0, 0.25, 0.5, 0.75, 1.0], leftClosed, endsClosed);
+                var batch = new RunningStatistics.Histogram([0.0, 0.25, 0.5, 0.75, 1.0], leftClosed, endsClosed);
+                var weighted = new RunningStatistics.Histogram([0.0, 0.25, 0.5, 0.75, 1.0], leftClosed, endsClosed);
+                for (var i = 0; i < values.Length; i++)
+                {
+                    loop.Fit(values[i]);
+                    batch.Fit(values[i], 1);
+                    weighted.Fit(values[i], 5);
+                }
+
+                Assert.Equal(BinCounts(loop), BinCounts(batch));
+                Assert.Equal(loop.Nobs, batch.Nobs);
+                Assert.Equal(loop.OutOfBoundsCounts.Lower, batch.OutOfBoundsCounts.Lower);
+                Assert.Equal(loop.OutOfBoundsCounts.Upper, batch.OutOfBoundsCounts.Upper);
+
+                var loopCounts = BinCounts(loop);
+                var quintupled = new int[loopCounts.Length];
+                for (var k = 0; k < loopCounts.Length; k++) quintupled[k] = 5 * loopCounts[k];
+                Assert.Equal(quintupled, BinCounts(weighted));
+                Assert.Equal(5L * loop.Nobs, weighted.Nobs);
+                Assert.Equal(weighted.Nobs,
+                             SumBins(weighted) + weighted.OutOfBoundsCounts.Lower + weighted.OutOfBoundsCounts.Upper);
+            }
+        }
+    }
+
+    // Merge count conservation across shapes that do not match. A mismatched merge
+    // refits the source's bin counts at the source's midpoints, an approximation of
+    // where the observations sat. That approximation may move a count between bins,
+    // but it must never create or lose one: the merged total's Nobs must equal both
+    // sources' Nobs summed, and its bins plus out-of-bounds counters must add back
+    // to that total. A same-shape merge must add bins directly, with exact per-bin
+    // sums and exact out-of-bounds sums. The audit run of 2026-11-19 found one leak:
+    // with a source holding one out-of-bounds observation, the merged Nobs read 10
+    // against the 11 the two sources held, because the replay walks only the source's
+    // bins while the out-of-bounds counters were folded in separately. Histogram.Merge
+    // now adds the source's counter values to the total in that branch, and the gate
+    // pins the identity again.
+    [Fact]
+    public void Gate_HistogramMergeConservesCountsAcrossMismatchedShapes()
+    {
+        var dataA = new[] { 0.0, 0.5, 0.5, 1.0, 1.5, 2.0 };
+        var dataB = new[] { 0.4, 1.2, 1.6, 2.4, 2.5 };
+        var dataC = new[] { -3.0, 0.5, 1.5, 2.0, 9.0 };
+
+        var a = new RunningStatistics.Histogram([0.0, 1.0, 2.0], true, true);
+        for (var i = 0; i < dataA.Length; i++) a.Fit(dataA[i]);
+
+        var b = new RunningStatistics.Histogram([0.5, 1.5, 2.5], false, false);
+        for (var i = 0; i < dataB.Length; i++) b.Fit(dataB[i]);
+
+        var total = a.Clone();
+        total.Merge(b);
+        Assert.Equal(a.Nobs + b.Nobs, total.Nobs);
+        Assert.Equal(total.Nobs,
+                     SumBins(total) + total.OutOfBoundsCounts.Lower + total.OutOfBoundsCounts.Upper);
+
+        // The same-shape merge adds bins directly, so every count must be exact.
+        var c = new RunningStatistics.Histogram([0.0, 1.0, 2.0], true, true);
+        for (var i = 0; i < dataC.Length; i++) c.Fit(dataC[i]);
+
+        var sums = a.Clone();
+        sums.Merge(c);
+        var aCounts = BinCounts(a);
+        var cCounts = BinCounts(c);
+        var sumCounts = BinCounts(sums);
+        for (var k = 0; k < aCounts.Length; k++)
+        {
+            Assert.Equal(aCounts[k] + cCounts[k], sumCounts[k]);
+        }
+
+        Assert.Equal(a.OutOfBoundsCounts.Lower + c.OutOfBoundsCounts.Lower, sums.OutOfBoundsCounts.Lower);
+        Assert.Equal(a.OutOfBoundsCounts.Upper + c.OutOfBoundsCounts.Upper, sums.OutOfBoundsCounts.Upper);
+    }
+
+    // The double steps away from a positive finite value along the doubles. The step
+    // has to come in the representable spacing at that value, not in whole numbers:
+    // past 2^53 the spacing is already 2 or more, so adding one to the value would
+    // land back on the value itself. Reading the bit pattern as a whole number gives
+    // the same order the real line gives, so one step there is one step here.
+    private static double NextAfter(double value, int steps)
+    {
+        var bits = BitConverter.DoubleToInt64Bits(value);
+        return BitConverter.Int64BitsToDouble(bits + steps);
+    }
+
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }
