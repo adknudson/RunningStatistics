@@ -2,8 +2,8 @@
 
 This file gives rules to automated contributors and to future sessions of this
 project. The rules cover work on the `RunningStatistics` library. The file
-`DEVELOPERS.md` defines the vocabulary these rules and the test facts use:
-gate, bench fact, band, κ-sweep, staged candidate, replay.
+`DEVELOPERS.md` defines the vocabulary these rules and the test gates use:
+gate, band, κ-sweep, staged candidate, replay.
 
 ## Algorithm improvements: benchmarking and regression gates
 
@@ -22,6 +22,16 @@ workflow reusable. Do not rebuild them for each statistic:
   offset/spread datasets, and normal samples. `MomentsReference` computes
   reference values with exact or two-pass methods. `Within` and `Describe`
   compare values with a tolerance.
+
+Performance gets proven with a throwaway bench, not with a committed
+test fact. Do not add `Bench_*` facts to the test project. Bench facts
+turn into noise in the unit-test suite: they run on every `dotnet test`,
+machine noise makes their bands flaky, and a red band tempts you to
+re-tune the band — a habit this file forbids. When you want to know
+whether a new algorithm is faster, or at least not statistically slower,
+run `BenchmarkHarness` in a scratch bench file, print the measured ns/obs
+and ratios, put that record in your report or commit message, and delete
+the file.
 
 ### Workflow
 
@@ -43,10 +53,10 @@ workflow reusable. Do not rebuild them for each statistic:
    Every check must pass before any performance claim. Record how badly
    the current implementation fails these same checks. Print that record.
    Do not assert it. That record states the win you claim.
-3. Run the A/B benchmark. Run `BenchmarkHarness` over the baseline and
-   the candidate on the same seeded data. Compare
+3. Run the A/B benchmark in the scratch bench file. Run `BenchmarkHarness`
+   over the baseline and the candidate on the same seeded data. Compare
    candidate-ns-per-observation to baseline-ns-per-observation. The
-   gates:
+   budgets for that ratio:
    - `StreamFit` with a 1k working set: the ratio must stay at most 1.20.
      The set stays in cache, so the loop is compute-bound.
    - `StreamFit` with a 1M working set: the ratio must stay at most 1.05.
@@ -57,9 +67,9 @@ workflow reusable. Do not rebuild them for each statistic:
      costs one interface dispatch plus a few floating-point operations.
      Measurement noise of about 1% straddles 1.00, so the honest claim
      for a getter is "not slower", not "faster".
-4. Swap the production class only after steps 2 and 3 pass. Re-run the
-   harness against the real class as a final gate. Run the property
-   checks against the real class too.
+4. Swap the production class only after steps 2 and 3 pass their budgets.
+   Re-run the scratch bench against the real class as the final
+   measurement. Run the property checks against the real class too.
 5. Clean up. Delete the candidate class and the bench scratch file. Keep
    `BenchmarkHarness.cs` and `PropertyHelpers.cs` permanently.
 
@@ -70,13 +80,13 @@ dotnet test RunningStatistics.Tests/RunningStatistics.Tests.csproj
 dotnet test RunningStatistics.Tests/RunningStatistics.Tests.csproj --filter "Gate_KappaSweep_StableWithinTolerance"
 ```
 
-You can also run the suite through the IDE's Unit Tests window. Bench and
-gate facts carry the `Gate_` and `Bench_` name prefixes, so you can run
-one fact alone. The runner's `--filter` matches a full bare method name
-only. A pattern such as `Gate_*` or `Class.*` matches nothing, and the
-runner reports no error for it. A red `Bench_*` fact means a
-performance regression. The asserts embed the budgets and the measured
-ns/obs.
+You can also run the suite through the IDE's Unit Tests window. Gate
+facts carry the `Gate_` name prefix, so you can run one fact alone. The
+runner's `--filter` matches a full bare method name only. A pattern such
+as `Gate_*` or `Class.*` matches nothing, and the runner reports no error
+for it. The suite holds gates only. A performance claim lives in the
+scratch bench's printed record and the report that carries it, never in
+a committed fact.
 
 ### Notes
 

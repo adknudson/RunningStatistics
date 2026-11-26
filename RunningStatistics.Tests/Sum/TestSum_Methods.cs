@@ -216,20 +216,20 @@ public partial class TestSum
 
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 
-    // ---- Correctness gates and regression benches for Sum's accumulation ----
+    // ---- Correctness gates for Sum's accumulation ----
     //
     // Sum keeps a correction beside its running total, so its error stays near one epsilon
-    // of the running totals. These facts hold that promise, and they hold the timing flat.
-    // The staging run (2026-11-19) recorded what the plain fold used before this change was
+    // of the running totals. These facts hold that promise. The staging run (2026-11-19)
+    // recorded what the plain fold used before this change was
     // worth. On the canceling blocks below, from kappa 1e14 up, the plain fold read 0 where
     // the exact answer is 75: an absolute error of 75, or 100% relative. On the one-sign
     // kappa sweep the plain fold was about one epsilon relative, up to 1.6e-2 absolute at
     // kappa 1e12. The compensated fold matched the compensated reference exactly on both,
     // and its cost came in at 0.95 to 1.04 of the plain fold's.
     //
-    // A red Gate_ fact means the accumulation lost accuracy. A red Bench_ fact means a
-    // regression in cost. Fix the algorithm in either case, and do not widen a band or a
-    // tolerance to make a fact pass. The datasets are seeded, so a failure reproduces.
+    // A red Gate_ fact means the accumulation lost accuracy. Fix the algorithm, and do not
+    // widen a band or a tolerance to make a fact pass. The datasets are seeded, so a
+    // failure reproduces.
 
     [Fact]
     public void Gate_SumKappaSweepWithinTolerance()
@@ -419,226 +419,5 @@ public partial class TestSum
             Assert.True(PropertyHelpers.Within(reference, g3.Value, relTol), PropertyHelpers.Describe("c+b+a vs reference", reference, g3.Value));
             Assert.True(PropertyHelpers.Within(g1.Value, g3.Value, relTol), PropertyHelpers.Describe("a+b+c vs c+b+a", g1.Value, g3.Value));
         }
-    }
-
-    // The bands below are the AGENTS.md budgets, read against the real class. The getter and
-    // the clone facts compare identical machine code, so a ratio away from 1.00 by more than
-    // the noise is a real change in cost, and the honest claim is "not slower". Do not widen
-    // a band to make a fact green.
-
-    [Fact]
-    public void Bench_SumStreamFitCostFlatInWorkingSet()
-    {
-        // Both sweeps fit through the interface over one fixed-seed dataset. The 1k set
-        // stays in cache and shows the arithmetic; the 1M set models realistic streaming
-        // and is memory-bound. A compensated fold that hid its work behind the loads keeps
-        // the two within 20%. A fold whose cost is bound up in latency or a mispredicted
-        // branch shows up here as red.
-        var smallData = PropertyHelpers.UniformUnit(1000, 20251126L);
-        var bigData = PropertyHelpers.UniformUnit(1_000_000, 20251126L);
-
-        var hotNs = BenchmarkHarness.StreamFit(() => new RunningStatistics.Sum(), smallData, 4);
-        var coldNs = BenchmarkHarness.StreamFit(() => new RunningStatistics.Sum(), bigData, 4);
-        var ratio = BenchmarkHarness.Compare(
-            "Sum StreamFit 1M over 1k working set, ns per observation",
-            hotNs,
-            coldNs);
-        Assert.True(ratio >= 0.5 && ratio <= 1.20,
-                    $"StreamFit 1M over 1k ratio {ratio:F3} outside [0.5, 1.20]: the hot loop got slower than the memory-bound one; re-gate, do not re-tune the band");
-    }
-
-    [Fact]
-    public void Bench_SumWeightedFitIsPerCallCost()
-    {
-        // One weighted call per observation, against one single call per observation. The
-        // weighted path is O(1) in the count, so the two must stay within 20%. A weighted
-        // fit that looped per observation would leave this fact red.
-        var data = PropertyHelpers.UniformUnit(1000, 20251126L);
-        var fitNs = BenchmarkHarness.StreamFit(() => new RunningStatistics.Sum(), data, 4);
-        var weightedNs = BenchmarkHarness.WeightedFit(() => new RunningStatistics.Sum(), data, 1003, 4);
-        var ratio = BenchmarkHarness.Compare(
-            "Sum WeightedFit count=1003 over StreamFit, ns per observation",
-            fitNs,
-            weightedNs);
-        Assert.True(ratio >= 0.5 && ratio <= 1.20,
-                    $"WeightedFit over StreamFit ratio {ratio:F3} outside [0.5, 1.20]: the weighted path spends per-observation work; re-gate, do not re-tune the band");
-    }
-
-    [Fact]
-    public void Bench_SumMergeIsPerChunkCost()
-    {
-        // Eight chunks merged one by one, against a straight stream. Merge is O(1) per
-        // chunk, so the two must stay within 20%.
-        var data = PropertyHelpers.UniformUnit(1000, 20251126L);
-        var fitNs = BenchmarkHarness.StreamFit(() => new RunningStatistics.Sum(), data, 4);
-        var mergeNs = BenchmarkHarness.MergeChunks(() => new RunningStatistics.Sum(), data, 8, 4);
-        var ratio = BenchmarkHarness.Compare(
-            "Sum MergeChunks 8 chunks over StreamFit, ns per observation",
-            fitNs,
-            mergeNs);
-        Assert.True(ratio >= 0.5 && ratio <= 1.20,
-                    $"MergeChunks over StreamFit ratio {ratio:F3} outside [0.5, 1.20]: merge spends per-observation work; re-gate, do not re-tune the band");
-    }
-
-    [Fact]
-    public void Bench_SumBatchFitCostFlatInBatchSize()
-    {
-        // The batch path folds the iterable directly, no List and no separate validate
-        // pass. The staging run of 2026-11-25 recorded the materialize-and-two-pass batch
-        // baseline: the single-pass candidate cost 0.445 of it at 1k batches (15.7 vs 35.3
-        // ns/obs) and 0.736 at 100k batches (15.0 vs 20.4 ns/obs), on bit-identical state.
-        // Both sides here process one million observations at cache-resident sizes: one
-        // hundred batches of ten thousand, against ten batches of one hundred thousand.
-        // Per-batch setup is amortized far enough on both sides, so the per-observation
-        // cost of the two sizes must stay within 20% of each other. A fold whose setup
-        // grew with the square of the batch size leaves this fact red. Small batches of
-        // one thousand are NOT swept here: their per-batch noise straddles the band on
-        // slower machines, the way the Sum getter noise straddles its band. A single
-        // one-million batch is not swept either: the memory-bound gap of an 8 MB batch
-        // is not a regression in the fold, the same reason the Mean twin skips it.
-        var smallBatches = PropertyHelpers.UniformUnit(10_000, 20251126L);
-        var bigBatches = PropertyHelpers.UniformUnit(100_000, 20251126L);
-
-        var smallNsPerObs = BenchmarkHarness.Measure(
-            "Sum batch fit, 100 batches of 10000, ns per observation",
-            1_000_000,
-            4,
-            () => SweepSumBatchFits(smallBatches, 100));
-        var bigNsPerObs = BenchmarkHarness.Measure(
-            "Sum batch fit, 10 batches of 100000, ns per observation",
-            1_000_000,
-            4,
-            () => SweepSumBatchFits(bigBatches, 10));
-        var ratio = BenchmarkHarness.Compare(
-            "Sum batch fit 100k batches over 10k batches, ns per observation",
-            smallNsPerObs,
-            bigNsPerObs);
-        Assert.True(ratio >= 0.5 && ratio <= 1.20,
-                    $"batch fit 100k over 10k ratio {ratio:F3} outside [0.5, 1.20]: the fold or its setup does not scale linearly with the batch; re-gate, do not re-tune the band");
-    }
-
-    [Fact]
-    public void Bench_SumGetterCostIndependentOfNobs()
-    {
-        // One statistic sees 2 to the 62nd observations through 61 self merges; the other
-        // holds six. Both go through the same readout code, so the band is [0.5, 1.05] and
-        // the honest claim is "not slower": the readout adds the correction back, one
-        // addition more than a plain total. The Sum readouts are two cheap arithmetic
-        // operations, so min-of-four noise straddles the band by a few percent here; eight
-        // measured runs take the minimum away from that straddle. The workload stays at the
-        // harness default of five million reads.
-        const int obs = 5_000_000;
-        const int repeats = 8;
-        var values = PropertyHelpers.UniformUnit(6, 20251118L);
-
-        var big = new RunningStatistics.Sum();
-        big.Fit(values[0]);
-        big.Fit(values[1]);
-        for (var i = 0; i < 61; i++) big.Merge(big);
-        Assert.Equal(1L << 62, big.Nobs);
-
-        var small = new RunningStatistics.Sum();
-        foreach (var value in values) small.Fit(value);
-        Assert.Equal(6, small.Nobs);
-
-        Assert.False(double.IsNaN(big.Value) || double.IsNaN(big.Mean()));
-        Assert.False(double.IsNaN(small.Value) || double.IsNaN(small.Mean()));
-
-        var bigNsPerObs = BenchmarkHarness.Measure(
-            "Sum readout sweep at Nobs=2^62, ns per read",
-            obs,
-            repeats,
-            () => SweepSumReadouts(big, obs));
-
-        var smallNsPerObs = BenchmarkHarness.Measure(
-            "Sum readout sweep at Nobs=6, ns per read",
-            obs,
-            repeats,
-            () => SweepSumReadouts(small, obs));
-
-        var ratio = BenchmarkHarness.Compare(
-            "Sum readout at Nobs=2^62 vs at Nobs=6, ns per read",
-            smallNsPerObs,
-            bigNsPerObs);
-
-        Assert.True(ratio >= 0.5 && ratio <= 1.05,
-                    $"2^62-scale readout sweep costs {ratio:F3} of the same sweep at Nobs=6 " +
-                    $"({bigNsPerObs:F4} vs {smallNsPerObs:F4} ns per read): the readout getters " +
-                    $"got slower once Nobs reaches 2^62; the claim is parity, so re-gate - do not widen the band.");
-    }
-
-    [Fact]
-    public void Bench_SumCloneCostIndependentOfNobs()
-    {
-        // A clone is an allocation plus an O(1) merge, so taking a snapshot after every
-        // observation must not depend on the count. The band is [0.5, 1.05]: both sides run
-        // the same body, and the honest claim is "not slower".
-        const int obs = 500_000;
-        const int repeats = 4;
-        var values = PropertyHelpers.UniformUnit(6, 20251118L);
-
-        var big = new RunningStatistics.Sum();
-        big.Fit(values[0]);
-        big.Fit(values[1]);
-        for (var i = 0; i < 61; i++) big.Merge(big);
-        Assert.Equal(1L << 62, big.Nobs);
-
-        var small = new RunningStatistics.Sum();
-        foreach (var value in values) small.Fit(value);
-        Assert.Equal(6, small.Nobs);
-
-        var bigNsPerObs = BenchmarkHarness.Measure(
-            "Sum clone-per-step sweep at Nobs=2^62, ns per step",
-            obs,
-            repeats,
-            () => SweepSumClones(big, obs));
-
-        var smallNsPerObs = BenchmarkHarness.Measure(
-            "Sum clone-per-step sweep at Nobs=6, ns per step",
-            obs,
-            repeats,
-            () => SweepSumClones(small, obs));
-
-        var ratio = BenchmarkHarness.Compare(
-            "Sum clone-per-step at Nobs=2^62 vs at Nobs=6, ns per step",
-            smallNsPerObs,
-            bigNsPerObs);
-
-        Assert.True(ratio >= 0.5 && ratio <= 1.05,
-                    $"2^62-scale clone sweep costs {ratio:F3} of the same sweep at Nobs=6 " +
-                    $"({bigNsPerObs:F4} vs {smallNsPerObs:F4} ns per step): cloning picked up work " +
-                    $"that grows with the count; the claim is parity, so re-gate - do not widen the band.");
-    }
-
-    private static double SweepSumReadouts(RunningStatistics.Sum stat, int obs)
-    {
-        var s = 0.0;
-        for (var i = 0; i < obs; i++) s += stat.Value + stat.Mean();
-        return s;
-    }
-
-    private static double SweepSumClones(RunningStatistics.Sum stat, int obs)
-    {
-        var s = 0.0;
-        for (var i = 0; i < obs; i++)
-        {
-            var copy = stat.Clone();
-            s += copy.Nobs;
-        }
-
-        return s;
-    }
-
-    private static double SweepSumBatchFits(List<double> data, int passes)
-    {
-        var s = 0.0;
-        for (var p = 0; p < passes; p++)
-        {
-            var stat = new RunningStatistics.Sum();
-            stat.Fit(data);
-            s += stat.Nobs;
-        }
-
-        return s;
     }
 }
