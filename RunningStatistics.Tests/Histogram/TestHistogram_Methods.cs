@@ -9,7 +9,7 @@ public partial class TestHistogram
 {
     // |-inf, 0|, |0, 10|, |10, 100|
     private readonly double[] _edges = [double.NegativeInfinity, 0, 10, 100];
-    
+
     [Fact]
     public void Fit_NobsOverflowThrows()
     {
@@ -18,7 +18,7 @@ public partial class TestHistogram
         Assert.Throws<OverflowException>(() => hist.Fit(0.5, long.MaxValue / 2 + 1));
         Assert.Equal(long.MaxValue / 2 + 1, hist.Nobs);
     }
-    
+
     // These facts test the constructor's checks on the edge list. The
     // scenarios below built histograms the old lenient behavior allowed: a
     // NaN edge in any position, edges out of order, and repeated edges. The
@@ -35,7 +35,7 @@ public partial class TestHistogram
         Assert.Throws<ArgumentException>(
             () => new RunningStatistics.Histogram([0.0, 1.0, double.NaN]));
     }
-    
+
     [Fact]
     public void Ctor_RejectsDuplicateEdges()
     {
@@ -44,7 +44,7 @@ public partial class TestHistogram
         Assert.Throws<ArgumentException>(
             () => new RunningStatistics.Histogram([0.0, 0.0, 1.0]));
     }
-    
+
     [Fact]
     public void Ctor_RejectsUnsortedEdges()
     {
@@ -53,26 +53,26 @@ public partial class TestHistogram
         Assert.Throws<ArgumentException>(
             () => new RunningStatistics.Histogram([2.0, 1.0, 0.0]));
     }
-    
+
     [Fact]
     public void Ctor_RejectsTooFewEdges()
     {
         Assert.Throws<ArgumentOutOfRangeException>(
             () => new RunningStatistics.Histogram([0.5]));
     }
-    
+
     [Fact]
     public void Ctor_AcceptsInfiniteEdges()
     {
         RunningStatistics.Histogram h = new([double.NegativeInfinity, 0, 10, 100]);
         Assert.Equal([double.NegativeInfinity, 0, 10, 100], h.Edges);
         Assert.Equal(0, h.Nobs);
-        
+
         RunningStatistics.Histogram upperOpen = new([0.0, 10.0, double.PositiveInfinity]);
         Assert.Equal([0.0, 10.0, double.PositiveInfinity], upperOpen.Edges);
         Assert.Equal(0, upperOpen.Nobs);
     }
-    
+
     [Fact]
     public void Ctor_AcceptsValidEdgesUnchanged()
     {
@@ -82,7 +82,7 @@ public partial class TestHistogram
         Assert.Equal([double.NegativeInfinity, 0, 10, 100], hist.Edges);
         Assert.False(hist.LeftClosed);
         Assert.False(hist.EndsClosed);
-        
+
         var numBins = 0;
         foreach (var bin in hist)
         {
@@ -90,7 +90,7 @@ public partial class TestHistogram
         }
         Assert.Equal(3, numBins);
     }
-    
+
     [Fact]
     public void Fit_RejectsNaNObservations()
     {
@@ -100,7 +100,7 @@ public partial class TestHistogram
         Assert.Throws<ArgumentException>(() => h.Fit(double.NaN, 3));
         Assert.Equal(1, h.Nobs);
     }
-    
+
     [Fact]
     public void Merge_MatchingEdgesSumsBinsDirectly()
     {
@@ -110,9 +110,9 @@ public partial class TestHistogram
         a.Fit(5);
         b.Fit(10);
         b.Fit(1000);
-        
+
         a.Merge(b);
-        
+
         int[] expectedCounts = [1, 1, 1];
         var i = 0;
         foreach (var bin in a)
@@ -125,7 +125,7 @@ public partial class TestHistogram
         Assert.Equal(0, a.OutOfBoundsCounts.Lower);
         Assert.Equal(1, a.OutOfBoundsCounts.Upper);
     }
-    
+
     [Fact]
     public void Fit_OutOfBoundsValueIncreasesOobCount()
     {
@@ -147,7 +147,7 @@ public partial class TestHistogram
             Assert.Equal(0, bin.Nobs);
         }
     }
-    
+
     [Fact]
     public void FreshHistogram_NobsAndBinsAreZero()
     {
@@ -539,9 +539,9 @@ public partial class TestHistogram
         // (0, 0.1], (0.1, 0.5], (0.5, 0.9]
         RunningStatistics.Histogram a = new([0, 0.1, 0.5, 0.9], leftClosed: false, endsClosed: false);
         RunningStatistics.Histogram b = new([0, 0.1, 0.5, 0.9], leftClosed: false, endsClosed: false);
-            
+
         var rng = new Random();
-            
+
         for (var i = 0; i < 1000; i++)
         {
             a.Fit(rng.NextDouble());
@@ -1090,6 +1090,261 @@ public partial class TestHistogram
     {
         var bits = BitConverter.DoubleToInt64Bits(value);
         return BitConverter.Int64BitsToDouble(bits + steps);
+    }
+
+    // The doubles touching a finite value from either side. A search that compared
+    // the wrong side of an edge first disagrees with the linear route one step away
+    // from that edge, so the lookup gate probes these neighbours.
+    private static double UlpAbove(double value)
+    {
+        if (double.IsInfinity(value)) return value;
+        var bits = BitConverter.DoubleToInt64Bits(value);
+        return BitConverter.Int64BitsToDouble(bits < 0 ? bits - 1 : bits + 1);
+    }
+
+    private static double UlpBelow(double value)
+    {
+        if (double.IsInfinity(value)) return value;
+        var bits = BitConverter.DoubleToInt64Bits(value);
+        if (bits == 0) bits = long.MinValue;
+        return BitConverter.Int64BitsToDouble(bits < 0 ? bits + 1 : bits - 1);
+    }
+
+    // bins + 1 evenly spaced edges between lower and upper.
+    private static List<double> EvenEdges(int bins, double lower, double upper)
+    {
+        var edges = new List<double>(bins + 1);
+        for (var i = 0; i <= bins; i++)
+        {
+            edges.Add(lower + (upper - lower) * i / bins);
+        }
+
+        return edges;
+    }
+
+    // The outer edges replaced by infinities. The route must stay total here:
+    // only a bin with both bounds infinite is illegal, and the constructor
+    // rejects that one earlier.
+    private static List<double> InfiniteOuterEdges(List<double> edges)
+    {
+        var swapped = new List<double>(edges);
+        swapped[0] = double.NegativeInfinity;
+        swapped[^1] = double.PositiveInfinity;
+        return swapped;
+    }
+
+    // The oracle for the lookup: the linear route, restated here. The bins are
+    // built with the constructor's rules, then the value is looked up with a scan
+    // over HistogramBin.Contains, which is what the old Histogram.UncheckedFit did.
+    // A result of -1 means an out-of-bounds counter, not a bin. Keeping the oracle
+    // in the test is what makes the lookup gate meaningful after the swap: the
+    // production class no longer holds a scan of its own to compare against.
+    private static int ScanBinIndex(List<double> edges, bool leftClosed, bool endsClosed, double value)
+    {
+        var bins = new List<RunningStatistics.HistogramBin>();
+        if (leftClosed)
+        {
+            for (var i = 1; i < edges.Count - 1; i++)
+            {
+                bins.Add(new RunningStatistics.HistogramBin(edges[i - 1], edges[i], true, false));
+            }
+
+            bins.Add(new RunningStatistics.HistogramBin(edges[^2], edges[^1], true, endsClosed));
+        }
+        else
+        {
+            bins.Add(new RunningStatistics.HistogramBin(edges[0], edges[1], endsClosed, true));
+            for (var i = 2; i < edges.Count; i++)
+            {
+                bins.Add(new RunningStatistics.HistogramBin(edges[i - 1], edges[i], false, true));
+            }
+        }
+
+        if (value < bins[0].Lower) return -1;
+        if (value > bins[^1].Upper) return -1;
+        if (value.Equals(bins[^1].Upper)) return bins[^1].ClosedRight ? bins.Count - 1 : -1;
+        if (value.Equals(bins[0].Lower)) return bins[0].ClosedLeft ? 0 : -1;
+
+        for (var i = 0; i < bins.Count; i++)
+        {
+            if (bins[i].Contains(value)) return i;
+        }
+
+        throw new InvalidOperationException("The scan found no bin for an interior value");
+    }
+
+    // The lookup route must answer the linear route everywhere. Three bin counts
+    // are checked, 5, 50 and 500, and both outer-edge shapes: finite edges and
+    // infinite outer edges. All four closure-flag combinations are checked. The
+    // probe values are each edge, the doubles touching that edge on either side,
+    // a plain step outside each outer edge, the infinities when the outer edges
+    // are infinite, and seeded interior values at three scales. Each probe runs
+    // through a fresh histogram, so a wrong route shows up as a different bin
+    // holding the single observation. The seeded stream then runs whole, and the
+    // counts must match the scan's answer bin for bin. A red fact means the search
+    // routed a value somewhere the scan does not; fix the route, do not thin the
+    // probes or move the edges closer together.
+    [Fact]
+    public void Gate_HistogramBinLookupMatchesLinearScan()
+    {
+        foreach (var bins in new[] { 5, 50, 500 })
+        {
+            // Sample edges cheaply at the big bin counts, so the fact stays quick
+            // while still reading interior edges far from the outer ones.
+            var stride = bins > 50 ? 25 : 1;
+            foreach (var outerInfinite in new[] { false, true })
+            {
+                var edges = EvenEdges(bins, -1000.0, 1000.0);
+                if (outerInfinite) edges = InfiniteOuterEdges(edges);
+
+                var probes = new List<double>();
+                for (var i = 0; i < edges.Count; i += stride)
+                {
+                    probes.Add(edges[i]);
+                    probes.Add(UlpAbove(edges[i]));
+                    probes.Add(UlpBelow(edges[i]));
+                }
+
+                if (outerInfinite)
+                {
+                    // The infinities sit on an outer edge, so the flags decide.
+                    // The largest finite doubles sit inside them, in the outer
+                    // bin.
+                    probes.Add(double.NegativeInfinity);
+                    probes.Add(double.PositiveInfinity);
+                    probes.Add(-1.7976931348623157e308);
+                    probes.Add(1.7976931348623157e308);
+                }
+                else
+                {
+                    probes.Add(edges[0] - 1.0);
+                    probes.Add(edges[^1] + 1.0);
+                }
+
+                foreach (var scale in new[] { 1.0, 1e6, 1e15 })
+                {
+                    var drawn = PropertyHelpers.UniformUnit(40, 202611250L + bins);
+                    foreach (var v in drawn)
+                    {
+                        probes.Add(-1000.0 * scale + v * 2000.0 * scale);
+                    }
+                }
+
+                foreach (var leftClosed in new[] { true, false })
+                {
+                    foreach (var endsClosed in new[] { true, false })
+                    {
+                        foreach (var value in probes)
+                        {
+                            RunningStatistics.Histogram h = new(edges, leftClosed, endsClosed);
+                            h.Fit(value);
+
+                            var expected = ScanBinIndex(edges, leftClosed, endsClosed, value);
+                            var expectedCounts = new int[bins];
+                            if (expected >= 0)
+                            {
+                                expectedCounts[expected] = 1;
+                            }
+
+                            Assert.True(expectedCounts.SequenceEqual(BinCounts(h)),
+                                        $"the lookup disagrees with the linear scan at value {value} for {bins} bins with leftClosed={leftClosed}, endsClosed={endsClosed}");
+                            Assert.Equal(1, h.Nobs);
+                            Assert.Equal(expected >= 0 ? 0 : 1,
+                                         h.OutOfBoundsCounts.Lower + h.OutOfBoundsCounts.Upper);
+                        }
+
+                        // The whole seeded stream, on data built once and shared.
+                        var stream = PropertyHelpers.OffsetSpread(2_000, 0.0, 2000.0, 202611251L + bins);
+                        RunningStatistics.Histogram streamed = new(edges, leftClosed, endsClosed);
+                        foreach (var v in stream) streamed.Fit(v - 1000.0);
+
+                        var streamCounts = new int[bins];
+                        for (var i = 0; i < stream.Count; i++)
+                        {
+                            var index = ScanBinIndex(edges, leftClosed, endsClosed, stream[i] - 1000.0);
+                            if (index >= 0) streamCounts[index]++;
+                        }
+
+                        Assert.True(streamCounts.SequenceEqual(BinCounts(streamed)),
+                                    $"the seeded stream lands in different bins than the linear scan for {bins} bins with leftClosed={leftClosed}, endsClosed={endsClosed}");
+                        Assert.Equal(2_000, streamed.Nobs);
+                    }
+                }
+            }
+        }
+    }
+
+    // The bands below are the AGENTS.md budgets, read against the real class after
+    // the swap. The working-set and weighted facts compare the same machine code on
+    // both sides, so a ratio away from 1.00 by more than the noise is a real change
+    // in cost, and the honest claim is "not slower". Do not widen a band to make a
+    // fact green.
+
+    // Both sweeps fit single observations through the interface over one fixed-seed
+    // dataset. The 1k set stays in cache and shows the arithmetic; the 1M set models
+    // realistic streaming. With the search, the lookup cost no longer grows with the
+    // bin count, so the two readings must land in the noise of each other.
+    [Fact]
+    public void Bench_HistogramStreamFitCostFlatInWorkingSet()
+    {
+        var smallData = PropertyHelpers.UniformUnit(1_000, 202611253L);
+        var bigData = PropertyHelpers.UniformUnit(1_000_000, 202611253L);
+        var edges = EvenEdges(50, 0.0, 1.0);
+        Func<IRunningStatistic<double>> factory = () => new RunningStatistics.Histogram(edges);
+
+        var hotNs = BenchmarkHarness.StreamFit(factory, smallData, 4);
+        var coldNs = BenchmarkHarness.StreamFit(factory, bigData, 2);
+        var ratio = BenchmarkHarness.Compare(
+            "Histogram StreamFit 1M over 1k working set, ns per observation",
+            hotNs,
+            coldNs);
+        Assert.True(ratio >= 0.5 && ratio <= 1.20,
+                    $"StreamFit 1M over 1k ratio {ratio:F3} outside [0.5, 1.20]: the hot loop got slower than the memory-bound one; re-gate, do not re-tune the band");
+    }
+
+    // One weighted call per observation, against one single call per observation.
+    // The lookup runs once per call either way, so the two must stay within 20%.
+    [Fact]
+    public void Bench_HistogramWeightedFitIsPerCallCost()
+    {
+        var data = PropertyHelpers.UniformUnit(1_000, 202611253L);
+        var edges = EvenEdges(50, 0.0, 1.0);
+        Func<IRunningStatistic<double>> factory = () => new RunningStatistics.Histogram(edges);
+
+        var fitNs = BenchmarkHarness.StreamFit(factory, data, 4);
+        var weightedNs = BenchmarkHarness.WeightedFit(factory, data, 1009, 4);
+        var ratio = BenchmarkHarness.Compare(
+            "Histogram WeightedFit count=1009 over StreamFit, ns per observation",
+            fitNs,
+            weightedNs);
+        Assert.True(ratio >= 0.5 && ratio <= 1.20,
+                    $"WeightedFit over StreamFit ratio {ratio:F3} outside [0.5, 1.20]: the weighted path spends per-observation work; re-gate, do not re-tune the band");
+    }
+
+    // The algorithmic claim, pinned on the class itself. One fixed-seed 1M stream
+    // runs through histograms of 5 bins and of 500 bins, so only the lookup depth
+    // and the histogram's own state change. The measured 500-over-5 reading lands
+    // near 1.80 with the search. Part of that rise is not the lookup: a 500-bin
+    // histogram spreads its counts over 500 bin objects, and a random stream keeps
+    // touching objects the cache had dropped. The linear scan the swap replaced
+    // read about 13 on the same pair, measured during staging, so this fact fails
+    // loudly if the lookup starts growing with the bin count again. Fix the
+    // lookup, do not widen the band. The 1M set is the right one for this claim:
+    // at 1k the reading carries the histogram's own O(bins) construction cost on
+    // every observation, which dwarfs the lookup there.
+    [Fact]
+    public void Bench_HistogramBinLookupCostFlatInBinCount()
+    {
+        var data = PropertyHelpers.UniformUnit(1_000_000, 202611253L);
+
+        var narrowNs = BenchmarkHarness.StreamFit(() => new RunningStatistics.Histogram(EvenEdges(5, 0.0, 1.0)), data, 2);
+        var wideNs = BenchmarkHarness.StreamFit(() => new RunningStatistics.Histogram(EvenEdges(500, 0.0, 1.0)), data, 2);
+        var ratio = BenchmarkHarness.Compare(
+            "Histogram StreamFit 500 bins over 5 bins, same 1M stream, ns per observation",
+            narrowNs,
+            wideNs);
+        Assert.True(ratio >= 1.0 && ratio <= 2.00,
+                    $"500-bin over 5-bin ratio {ratio:F3} outside [1.0, 2.00]: the lookup cost grew with the bin count, the way a scan does; re-gate, do not re-tune the band");
     }
 
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
