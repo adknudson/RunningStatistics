@@ -438,6 +438,81 @@ public partial class TestMoments
         }
     }
 
+    // This gate is the audit coverage for the Moments readouts: it runs the existing KappaSweep
+    // datasets against the single-fit route, which is the only route Moments provides, and pins
+    // every getter of the four-moment contract against the two-pass PropertyHelpers reference.
+    // The margins follow the merge gates above: a relative 1e-8 plus ten thousand times the
+    // condition number times machine epsilon on mean, variance and standard deviation; an
+    // absolute 1e-12 plus one thousand times the condition number times machine epsilon on the
+    // standardized ratios. The audit run of 2026-11-19 recorded the worst errors this machine
+    // measured: the mean held within a relative 4.6E-16, the variance and standard deviation at
+    // a relative 2.87E-9 and 1.44E-9 at condition number 1e8, about 1.3 times the condition
+    // number times machine epsilon, and skewness and kurtosis at an absolute 3.12E-8 and 2.10E-8
+    // there, about 700 times inside the absolute margin. Deeper probes saw the spread getters
+    // keep growing near linearly in the condition number: a relative 1.39E-4 on variance at
+    // 1e12. The audit records no failure on this family, and no candidate is staged. A red
+    // Gate_ fact means the Chan update lost accuracy. Fix the algorithm, and do not widen a
+    // tolerance to make a fact pass. The datasets are seeded, so a failure reproduces.
+    [Fact]
+    public void Gate_MomentsKappaSweepWithinTolerance()
+    {
+        const int n = 100;
+        var sets = PropertyHelpers.KappaSweep(n, 8, 20251129L);
+        for (var d = 0; d <= 8; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var relTol = 1e-8 + 1e4 * kappa * PropertyHelpers.Epsilon;
+            var absTol = 1e-12 + 1e3 * kappa * PropertyHelpers.Epsilon;
+            var xs = sets[d];
+            var reference = PropertyHelpers.ReferenceMoments(xs);
+
+            var loop = new RunningStatistics.Moments();
+            for (var i = 0; i < n; i++) loop.Fit(xs[i]);
+
+            AssertMomentsAgainstReference($"loop at kappa {kappa:E0}", reference, loop, relTol, absTol);
+        }
+    }
+
+    // The cancellation sibling of the audit. The audit found one failure on this family, and
+    // this gate records it in its comment rather than asserting it: the Mean getter reached
+    // through the incremental route. The stored mean absorbs unit-in-the-last-place errors of
+    // the huge intermediate means it passes through on the way to the combined mean, and those
+    // dwarf the exact mean of 0.9259259 once the huge terms pass 2^53. The audit probe of
+    // 2026-11-19 recorded a relative 3.71E-4 at condition number 1e12, 1.16E+0 at 1e15, and
+    // 1.10E+3 at 1e18. The same exclusion holds in Mean's cancellation gate, where the single-
+    // fit route is not claimed either. The five spread readouts are not exposed to that error:
+    // their scale is the huge terms' own powers, and the probe held variance and standard
+    // deviation to within a relative 3.70E-16, and skewness, kurtosis and excess kurtosis to
+    // an absolute 1.07E-14, all at margins of one hundred-millionth, about 2.7E7 times of
+    // headroom. No algorithm swap is queued yet, so this gate asserts the five spread readouts
+    // and leaves Mean to a future candidate, which must extend this gate once it lands. A red
+    // fact means the Chan update lost accuracy; fix the algorithm, do not widen a tolerance.
+    [Fact]
+    public void Gate_MomentsCancellationWithinTolerance()
+    {
+        const int n = 100;
+        for (var d = 12; d <= 18; d++)
+        {
+            var kappa = Math.Pow(10.0, d);
+            var xs = PropertyHelpers.CancelingStream(n, kappa, 991_577L + d);
+            var reference = PropertyHelpers.ReferenceMoments(xs);
+
+            var loop = new RunningStatistics.Moments();
+            for (var i = 0; i < xs.Count; i++) loop.Fit(xs[i]);
+
+            Assert.True(PropertyHelpers.Within(reference.Variance, loop.Variance, 1e-8),
+                        PropertyHelpers.Describe($"variance at kappa {kappa:E0} vs reference", reference.Variance, loop.Variance));
+            Assert.True(PropertyHelpers.Within(reference.StandardDeviation, loop.StandardDeviation, 1e-8),
+                        PropertyHelpers.Describe($"standard deviation at kappa {kappa:E0} vs reference", reference.StandardDeviation, loop.StandardDeviation));
+            Assert.True(PropertyHelpers.WithinAbsolute(reference.Skewness, loop.Skewness, 1e-8),
+                        PropertyHelpers.Describe($"skewness at kappa {kappa:E0} vs reference", reference.Skewness, loop.Skewness));
+            Assert.True(PropertyHelpers.WithinAbsolute(reference.Kurtosis, loop.Kurtosis, 1e-8),
+                        PropertyHelpers.Describe($"kurtosis at kappa {kappa:E0} vs reference", reference.Kurtosis, loop.Kurtosis));
+            Assert.True(PropertyHelpers.WithinAbsolute(reference.ExcessKurtosis, loop.ExcessKurtosis, 1e-8),
+                        PropertyHelpers.Describe($"excess kurtosis at kappa {kappa:E0} vs reference", reference.ExcessKurtosis, loop.ExcessKurtosis));
+        }
+    }
+
     private static void AssertMomentsAgainstReference(string tag, MomentsReference reference, RunningStatistics.Moments merged, double relTol, double absTol)
     {
         Assert.True(PropertyHelpers.Within(reference.Mean, merged.Mean, relTol), PropertyHelpers.Describe($"{tag} Mean vs reference", reference.Mean, merged.Mean));

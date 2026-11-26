@@ -1,34 +1,31 @@
 # RunningStatistics
-Online (single pass) algorithms for statistical measures based on the Julia package 
-[OnlineStats.jl](https://github.com/joshday/OnlineStats.jl) by [Josh Day](https://github.com/joshday). Useful for streaming and big data.
+
+Online (single-pass) algorithms for statistical measures. Useful for streaming and big data.
 
 This package is [available on NuGet](https://www.nuget.org/packages/RunningStatistics/)
 
+```
+dotnet add package RunningStatistics
+```
+
 Supports .NET Standard 2.0
 
-## List of Statistics
+## Statistics
 
-| Statistic          | Description                                                                              |
-|:-------------------|:-----------------------------------------------------------------------------------------|
-| Mean               | The univariate mean                                                                      |
-| Sum                | The overall sum of `double` observations                                                 |
-| Sum\<T\>           | The overall sum of any type that implements `IAdditionOperators` and `IAdditiveIdentity` |
-| Variance           | The univariate variance                                                                  |
-| Extrema            | The min and max of `double` observations                                                 |
-| Extrema\<T\>       | The min and max of any type that implements `IComparable<T>`                             |
-| Moments            | The Mean, Variance, Skewness, and (excess) Kurtosis                                      |
-| EmpiricalCdf       | Approximate order statistics (quantiles)                                                 |
-| CountMap\<T\>      | Counts for each unique value                                                             |
-| Histogram          | A histogram with specified bin edges                                                     |
-
-
-## List of Distributions
-
-| Distribution | Description                          |
-|:-------------|:-------------------------------------|
-| Normal       | The univariate mean and variance     |
-| Beta         | The number of successes and failures |
-
+| Statistic     | Fits                                                                           | Reads out                                                                                          |
+|:--------------|:-------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------|
+| Mean          | `double`                                                                        | `Value`                                                                                              |
+| Sum           | `double`                                                                        | `Value`, `Mean()`                                                                                    |
+| Sum\<T\>      | any type implementing `IAdditionOperators` and `IAdditiveIdentity`              | `Value`                                                                                              |
+| Variance      | `double`                                                                        | `Value`, `StandardDeviation`                                                                         |
+| Extrema       | `double`                                                                        | `Min`, `Max`, `MinCount`, `MaxCount`                                                                 |
+| Extrema\<T\>  | any type implementing `IComparable<T>`                                          | same as `Extrema`                                                                                    |
+| Moments       | `double`                                                                        | `Mean`, `Variance`, `StandardDeviation`, `Skewness`, `Kurtosis`, `ExcessKurtosis`                     |
+| EmpiricalCdf  | `double`, into `numBins` bins (default 200)                                     | `Quantile(p)`, `Cdf(x)`, `Median`, `Min`, `Max`                                                      |
+| Histogram     | `double`, into bins given as `edges`                                            | `NumBins`, iteration over `HistogramBin`s with `Lower`, `Upper`, `Nobs`                              |
+| CountMap\<T\> | any type                                                                        | `Count`, `Keys`, `Values`, `MinKey`, `MaxKey`, and read-only `Dictionary` access                     |
+| Normal        | `double`                                                                        | `Mean`, `Variance`, `StandardDeviation`, `Pdf(x)`, `Cdf(x)`, `Quantile(p)`                            |
+| Beta          | `bool`                                                                          | `Successes`, `Failures`, `Mean`, `Median`, `Mode`, `Variance`, `Pdf(x)`, `Cdf(x)`                     |
 
 ## Common Interface
 
@@ -77,10 +74,9 @@ public interface IRunningStatistic<TObs, TSelf> : IRunningStatistic<TObs>
 ```
 
 The interface is layered as three interfaces of increasing specificity. `IRunningStatistic` is the
-most generic and allows for mixed running statistics to be in a collection. `IRunningStatistic<TObs>`
-expands by adding information about the type of observations that the running statistic can fit.
-Finally `IRunningStatistic<TObs, TSelf>` adds information about the concrete type of the running
-statistic, and allows for precise cloning and merging.
+most generic and allows mixed running statistics in a collection. `IRunningStatistic<TObs>`
+adds the type of observations the running statistic can fit. `IRunningStatistic<TObs, TSelf>`
+adds the concrete type of the running statistic, and allows precise cloning and merging.
 
 ### Abstract Base Class
 
@@ -89,7 +85,9 @@ and provides default implementations when possible.
 
 ## Examples
 
-See the `RunningStatistics.Examples` project for more examples.
+See the `RunningStatistics.Examples` project for more examples. `UsingACollectionOfStatistics.cs`
+mixes different statistics in one collection. `ImplementingACompoundStatistic.cs` builds a new
+statistic out of existing ones.
 
 ### Basic Usage
 
@@ -115,19 +113,24 @@ mean1.Merge(mean2);
 var q1 = ecdf.Quantile(0.25);
 ```
 
-## Upgrading from v2 to v3
+## Notes
 
-If you are inheriting from `RunningStatisticBase`, the biggest change should be the removal of the
-`GetStatsString` method. Now you should just override the `ToString` method.
+- Readout getters return `NaN` when there are too few observations. `Variance` returns `NaN`
+  while `Nobs < 2`, and other statistics have their own thresholds.
+- `Beta` also fits pre-counted results with `Fit(successes, failures)`.
+- `HistogramBin` and `HistogramOutOfBounds` are supporting types. A `Histogram` iterates as
+  `HistogramBin`s. `HistogramOutOfBounds` counts observations below or above the bins of a
+  `Histogram` with `Fit(bool lower, long count)`.
+- The `Extensions` classes add calls such as `beta.Pdf(x)` and `beta.Cdf(x)` for statistics
+  like `Beta`.
 
-Before:
+## Development
 
-```csharp
-protected override string GetStatsString() => $"μ={Mean}, σ²={Variance}";
-```
+Contributors and automated agents should read `AGENTS.md`, which carries the
+algorithm-improvement workflow, and `DEVELOPERS.md`, which defines the
+vocabulary the tests and plans use ("gate", "bench fact", "band", "κ-sweep").
 
-After:
+## Credits
 
-```csharp
-public override string ToString() => base.ToString() + $" | μ={Mean}, σ²={Variance}";
-```
+Based on the Julia package [OnlineStats.jl](https://github.com/joshday/OnlineStats.jl)
+by [Josh Day](https://github.com/joshday).

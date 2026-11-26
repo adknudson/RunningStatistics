@@ -988,5 +988,334 @@ public partial class TestEmpiricalCdf
         }
     }
 
+    // Accuracy audit of the empirical CDF on the canceling family, the one PR #10's
+    // batching left open. Three things are pinned. First, the batched weighted fit
+    // must stay bit-for-bit equal to the replay loop on canceling data, the same
+    // contract the batching gate holds on uniform data. Second, every readout must
+    // scale exactly when the whole dataset is multiplied by a power of two: the state
+    // blends carry only order-preserving exact arithmetic, so a relative error that
+    // grew with the condition number would show up here as a changed low-order bit.
+    // Third, on block-aligned canceling data every flush window holds one whole block,
+    // so the window converges to that block's sorted values and the central quantiles
+    // read the data's dominant value bit-exact even at condition number 1e18. The
+    // audit run of 2026-11-19 found no failure on any of the three. A red fact means
+    // the batching or the readouts lost accuracy; fix the algorithm, do not widen a
+    // tolerance or swap in a looser comparison.
+    [Fact]
+    public void Gate_EmpiricalCdfCancelingStreamWeightedEqualsLoop()
+    {
+        foreach (var bins in new[] { 2, 7, 25 })
+        {
+            for (var d = 12; d <= 18; d += 3)
+            {
+                var kappa = Math.Pow(10.0, d);
+                var xs = PropertyHelpers.CancelingStream(120, kappa, 611_407L + d);
+                RunningStatistics.EmpiricalCdf weighted = new(bins);
+                RunningStatistics.EmpiricalCdf replay = new(bins);
+
+                for (var w = 0; w < bins + 3; w++)
+                {
+                    var warm = xs[w % xs.Count];
+                    weighted.Fit(warm);
+                    replay.Fit(warm);
+                }
+
+                var countSet = new long[] { 0, 1, bins - 1, bins, bins + 1, 2L * bins, 10L * bins + 3 };
+                for (var i = 0; i < xs.Count; i += 7)
+                {
+                    var value = xs[i];
+                    var count = countSet[(i / 7) % countSet.Length];
+                    weighted.Fit(value, count);
+                    for (var k = 0L; k < count; k++) replay.Fit(value);
+
+                    Assert.Equal(replay.Nobs, weighted.Nobs);
+                    Assert.Equal(replay.Min, weighted.Min);
+                    Assert.Equal(replay.Max, weighted.Max);
+                    foreach (var p in new[] { 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95 })
+                    {
+                        Assert.Equal(replay.Quantile(p), weighted.Quantile(p));
+                    }
+
+                    foreach (var x in new[] { 0.0, 0.5, 1.0, 2.0 })
+                    {
+                        Assert.Equal(replay.Cdf(x), weighted.Cdf(x));
+                    }
+                }
+            }
+        }
+    }
+
+    // Power-of-two scaling audit. Every arithmetic step the statistic runs is exact
+    // under an exact scaling: comparisons keep their answer, a difference scales
+    // exactly, and the blend a + p(b - a) scales exactly with no new rounding. So the
+    // readouts on scaled data must be exactly the readouts on base data times the
+    // same scale, bit for bit. Any relative error that grew with the condition number
+    // would break this equality at some scale.
+    [Fact]
+    public void Gate_EmpiricalCdfReadoutsScaleInvariantUnderKappa()
+    {
+        foreach (var d in new[] { 6, 12, 18 })
+        {
+            var xs = PropertyHelpers.CancelingStream(160, Math.Pow(10.0, d), 523_711L + d);
+            var scales = new[] { 1.0, 4.0, Math.Pow(2.0, 20), Math.Pow(2.0, 40) };
+            for (var s = 0; s < scales.Length; s++)
+            {
+                var scale = scales[s];
+                var scaled = new List<double>(xs.Count);
+                for (var i = 0; i < xs.Count; i++) scaled.Add(xs[i] * scale);
+
+                RunningStatistics.EmpiricalCdf plain = new(25);
+                RunningStatistics.EmpiricalCdf grown = new(25);
+                for (var i = 0; i < xs.Count; i++) plain.Fit(xs[i]);
+                for (var i = 0; i < scaled.Count; i++) grown.Fit(scaled[i]);
+
+                Assert.Equal(plain.Min * scale, grown.Min);
+                Assert.Equal(plain.Max * scale, grown.Max);
+                foreach (var p in new[] { 0.1, 0.25, 0.5, 0.75, 0.9 })
+                {
+                    Assert.Equal(plain.Quantile(p) * scale, grown.Quantile(p));
+                }
+
+                foreach (var x in new[] { 0.0, 1.0 })
+                {
+                    Assert.Equal(plain.Cdf(x), grown.Cdf(x * scale));
+                }
+            }
+        }
+    }
+
+    // Block-aligned canceling data. The dataset builder puts one big power-of-two
+    // term, a run of ones, and the negation of the term in each block, so with 92
+    // observations the blocks are 23 ones plus the two huge terms, exactly 25
+    // observations: the bin count. Three whole blocks sit in the stream, so every
+    // flush window holds one whole block and the window converges to that block's
+    // sorted values exactly. The central quantiles, probabilities 0.1 through 0.9,
+    // must then read 1.0 bit-exact even at condition number 1e18. The CDF readouts
+    // are checked against the window's own fractions: one twenty-seventh at the
+    // minimum, and twenty-four twenty-sevenths at 1.0, because that is what the
+    // window's 25 slots say. Those fractions are the method's approximation of the
+    // global empirical fraction 72/75 at 1.0; the difference is the documented
+    // window semantics, not a lost accuracy.
+    [Fact]
+    public void Gate_EmpiricalCdfCancelingStreamCentralReadoutsExact()
+    {
+        var xs = PropertyHelpers.CancelingStream(92, 1e18, 523_719L);
+        Assert.Equal(75, xs.Count);
+
+        RunningStatistics.EmpiricalCdf stat = new(25);
+        for (var i = 0; i < xs.Count; i++) stat.Fit(xs[i]);
+        Assert.Equal(75, stat.Nobs);
+
+        Assert.Equal(1.0, stat.Median);
+        foreach (var p in new[] { 0.1, 0.25, 0.5, 0.75, 0.9 })
+        {
+            Assert.Equal(1.0, stat.Quantile(p));
+        }
+
+        Assert.True(PropertyHelpers.Within(24.0 / 27.0, stat.Cdf(1.0), 1e-12),
+                    PropertyHelpers.Describe("Cdf(1) vs the window fraction 24/27", 24.0 / 27.0, stat.Cdf(1.0)));
+        Assert.True(PropertyHelpers.Within(1.0 / 27.0, stat.Cdf(stat.Min), 1e-12),
+                    PropertyHelpers.Describe("Cdf at the minimum vs the window fraction 1/27", 1.0 / 27.0, stat.Cdf(stat.Min)));
+    }
+
+    // Precondition, pinned through the observable readouts. The
+    // stamped window (Min slot, the bins, Max slot) is private, but the CDF
+    // readouts may only read it as sorted: equal-weight blends of sorted
+    // flush windows with the monotone Smooth keep it non-decreasing, and a
+    // search instead of the linear scan is only legal while that holds. This
+    // gate asserts the same thing from outside: an increasing sweep of
+    // queries never makes Cdf walk backwards, and a growing probability
+    // never makes Quantile walk backwards. Duplicate-heavy streams carry
+    // equal window neighbors, the shape where an upper-bound search must
+    // agree with the scan's "first greater" contract.
+    [Fact]
+    public void Gate_EmpiricalCdfWindowNonDecreasingObservedAsMonotoneReadouts()
+    {
+        foreach (var bins in new[] { 2, 20, 200 })
+        {
+            var streams = new[]
+            {
+                PropertyHelpers.UniformUnit(bins * 6 + 20, 20261205L + bins),
+                PropertyHelpers.CancelingStream(120, 1e12, 20261206L + bins),
+                QuantizedGateStream(bins * 6 + 20, 20261207L + bins),
+                DuplicateHeavyGateStream(bins * 6 + 20),
+            };
+
+            foreach (var stream in streams)
+            {
+                if (bins > stream.Count) continue;
+                RunningStatistics.EmpiricalCdf stat = new(bins);
+                for (var i = 0; i < stream.Count; i++)
+                {
+                    stat.Fit(stream[i]);
+                }
+
+                Assert.True(stat.Nobs >= bins, $"the gate feeds at least one full window, got Nobs {stat.Nobs} below bins {bins}");
+
+                var sweep = GateQuerySweep(stat.Min, stat.Max, 60);
+                var previous = stat.Cdf(sweep[0]);
+                for (var i = 1; i < sweep.Count; i++)
+                {
+                    var at = stat.Cdf(sweep[i]);
+                    Assert.True(at >= previous,
+                        PropertyHelpers.Describe($"Cdf walked backwards at sweep query {sweep[i]}", previous, at));
+                    previous = at;
+                }
+
+                var previousQ = stat.Quantile(0.0);
+                for (var step = 1; step <= 40; step++)
+                {
+                    var p = step / 40.0;
+                    var q = stat.Quantile(p);
+                    Assert.True(q >= previousQ,
+                        PropertyHelpers.Describe($"Quantile walked backwards at p {p}", previousQ, q));
+                    previousQ = q;
+                }
+            }
+        }
+    }
+
+    private static List<double> DuplicateHeavyGateStream(int count)
+    {
+        var multiset = new double[] { 2.0, 3.0, 3.0, 5.0, 5.0, 5.0, 8.0, 8.0 };
+        var xs = new List<double>(count);
+        for (var i = 0; i < count; i++)
+        {
+            xs.Add(multiset[i % multiset.Length]);
+        }
+
+        return xs;
+    }
+
+    private static List<double> QuantizedGateStream(int count, long seed)
+    {
+        var snapped = new List<double>(count);
+        foreach (var u in PropertyHelpers.UniformUnit(count, seed))
+        {
+            snapped.Add(Math.Round(u * 10.0) / 10.0);
+        }
+
+        return snapped;
+    }
+
+    // The sweep the monotonicity gate walks: just below the minimum, the ends
+    // and evenly inside, one point above the maximum.
+    private static List<double> GateQuerySweep(double min, double max, int insideSteps)
+    {
+        var xs = new List<double>();
+        var spread = max - min;
+        var tail = spread > 0 ? spread : 1.0;
+        xs.Add(min - tail);
+        xs.Add(min);
+        for (var s = 1; s < insideSteps; s++)
+        {
+            xs.Add(min + spread * (s / (double)insideSteps));
+        }
+
+        xs.Add(max);
+        xs.Add(max + tail);
+        return xs;
+    }
+
+    // Cdf and Quantile must stay mutually inverse up to the window's own
+    // resolution. Quantile states position (NumBins + 1) p on the window;
+    // Cdf reports a position divided by NumBins + 2. The round trip
+    // Cdf(Quantile(p)) therefore sits at p (NumBins + 1) / (NumBins + 2), and
+    // on strictly interior uniform data it can sit no farther away: a search
+    // index error moves it by a whole window position, far above this budget.
+    // Duplicate-heavy streams may only push the trip upward across a plateau
+    // of equal window neighbors, so they get the one-sided lower budget.
+    [Fact]
+    public void Gate_EmpiricalCdfCdfInversesQuantileWithinWindowBudget()
+    {
+        var probs = new[] { 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95 };
+
+        foreach (var bins in new[] { 2, 20, 200 })
+        {
+            var len = bins + 2.0;
+            var expectedScale = bins + 1.0;
+
+            RunningStatistics.EmpiricalCdf uniform = new(bins);
+            foreach (var x in PropertyHelpers.UniformUnit(bins * 6 + 20, 20261208L + bins))
+            {
+                uniform.Fit(x);
+            }
+
+            foreach (var p in probs)
+            {
+                var q = uniform.Quantile(p);
+                var trip = uniform.Cdf(q);
+                var expected = p * expectedScale / len;
+                Assert.True(PropertyHelpers.WithinAbsolute(expected, trip, 1e-9),
+                            PropertyHelpers.Describe($"inverse trip Cdf(Quantile({p})) on uniform data at bins {bins}", expected, trip));
+                Assert.True(trip <= p + 1e-9,
+                    $"the inverse trip at p {p} on uniform data overshot to {trip} above p at bins {bins}");
+            }
+
+            RunningStatistics.EmpiricalCdf duplicated = new(bins);
+            foreach (var x in DuplicateHeavyGateStream(bins * 6 + 20))
+            {
+                duplicated.Fit(x);
+            }
+
+            foreach (var p in probs)
+            {
+                var q = duplicated.Quantile(p);
+                var trip = duplicated.Cdf(q);
+                var expected = p * expectedScale / len;
+                Assert.True(trip >= expected - 1e-9,
+                    PropertyHelpers.Describe($"inverse trip at p {p} fell below the window position budget at bins {bins}", expected, trip));
+            }
+        }
+    }
+
+    // Readout scaling audit for the CDF search. A Cdf query must cost about
+    // the same whether the histogram holds 200 bins or 2000: the upper-bound
+    // search pays log steps, so the tenfold bin growth moves the per-query
+    // time by little. The old full-array scan answered this ratio near 7 and
+    // now fails inside this band. The band carries the plan's meaning: the
+    // readout claim is "not slower" per query and flat scaling in bins.
+    [Fact]
+    public void Bench_EmpiricalCdfCdfQueryCostFlatInNumBins()
+    {
+        const int queries = 512;
+        const int repeats = 6;
+
+        var cost = new double[2];
+        foreach (var b in new[] { 0, 1 })
+        {
+            var bins = b == 0 ? 200 : 2000;
+            var data = PropertyHelpers.UniformUnit(bins * 4, 20261209L + bins);
+            RunningStatistics.EmpiricalCdf stat = new(bins);
+            for (var i = 0; i < data.Count; i++)
+            {
+                stat.Fit(data[i]);
+            }
+
+            var xs = GateQuerySweep(stat.Min, stat.Max, queries - 3);
+            cost[b] = BenchmarkHarness.Measure(
+                $"EmpiricalCdf.Cdf, bins {bins}, ns per query",
+                queries,
+                repeats,
+                () => {
+                    var sum = 0.0;
+                    for (var q = 0; q < queries; q++)
+                    {
+                        sum += stat.Cdf(xs[q]);
+                    }
+
+                    return sum;
+                });
+        }
+
+        var ratio = BenchmarkHarness.Compare(
+            "Cdf query cost, bins 2000 against bins 200",
+            cost[0],
+            cost[1]);
+        Assert.True(ratio >= 0.5 && ratio <= 1.5,
+            $"Cdf query cost ratio bins 2000/200 {ratio:F3} outside [0.5, 1.5] " +
+            $"({cost[1]:F4} vs {cost[0]:F4} ns/query): the query no longer stays flat in the bin count (re-gate; do not widen the band)");
+    }
+
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

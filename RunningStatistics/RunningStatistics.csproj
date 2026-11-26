@@ -22,6 +22,12 @@
 		<PackageReleaseNotes>
 			Changes since 3.3.0:
 			- `EmpiricalCdf`: `Fit(value, count)` batches a constant run instead of replaying it one observation at a time. The cost is now O(count / NumBins) flush blends plus O(NumBins) boundary work, down from O(count). The resulting state stays bitwise identical to a loop of single fits, so no released result changes (issue #8)
+			- `EmpiricalCdf`: `Cdf` binary searches its sorted window instead of scanning it; same results (PR #11)
+			- `Histogram`: bin lookup is a binary search over the constructor's sorted, distinct, NaN-free edges instead of a per-observation scan; same results (PR #11)
+			- `Histogram`: `Merge`'s mismatched-shape branch now counts the source's out-of-bounds bins into `Nobs`, restoring the count identity `Nobs = bins + counters`; bug fix, no new behavior (PR #11)
+			- `Sum`, `Mean`: folds run through a branch-free Knuth two-sum, so canceling streams at kappa >= 1e14 return the exact total/mean instead of zero; batch `Fit(iterable)` folds once and commits state only after validation, bit-identical to the two-pass path (PR #11)
+			- `Normal`: the mean/variance update is inlined instead of delegating to `Mean`/`Variance` objects; state stays bit-identical on both routes (PR #11)
+			- `Mean`, `Normal`, `Variance`: hot-path blends at call sites whose weight is provably a count ratio in (0, 1] use `Utils.SmoothUnchecked`; the arithmetic expression is unchanged, so state bits do not move (PR #11)
 			Changes since 3.2.0:
 			- `CountMap`: `CloneEmpty` now propagates the map's comparer (previously the clone dropped a custom comparer and fell back to the default one, so `MinKey`/`MaxKey` and merging on a cloned map used wrong key order — issue #6)
 			- `Beta`: `Median` existence relaxed from `Successes` > 1 and `Failures` > 1 to at least one success and at least one failure (`Quantile(0.5)` now defined for e.g. 1/1 fits instead of returning NaN); `Mode` still requires > 1 of each
