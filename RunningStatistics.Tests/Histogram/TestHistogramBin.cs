@@ -9,20 +9,20 @@ public class TestHistogramBin
     [Fact]
     public void Constructor_ThrowsOnInvalidBounds()
     {
-        Assert.Throws<ArgumentException>(() => new HistogramBin(10, 0, true, false));
+        Assert.Throws<ArgumentException>(() => new RunningStatistics.Histogram.Bin(10, 0, true, false));
     }
     
     [Fact]
     public void Constructor_ThrowsWhenBothBoundsInfinite()
     {
         Assert.Throws<ArgumentException>(() =>
-            new HistogramBin(double.NegativeInfinity, double.PositiveInfinity, true, false).Midpoint);
+            new RunningStatistics.Histogram.Bin(double.NegativeInfinity, double.PositiveInfinity, true, false).Midpoint);
     }
 
     [Fact]
     public void Constructor_InitializesPropertiesCorrectly()
     {
-        var bin = new HistogramBin(0, 10, true, false);
+        var bin = new RunningStatistics.Histogram.Bin(0, 10, true, false);
         Assert.Equal(0, bin.Lower);
         Assert.Equal(10, bin.Upper);
         Assert.Equal(0, bin.Nobs);
@@ -33,105 +33,105 @@ public class TestHistogramBin
     [Fact]
     public void Contains_WithinBoundsTrue()
     {
-        var bin = new HistogramBin(0, 10, true, false);
+        var bin = new RunningStatistics.Histogram.Bin(0, 10, true, false);
         Assert.True(bin.Contains(5));
     }
 
     [Fact]
     public void Contains_OutOfBoundsFalse()
     {
-        var bin = new HistogramBin(0, 10, true, false);
+        var bin = new RunningStatistics.Histogram.Bin(0, 10, true, false);
         Assert.False(bin.Contains(15));
     }
 
     [Fact]
     public void Contains_ClosedLeftIncludesLowerBound()
     {
-        var bin = new HistogramBin(0, 10, true, false);
+        var bin = new RunningStatistics.Histogram.Bin(0, 10, true, false);
         Assert.True(bin.Contains(0));
     }
 
     [Fact]
     public void Contains_OpenLeftExcludesLowerBound()
     {
-        var bin = new HistogramBin(0, 10, false, false);
+        var bin = new RunningStatistics.Histogram.Bin(0, 10, false, false);
         Assert.False(bin.Contains(0));
     }
 
     [Fact]
     public void Contains_ClosedRightIncludesUpperBound()
     {
-        var bin = new HistogramBin(0, 10, false, true);
+        var bin = new RunningStatistics.Histogram.Bin(0, 10, false, true);
         Assert.True(bin.Contains(10));
     }
 
     [Fact]
     public void Contains_OpenRightExcludesUpperBound()
     {
-        var bin = new HistogramBin(0, 10, false, false);
+        var bin = new RunningStatistics.Histogram.Bin(0, 10, false, false);
         Assert.False(bin.Contains(10));
     }
     
     [Fact]
     public void Increment_ThrowsOnNegativeCount()
     {
-        var bin = new HistogramBin(0, 10, true, false);
+        var bin = new RunningStatistics.Histogram.Bin(0, 10, true, false);
         Assert.Throws<ArgumentOutOfRangeException>(() => bin.Increment(-1));
     }
     
     [Fact]
     public void Midpoint_CalculatesCorrectly()
     {
-        var bin = new HistogramBin(0, 10, true, false);
+        var bin = new RunningStatistics.Histogram.Bin(0, 10, true, false);
         Assert.Equal(5, bin.Midpoint);
     }
     
     [Fact]
     public void Midpoint_InfiniteLowerBound()
     {
-        var bin = new HistogramBin(double.NegativeInfinity, 10, true, false);
+        var bin = new RunningStatistics.Histogram.Bin(double.NegativeInfinity, 10, true, false);
         Assert.Equal(double.NegativeInfinity, bin.Midpoint);
     }
     
     [Fact]
     public void Midpoint_InfiniteUpperBound()
     {
-        var bin = new HistogramBin(0, double.PositiveInfinity, true, false);
+        var bin = new RunningStatistics.Histogram.Bin(0, double.PositiveInfinity, true, false);
         Assert.Equal(double.PositiveInfinity, bin.Midpoint);
     }
     
     [Fact]
     public void Midpoint_LargeNumbers()
     {
-        var bin = new HistogramBin(double.MaxValue / 2, double.MaxValue, true, false);
+        var bin = new RunningStatistics.Histogram.Bin(double.MaxValue / 2, double.MaxValue, true, false);
         Assert.Equal(double.MaxValue * 0.75, bin.Midpoint);
     }
 
     [Fact]
     public void Midpoint_SmallNumbers()
     {
-        var bin = new HistogramBin(double.MinValue, double.MinValue / 2, true, false);
+        var bin = new RunningStatistics.Histogram.Bin(double.MinValue, double.MinValue / 2, true, false);
         Assert.Equal(double.MinValue * 0.75, bin.Midpoint);
     }
     
     [Fact]
     public void Midpoint_ValuesCloseToZero()
     {
-        var bin = new HistogramBin(-1e-10, 1e-10, true, false);
+        var bin = new RunningStatistics.Histogram.Bin(-1e-10, 1e-10, true, false);
         Assert.Equal(0, bin.Midpoint);
     }
 
     [Fact]
     public void Midpoint_PositiveValuesCloseToZero()
     {
-        var bin = new HistogramBin(1e-10, 2e-10, true, false);
+        var bin = new RunningStatistics.Histogram.Bin(1e-10, 2e-10, true, false);
         Assert.Equal(1.5e-10, bin.Midpoint);
     }
 
     [Fact]
     public void Midpoint_NegativeValuesCloseToZero()
     {
-        var bin = new HistogramBin(-2e-10, -1e-10, true, false);
+        var bin = new RunningStatistics.Histogram.Bin(-2e-10, -1e-10, true, false);
         Assert.Equal(-1.5e-10, bin.Midpoint);
     }
 
@@ -155,7 +155,7 @@ public class TestHistogramBin
             {
                 foreach (var closedRight in new[] { true, false })
                 {
-                    var bin = new HistogramBin(lower, upper, closedLeft, closedRight);
+                    var bin = new RunningStatistics.Histogram.Bin(lower, upper, closedLeft, closedRight);
 
                     var probes = new List<double> { lower, upper, bin.Midpoint };
                     if (lower == double.NegativeInfinity)
@@ -223,7 +223,7 @@ public class TestHistogramBin
         return BitConverter.Int64BitsToDouble(bits < 0 ? bits + 1 : bits - 1);
     }
 
-    private static bool ContainsByClosureModel(HistogramBin bin, double value)
+    private static bool ContainsByClosureModel(RunningStatistics.Histogram.Bin bin, double value)
     {
         var inFromLeft = value > bin.Lower || (value == bin.Lower && bin.ClosedLeft);
         var inFromRight = value < bin.Upper || (value == bin.Upper && bin.ClosedRight);

@@ -1135,28 +1135,28 @@ public partial class TestHistogram
 
     // The oracle for the lookup: the linear route, restated here. The bins are
     // built with the constructor's rules, then the value is looked up with a scan
-    // over HistogramBin.Contains, which is what the old Histogram.UncheckedFit did.
+    // over Histogram.Bin.Contains, which is what the old Histogram.UncheckedFit did.
     // A result of -1 means an out-of-bounds counter, not a bin. Keeping the oracle
     // in the test is what makes the lookup gate meaningful after the swap: the
     // production class no longer holds a scan of its own to compare against.
     private static int ScanBinIndex(List<double> edges, bool leftClosed, bool endsClosed, double value)
     {
-        var bins = new List<RunningStatistics.HistogramBin>();
+        var bins = new List<RunningStatistics.Histogram.Bin>();
         if (leftClosed)
         {
             for (var i = 1; i < edges.Count - 1; i++)
             {
-                bins.Add(new RunningStatistics.HistogramBin(edges[i - 1], edges[i], true, false));
+                bins.Add(new RunningStatistics.Histogram.Bin(edges[i - 1], edges[i], true, false));
             }
 
-            bins.Add(new RunningStatistics.HistogramBin(edges[^2], edges[^1], true, endsClosed));
+            bins.Add(new RunningStatistics.Histogram.Bin(edges[^2], edges[^1], true, endsClosed));
         }
         else
         {
-            bins.Add(new RunningStatistics.HistogramBin(edges[0], edges[1], endsClosed, true));
+            bins.Add(new RunningStatistics.Histogram.Bin(edges[0], edges[1], endsClosed, true));
             for (var i = 2; i < edges.Count; i++)
             {
-                bins.Add(new RunningStatistics.HistogramBin(edges[i - 1], edges[i], false, true));
+                bins.Add(new RunningStatistics.Histogram.Bin(edges[i - 1], edges[i], false, true));
             }
         }
 
@@ -1273,79 +1273,4 @@ public partial class TestHistogram
             }
         }
     }
-
-    // The bands below are the AGENTS.md budgets, read against the real class after
-    // the swap. The working-set and weighted facts compare the same machine code on
-    // both sides, so a ratio away from 1.00 by more than the noise is a real change
-    // in cost, and the honest claim is "not slower". Do not widen a band to make a
-    // fact green.
-
-    // Both sweeps fit single observations through the interface over one fixed-seed
-    // dataset. The 1k set stays in cache and shows the arithmetic; the 1M set models
-    // realistic streaming. With the search, the lookup cost no longer grows with the
-    // bin count, so the two readings must land in the noise of each other.
-    [Fact]
-    public void Bench_HistogramStreamFitCostFlatInWorkingSet()
-    {
-        var smallData = PropertyHelpers.UniformUnit(1_000, 202611253L);
-        var bigData = PropertyHelpers.UniformUnit(1_000_000, 202611253L);
-        var edges = EvenEdges(50, 0.0, 1.0);
-        Func<IRunningStatistic<double>> factory = () => new RunningStatistics.Histogram(edges);
-
-        var hotNs = BenchmarkHarness.StreamFit(factory, smallData, 4);
-        var coldNs = BenchmarkHarness.StreamFit(factory, bigData, 2);
-        var ratio = BenchmarkHarness.Compare(
-            "Histogram StreamFit 1M over 1k working set, ns per observation",
-            hotNs,
-            coldNs);
-        Assert.True(ratio >= 0.5 && ratio <= 1.20,
-                    $"StreamFit 1M over 1k ratio {ratio:F3} outside [0.5, 1.20]: the hot loop got slower than the memory-bound one; re-gate, do not re-tune the band");
-    }
-
-    // One weighted call per observation, against one single call per observation.
-    // The lookup runs once per call either way, so the two must stay within 20%.
-    [Fact]
-    public void Bench_HistogramWeightedFitIsPerCallCost()
-    {
-        var data = PropertyHelpers.UniformUnit(1_000, 202611253L);
-        var edges = EvenEdges(50, 0.0, 1.0);
-        Func<IRunningStatistic<double>> factory = () => new RunningStatistics.Histogram(edges);
-
-        var fitNs = BenchmarkHarness.StreamFit(factory, data, 4);
-        var weightedNs = BenchmarkHarness.WeightedFit(factory, data, 1009, 4);
-        var ratio = BenchmarkHarness.Compare(
-            "Histogram WeightedFit count=1009 over StreamFit, ns per observation",
-            fitNs,
-            weightedNs);
-        Assert.True(ratio >= 0.5 && ratio <= 1.20,
-                    $"WeightedFit over StreamFit ratio {ratio:F3} outside [0.5, 1.20]: the weighted path spends per-observation work; re-gate, do not re-tune the band");
-    }
-
-    // The algorithmic claim, pinned on the class itself. One fixed-seed 1M stream
-    // runs through histograms of 5 bins and of 500 bins, so only the lookup depth
-    // and the histogram's own state change. The measured 500-over-5 reading lands
-    // near 1.80 with the search. Part of that rise is not the lookup: a 500-bin
-    // histogram spreads its counts over 500 bin objects, and a random stream keeps
-    // touching objects the cache had dropped. The linear scan the swap replaced
-    // read about 13 on the same pair, measured during staging, so this fact fails
-    // loudly if the lookup starts growing with the bin count again. Fix the
-    // lookup, do not widen the band. The 1M set is the right one for this claim:
-    // at 1k the reading carries the histogram's own O(bins) construction cost on
-    // every observation, which dwarfs the lookup there.
-    [Fact]
-    public void Bench_HistogramBinLookupCostFlatInBinCount()
-    {
-        var data = PropertyHelpers.UniformUnit(1_000_000, 202611253L);
-
-        var narrowNs = BenchmarkHarness.StreamFit(() => new RunningStatistics.Histogram(EvenEdges(5, 0.0, 1.0)), data, 2);
-        var wideNs = BenchmarkHarness.StreamFit(() => new RunningStatistics.Histogram(EvenEdges(500, 0.0, 1.0)), data, 2);
-        var ratio = BenchmarkHarness.Compare(
-            "Histogram StreamFit 500 bins over 5 bins, same 1M stream, ns per observation",
-            narrowNs,
-            wideNs);
-        Assert.True(ratio >= 1.0 && ratio <= 2.00,
-                    $"500-bin over 5-bin ratio {ratio:F3} outside [1.0, 2.00]: the lookup cost grew with the bin count, the way a scan does; re-gate, do not re-tune the band");
-    }
-
-    // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

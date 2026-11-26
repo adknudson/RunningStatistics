@@ -42,7 +42,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     /// <summary>
     /// Gets the number of bins.
     /// </summary>
-    private int NumBins { get; }
+    public int NumBins { get; }
     
     /// <summary>
     /// Gets the median of the empirical CDF.
