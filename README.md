@@ -22,7 +22,7 @@ Supports .NET Standard 2.0
 | Extrema\<T\>  | any type implementing `IComparable<T>`                                          | same as `Extrema`                                                                                    |
 | Moments       | `double`                                                                        | `Mean`, `Variance`, `StandardDeviation`, `Skewness`, `Kurtosis`, `ExcessKurtosis`                     |
 | EmpiricalCdf  | `double`, into `numBins` bins (default 200)                                     | `Quantile(p)`, `Cdf(x)`, `Median`, `Min`, `Max`                                                      |
-| Histogram     | `double`, into bins given as `edges`                                            | `NumBins`, iteration over `HistogramBin`s with `Lower`, `Upper`, `Nobs`                              |
+| Histogram     | `double`, into bins given as `edges`                                            | `NumBins`, `Bins`, `Edges`, `OutOfBoundsCounts`, iteration over `Bin`s with `Lower`, `Upper`, `Nobs` |
 | CountMap\<T\> | any type                                                                        | `Count`, `Keys`, `Values`, `MinKey`, `MaxKey`, and read-only `Dictionary` access                     |
 | Normal        | `double`                                                                        | `Mean`, `Variance`, `StandardDeviation`, `Pdf(x)`, `Cdf(x)`, `Quantile(p)`                            |
 | Beta          | `bool`                                                                          | `Successes`, `Failures`, `Mean`, `Median`, `Mode`, `Variance`, `Pdf(x)`, `Cdf(x)`                     |
@@ -118,9 +118,9 @@ var q1 = ecdf.Quantile(0.25);
 - Readout getters return `NaN` when there are too few observations. `Variance` returns `NaN`
   while `Nobs < 2`, and other statistics have their own thresholds.
 - `Beta` also fits pre-counted results with `Fit(successes, failures)`.
-- `HistogramBin` and `HistogramOutOfBounds` are supporting types. A `Histogram` iterates as
-  `HistogramBin`s. `HistogramOutOfBounds` counts observations below or above the bins of a
-  `Histogram` with `Fit(bool lower, long count)`.
+- `Histogram.Bin` is a nested supporting type. A `Histogram` iterates as `Bin`s, each with
+  `Lower`, `Upper` and `Nobs`. `Histogram.OutOfBoundsCounts` reports observations below or above
+  the bins as a `(long Lower, long Upper)` tuple.
 - The `Extensions` classes add calls such as `beta.Pdf(x)` and `beta.Cdf(x)` for statistics
   like `Beta`.
 

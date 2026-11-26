@@ -9,12 +9,14 @@ namespace RunningStatistics;
 /// Represents a histogram for running statistics. A set of edges defines the boundaries of the
 /// bins. Each bin has left and right ends that are open or closed.
 /// </summary>
-public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumerable<HistogramBin>
+public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumerable<Histogram.Bin>
 {
-    private HistogramOutOfBounds _oob;
     private readonly List<double> _edges;
-    private bool _binsAreInitialized;
+    private readonly List<Bin> _bins;
+    
     private long _nobs;
+    private long _lowerOutOfBounds;
+    private long _upperOutOfBounds;
 
 
     /// <summary>
@@ -36,7 +38,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     /// edges).</exception>
     public Histogram(IEnumerable<double> edges, bool leftClosed = true, bool endsClosed = true)
     {
-        _edges = edges.ToList();
+        _edges = [..edges];
 
         if (_edges.Count < 2)
         {
@@ -68,24 +70,48 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
         LeftClosed = leftClosed;
         EndsClosed = endsClosed;
 
-        InitializeBins();
+
+        _bins = [];
+
+        if (LeftClosed)
+        {
+            // add all but last normally
+            for (var i = 1; i < _edges.Count - 1; i++)
+            {
+                _bins.Add(new Bin(_edges[i - 1], _edges[i], true, false));
+            }
+
+            var lastTwoEdges = Edges.Reverse().Take(2).Reverse().ToList();
+            _bins.Add(new Bin(lastTwoEdges[0], lastTwoEdges[1], true, EndsClosed));
+        }
+        else
+        {
+            // add all but first normally
+            var firstTwoEdges = Edges.Take(2).ToList();
+            _bins.Add(new Bin(firstTwoEdges[0], firstTwoEdges[1], EndsClosed, true));
+
+            for (var i = 2; i < _edges.Count; i++)
+            {
+                _bins.Add(new Bin(_edges[i - 1], _edges[i], false, true));
+            }
+        }
     }
 
 
     /// <summary>
     /// Gets the counts of values that are outside the bounds of the histogram bins.
     /// </summary>
-    public (long Lower, long Upper) OutOfBoundsCounts => (_oob.Lower, _oob.Upper);
+    public (long Lower, long Upper) OutOfBoundsCounts => (_lowerOutOfBounds, _upperOutOfBounds);
 
     /// <summary>
-    /// The number of bins in the histogram.
+    /// Gets the number of bins in the histogram.
     /// </summary>
-    private int NumBins => Bins.Count;
+    public int NumBins => _bins.Count;
 
     /// <summary>
     /// Gets the list of histogram bins.
     /// </summary>
-    private List<HistogramBin> Bins { get; } = [];
+    public IEnumerable<Bin> Bins => _bins;
 
     /// <summary>
     /// Get a list of the histogram edges.
@@ -108,45 +134,12 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     /// </summary>
     /// <example>
     /// <code>
-    /// EndsClosed= true: [a, b), [b, c), [c, d]
-    /// EndsClosed=false: [a, b), [b, c), [c, d)
+    /// EndsClosed =  true: [a, b), [b, c), [c, d]
+    /// EndsClosed = false: [a, b), [b, c), [c, d)
     /// </code>
     /// </example>
     public bool EndsClosed { get; }
 
-
-    /// <summary>
-    /// Initialize the bins according to the edges and end-bin behavior.
-    /// </summary>
-    private void InitializeBins()
-    {
-        if (_binsAreInitialized) return;
-
-        if (LeftClosed)
-        {
-            // add all but last normally
-            for (var i = 1; i < _edges.Count - 1; i++)
-            {
-                Bins.Add(new HistogramBin(_edges[i - 1], _edges[i], true, false));
-            }
-
-            var lastTwoEdges = Edges.Reverse().Take(2).Reverse().ToList();
-            Bins.Add(new HistogramBin(lastTwoEdges[0], lastTwoEdges[1], true, EndsClosed));
-        }
-        else
-        {
-            // add all but first normally
-            var firstTwoEdges = Edges.Take(2).ToList();
-            Bins.Add(new HistogramBin(firstTwoEdges[0], firstTwoEdges[1], EndsClosed, true));
-
-            for (var i = 2; i < _edges.Count; i++)
-            {
-                Bins.Add(new HistogramBin(_edges[i - 1], _edges[i], false, true));
-            }
-        }
-
-        _binsAreInitialized = true;
-    }
 
     protected override long GetNobs() => _nobs;
 
@@ -162,18 +155,18 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     {
         checked { _nobs += count; }
 
-        var firstBin = Bins.First();
-        var lastBin = Bins.Last();
+        var firstBin = _bins[0];
+        var lastBin = _bins[NumBins - 1];
 
         if (value < firstBin.Lower)
         {
-            _oob.Fit(lower: true, count);
+            _lowerOutOfBounds += count;
             return;
         }
 
         if (value > lastBin.Upper)
         {
-            _oob.Fit(lower: false, count);
+            _upperOutOfBounds += count;
             return;
         }
 
@@ -185,7 +178,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
             }
             else
             {
-                _oob.Fit(lower: false, count);
+                _upperOutOfBounds += count;
             }
             return;
         }
@@ -198,12 +191,12 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
             }
             else
             {
-                _oob.Fit(lower: true, count);
+                _lowerOutOfBounds += count;
             }
             return;
         }
 
-        var bin = Bins[FindBinIndex(value)];
+        var bin = _bins[FindBinIndex(value)];
         bin.Increment(count);
     }
 
@@ -240,7 +233,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
 
         // A value exactly on an interior edge belongs to the bin above when the
         // bins close on the left, and to the bin below when they close on the
-        // right. That is the answer HistogramBin.Contains gives for that edge,
+        // right. That is the answer Bin.Contains gives for that edge,
         // so the route leaves the bin counts unchanged. low stays above zero
         // here, because a value equal to the first edge returns earlier.
         if (!LeftClosed && value.Equals(_edges[low])) return low - 1;
@@ -252,12 +245,13 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     {
         _nobs = 0;
 
-        foreach (var bin in Bins)
+        foreach (var bin in _bins)
         {
             bin.Reset();
         }
 
-        _oob.Reset();
+        _lowerOutOfBounds = 0;
+        _upperOutOfBounds = 0;
     }
 
     public override Histogram CloneEmpty() => new(_edges, LeftClosed, EndsClosed);
@@ -275,15 +269,16 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     /// </remarks>
     public override void Merge(Histogram histogram)
     {
-        _oob.Merge(histogram._oob);
+        _lowerOutOfBounds += histogram._lowerOutOfBounds;
+        _upperOutOfBounds += histogram._upperOutOfBounds;
 
-        if (BinsAreMatching(histogram.Bins))
+        if (BinsAreMatching(histogram._bins))
         {
             checked { _nobs += histogram.Nobs; }
 
             for (var j = 0; j < NumBins; j++)
             {
-                Bins[j].Merge(histogram.Bins[j]);
+                _bins[j].Merge(histogram._bins[j]);
             }
         }
         else
@@ -294,10 +289,10 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
             // a mismatched merge drops the source's out-of-bounds observations from
             // Nobs while its counters still report them, so the count identity
             // Nobs = bins + counters no longer holds.
-            checked { _nobs += histogram.OutOfBoundsCounts.Lower + histogram.OutOfBoundsCounts.Upper; }
+            checked { _nobs += histogram._lowerOutOfBounds + histogram._upperOutOfBounds; }
 
             // Using midpoints of source bins as approximate locations for merging
-            foreach (var bin in histogram.Bins)
+            foreach (var bin in histogram._bins)
             {
                 UncheckedFit(bin.Midpoint, bin.Nobs);
             }
@@ -309,15 +304,182 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     /// </summary>
     /// <param name="other">The other histogram bins to check.</param>
     /// <returns>True if the bins match, otherwise false.</returns>
-    private bool BinsAreMatching(List<HistogramBin> other)
+    private bool BinsAreMatching(List<Bin> other)
     {
-        return Bins.Count == other.Count
-               && this.Zip(other, (a, b) => (a, b)).All(z => z.a.Equals(z.b));
+        return _bins.Count == other.Count
+               && _bins.Zip(other, (a, b) => (a, b)).All(z => z.a.Equals(z.b));
     }
 
-    public IEnumerator<HistogramBin> GetEnumerator() => Bins.GetEnumerator();
+    public IEnumerator<Bin> GetEnumerator() => _bins.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public override string ToString() => base.ToString() + $" | NumBins={NumBins}";
+
+
+    /// <summary>
+    /// Represents a bin in a histogram.
+    /// </summary>
+    public sealed class Bin : IEquatable<Bin>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Bin"/> class.
+        /// </summary>
+        /// <param name="lower">The lower bound of the bin.</param>
+        /// <param name="upper">The upper bound of the bin.</param>
+        /// <param name="closedLeft">Shows if the bin has a closed left side.</param>
+        /// <param name="closedRight">Shows if the bin has a closed right side.</param>
+        /// <exception cref="ArgumentException">Thrown when the lower bound is not strictly less than
+        /// the upper bound or both bounds are infinite.</exception>
+        internal Bin(double lower, double upper, bool closedLeft, bool closedRight)
+        {
+            if (lower >= upper)
+            {
+                throw new ArgumentException(
+                    $"Lower bound must be strictly less than upper bound. Lower: {lower}, Upper: {upper}");
+            }
+
+            if (double.IsInfinity(lower) && double.IsInfinity(upper))
+            {
+                throw new ArgumentException("Both bounds cannot be infinite");
+            }
+
+            Lower = lower;
+            Upper = upper;
+            ClosedLeft = closedLeft;
+            ClosedRight = closedRight;
+
+            Nobs = 0;
+        }
+
+
+        /// <summary>
+        /// Gets the number of observations in the bin.
+        /// </summary>
+        public long Nobs { get; private set; }
+
+        /// <summary>
+        /// Gets the lower bound of the bin.
+        /// </summary>
+        public double Lower { get; }
+
+        /// <summary>
+        /// Gets the upper bound of the bin.
+        /// </summary>
+        public double Upper { get; }
+
+        /// <summary>
+        /// Gets a value that shows if the bin has a closed left side.
+        /// </summary>
+        public bool ClosedLeft { get; }
+
+        /// <summary>
+        /// Gets a value that shows if the bin has a closed right side.
+        /// </summary>
+        public bool ClosedRight { get; }
+
+        /// <summary>
+        /// Gets the midpoint of the bin. If either the lower or upper bound is infinite, then midpoint
+        /// is set to the infinite bound.
+        /// </summary>
+        public double Midpoint
+        {
+            get
+            {
+                if (double.IsInfinity(Lower)) return Lower;
+                if (double.IsInfinity(Upper)) return Upper;
+                return Lower + (Upper - Lower) / 2;
+            }
+        }
+
+
+        /// <summary>
+        /// Determines if the specified value falls within the bin.
+        /// </summary>
+        /// <param name="value">The value to check.</param>
+        /// <returns>True if the bin contains the value, otherwise false.</returns>
+        /// <exception cref="InvalidOperationException">Thrown when the bin encounters an unexpected state.</exception>
+        internal bool Contains(double value)
+        {
+            // strictly outside of the bin
+            if (value < Lower || value > Upper) return false;
+            // strictly inside of the bin
+            if (Lower < value && value < Upper) return true;
+
+            // potentially on the boundary
+            if (value == Lower) return ClosedLeft;
+            if (value == Upper) return ClosedRight;
+
+            // should never reach here
+            throw new InvalidOperationException("Unexpected state");
+        }
+
+        /// <summary>
+        /// Resets the number of observations in the bin.
+        /// </summary>
+        internal void Reset()
+        {
+            Nobs = 0;
+        }
+
+        /// <summary>
+        /// Merges another bin into this bin.
+        /// </summary>
+        /// <param name="other">The other bin to merge.</param>
+        internal void Merge(Bin other)
+        {
+            Nobs += other.Nobs;
+        }
+
+        /// <summary>
+        /// Increments the number of observations in the bin by the specified count.
+        /// </summary>
+        /// <param name="count">The count to increment by.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the count is negative.</exception>
+        internal void Increment(long count)
+        {
+            Require.NonNegative(count);
+            Nobs += count;
+        }
+
+        public bool Equals(Bin? other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return Lower == other.Lower
+                   && Upper == other.Upper
+                   && ClosedLeft == other.ClosedLeft
+                   && ClosedRight == other.ClosedRight;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return ReferenceEquals(this, obj) || obj is Bin other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = Lower.GetHashCode();
+                hashCode = hashCode * 397 ^ Upper.GetHashCode();
+                hashCode = hashCode * 397 ^ ClosedLeft.GetHashCode();
+                hashCode = hashCode * 397 ^ ClosedRight.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        public static bool operator ==(Bin? left, Bin? right) => Equals(left, right);
+
+        public static bool operator !=(Bin? left, Bin? right) => !Equals(left, right);
+
+        public override string ToString()
+        {
+            var leftBrace = ClosedLeft ? '[' : '(';
+            var rightBrace = ClosedRight ? ']' : ')';
+            var binRepr = $"{leftBrace}{Lower}, {Upper}{rightBrace}";
+            
+            return $"{nameof(Bin)}(Nobs={Nobs:N0}) | Bin={binRepr}";
+        }
+    }
 }
