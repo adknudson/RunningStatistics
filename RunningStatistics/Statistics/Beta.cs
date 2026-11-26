@@ -27,7 +27,7 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
     /// </summary>
     /// <param name="successes">The number of successes. Must be non-negative.</param>
     /// <param name="failures">The number of failures. Must be non-negative.</param>
-    public Beta(long successes, long failures)
+    internal Beta(long successes, long failures)
     {
         Require.NonNegative(successes);
         Require.NonNegative(failures);
@@ -81,6 +81,21 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
 
     protected override long GetNobs() => _a + _b;
     
+    public override void Fit(bool value)
+    {
+        checked
+        {
+            if (value)
+            {
+                _a++;
+            }
+            else
+            {
+                _b++;
+            }
+        }
+    }
+    
     public override void Fit(bool value, long count)
     {
         Require.NonNegative(count);
@@ -130,7 +145,9 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
     }
     
     public override Beta CloneEmpty() => new();
-    
+
+    public override Beta Clone() => new Beta(_a, _b);
+
     public override void Merge(Beta other)
     {
         checked
