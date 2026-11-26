@@ -12,20 +12,20 @@ Supports .NET Standard 2.0
 
 ## Statistics
 
-| Statistic     | Fits                                                                           | Reads out                                                                                          |
-|:--------------|:-------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------|
-| Mean          | `double`                                                                        | `Value`                                                                                              |
-| Sum           | `double`                                                                        | `Value`, `Mean()`                                                                                    |
-| Sum\<T\>      | any type implementing `IAdditionOperators` and `IAdditiveIdentity`              | `Value`                                                                                              |
-| Variance      | `double`                                                                        | `Value`, `StandardDeviation`                                                                         |
-| Extrema       | `double`                                                                        | `Min`, `Max`, `MinCount`, `MaxCount`                                                                 |
-| Extrema\<T\>  | any type implementing `IComparable<T>`                                          | same as `Extrema`                                                                                    |
-| Moments       | `double`                                                                        | `Mean`, `Variance`, `StandardDeviation`, `Skewness`, `Kurtosis`, `ExcessKurtosis`                     |
-| EmpiricalCdf  | `double`, into `numBins` bins (default 200)                                     | `Quantile(p)`, `Cdf(x)`, `Median`, `Min`, `Max`                                                      |
-| Histogram     | `double`, into bins given as `edges`                                            | `NumBins`, `Bins`, `Edges`, `OutOfBoundsCounts`, iteration over `Bin`s with `Lower`, `Upper`, `Nobs` |
-| CountMap\<T\> | any type                                                                        | `Count`, `Keys`, `Values`, `MinKey`, `MaxKey`, and read-only `Dictionary` access                     |
-| Normal        | `double`                                                                        | `Mean`, `Variance`, `StandardDeviation`, `Pdf(x)`, `Cdf(x)`, `Quantile(p)`                            |
-| Beta          | `bool`                                                                          | `Successes`, `Failures`, `Mean`, `Median`, `Mode`, `Variance`, `Pdf(x)`, `Cdf(x)`                     |
+| Statistic     | Fits                                                               | Reads out                                                                                            |
+|:--------------|:-------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------|
+| Mean          | `double`                                                           | `Value`                                                                                              |
+| Sum           | `double`                                                           | `Value`, `Mean()`                                                                                    |
+| Sum\<T\>      | any type implementing `IAdditionOperators` and `IAdditiveIdentity` | `Value`                                                                                              |
+| Variance      | `double`                                                           | `Value`, `StandardDeviation`                                                                         |
+| Extrema       | `double`                                                           | `Min`, `Max`, `MinCount`, `MaxCount`                                                                 |
+| Extrema\<T\>  | any type implementing `IComparable<T>`                             | same as `Extrema`                                                                                    |
+| Moments       | `double`                                                           | `Mean`, `Variance`, `StandardDeviation`, `Skewness`, `Kurtosis`, `ExcessKurtosis`                    |
+| EmpiricalCdf  | `double`, into `numBins` bins (default 200)                        | `NumBins`, `Quantile(p)`, `Cdf(x)`, `Median`, `Min`, `Max`                                           |
+| Histogram     | `double`, into bins given as `edges`                               | `NumBins`, `Bins`, `Edges`, `OutOfBoundsCounts`, iteration over `Bin`s with `Lower`, `Upper`, `Nobs` |
+| CountMap\<T\> | any type                                                           | `Count`, `Keys`, `Values`, `MinKey`, `MaxKey`, and read-only `Dictionary` access                     |
+| Normal        | `double`                                                           | `Mean`, `Variance`, `StandardDeviation`, `Pdf(x)`, `Cdf(x)`, `Quantile(p)`                           |
+| Beta          | `bool`                                                             | `Successes`, `Failures`, `Mean`, `Median`, `Mode`, `Variance`, `Pdf(x)`, `Cdf(x)`                    |
 
 ## Common Interface
 
