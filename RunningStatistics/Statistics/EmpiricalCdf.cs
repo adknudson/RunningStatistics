@@ -335,9 +335,29 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         // ReSharper disable once UseIndexFromEndExpression
         _values[_values.Length - 1] = Max;
         
-        // find the index of the first value greater than x
-        // The query sits between that value and the window value just before it.
-        var i = Array.FindIndex(_values, v => v > x);
+        // Upper-bound binary search for the index of the first value greater
+        // than x. The window between the stamped slots never decreases: each
+        // flush blends two sorted runs with one weight through the monotone
+        // Smooth, so equal-weight blends keep it sorted, and Min and Max
+        // bracket every window value. The stamped maximum at the tail sits
+        // above x, so a greater slot always exists and the search ends at the
+        // first one, the same index a full scan answers, duplicates included.
+        var low = 0;
+        var high = _values.Length - 1;
+        while (low < high)
+        {
+            var mid = low + (high - low) / 2;
+            if (_values[mid] > x)
+            {
+                high = mid;
+            }
+            else
+            {
+                low = mid + 1;
+            }
+        }
+
+        var i = low;
         
         // The query now lies between the window value just below it and the one above it.
         

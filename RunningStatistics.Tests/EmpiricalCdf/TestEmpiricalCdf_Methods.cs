@@ -1118,5 +1118,204 @@ public partial class TestEmpiricalCdf
                     PropertyHelpers.Describe("Cdf at the minimum vs the window fraction 1/27", 1.0 / 27.0, stat.Cdf(stat.Min)));
     }
 
+    // Precondition, pinned through the observable readouts. The
+    // stamped window (Min slot, the bins, Max slot) is private, but the CDF
+    // readouts may only read it as sorted: equal-weight blends of sorted
+    // flush windows with the monotone Smooth keep it non-decreasing, and a
+    // search instead of the linear scan is only legal while that holds. This
+    // gate asserts the same thing from outside: an increasing sweep of
+    // queries never makes Cdf walk backwards, and a growing probability
+    // never makes Quantile walk backwards. Duplicate-heavy streams carry
+    // equal window neighbors, the shape where an upper-bound search must
+    // agree with the scan's "first greater" contract.
+    [Fact]
+    public void Gate_EmpiricalCdfWindowNonDecreasingObservedAsMonotoneReadouts()
+    {
+        foreach (var bins in new[] { 2, 20, 200 })
+        {
+            var streams = new[]
+            {
+                PropertyHelpers.UniformUnit(bins * 6 + 20, 20261205L + bins),
+                PropertyHelpers.CancelingStream(120, 1e12, 20261206L + bins),
+                QuantizedGateStream(bins * 6 + 20, 20261207L + bins),
+                DuplicateHeavyGateStream(bins * 6 + 20),
+            };
+
+            foreach (var stream in streams)
+            {
+                if (bins > stream.Count) continue;
+                RunningStatistics.EmpiricalCdf stat = new(bins);
+                for (var i = 0; i < stream.Count; i++)
+                {
+                    stat.Fit(stream[i]);
+                }
+
+                Assert.True(stat.Nobs >= bins, $"the gate feeds at least one full window, got Nobs {stat.Nobs} below bins {bins}");
+
+                var sweep = GateQuerySweep(stat.Min, stat.Max, 60);
+                var previous = stat.Cdf(sweep[0]);
+                for (var i = 1; i < sweep.Count; i++)
+                {
+                    var at = stat.Cdf(sweep[i]);
+                    Assert.True(at >= previous,
+                        PropertyHelpers.Describe($"Cdf walked backwards at sweep query {sweep[i]}", previous, at));
+                    previous = at;
+                }
+
+                var previousQ = stat.Quantile(0.0);
+                for (var step = 1; step <= 40; step++)
+                {
+                    var p = step / 40.0;
+                    var q = stat.Quantile(p);
+                    Assert.True(q >= previousQ,
+                        PropertyHelpers.Describe($"Quantile walked backwards at p {p}", previousQ, q));
+                    previousQ = q;
+                }
+            }
+        }
+    }
+
+    private static List<double> DuplicateHeavyGateStream(int count)
+    {
+        var multiset = new double[] { 2.0, 3.0, 3.0, 5.0, 5.0, 5.0, 8.0, 8.0 };
+        var xs = new List<double>(count);
+        for (var i = 0; i < count; i++)
+        {
+            xs.Add(multiset[i % multiset.Length]);
+        }
+
+        return xs;
+    }
+
+    private static List<double> QuantizedGateStream(int count, long seed)
+    {
+        var snapped = new List<double>(count);
+        foreach (var u in PropertyHelpers.UniformUnit(count, seed))
+        {
+            snapped.Add(Math.Round(u * 10.0) / 10.0);
+        }
+
+        return snapped;
+    }
+
+    // The sweep the monotonicity gate walks: just below the minimum, the ends
+    // and evenly inside, one point above the maximum.
+    private static List<double> GateQuerySweep(double min, double max, int insideSteps)
+    {
+        var xs = new List<double>();
+        var spread = max - min;
+        var tail = spread > 0 ? spread : 1.0;
+        xs.Add(min - tail);
+        xs.Add(min);
+        for (var s = 1; s < insideSteps; s++)
+        {
+            xs.Add(min + spread * (s / (double)insideSteps));
+        }
+
+        xs.Add(max);
+        xs.Add(max + tail);
+        return xs;
+    }
+
+    // Cdf and Quantile must stay mutually inverse up to the window's own
+    // resolution. Quantile states position (NumBins + 1) p on the window;
+    // Cdf reports a position divided by NumBins + 2. The round trip
+    // Cdf(Quantile(p)) therefore sits at p (NumBins + 1) / (NumBins + 2), and
+    // on strictly interior uniform data it can sit no farther away: a search
+    // index error moves it by a whole window position, far above this budget.
+    // Duplicate-heavy streams may only push the trip upward across a plateau
+    // of equal window neighbors, so they get the one-sided lower budget.
+    [Fact]
+    public void Gate_EmpiricalCdfCdfInversesQuantileWithinWindowBudget()
+    {
+        var probs = new[] { 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95 };
+
+        foreach (var bins in new[] { 2, 20, 200 })
+        {
+            var len = bins + 2.0;
+            var expectedScale = bins + 1.0;
+
+            RunningStatistics.EmpiricalCdf uniform = new(bins);
+            foreach (var x in PropertyHelpers.UniformUnit(bins * 6 + 20, 20261208L + bins))
+            {
+                uniform.Fit(x);
+            }
+
+            foreach (var p in probs)
+            {
+                var q = uniform.Quantile(p);
+                var trip = uniform.Cdf(q);
+                var expected = p * expectedScale / len;
+                Assert.True(PropertyHelpers.WithinAbsolute(expected, trip, 1e-9),
+                            PropertyHelpers.Describe($"inverse trip Cdf(Quantile({p})) on uniform data at bins {bins}", expected, trip));
+                Assert.True(trip <= p + 1e-9,
+                    $"the inverse trip at p {p} on uniform data overshot to {trip} above p at bins {bins}");
+            }
+
+            RunningStatistics.EmpiricalCdf duplicated = new(bins);
+            foreach (var x in DuplicateHeavyGateStream(bins * 6 + 20))
+            {
+                duplicated.Fit(x);
+            }
+
+            foreach (var p in probs)
+            {
+                var q = duplicated.Quantile(p);
+                var trip = duplicated.Cdf(q);
+                var expected = p * expectedScale / len;
+                Assert.True(trip >= expected - 1e-9,
+                    PropertyHelpers.Describe($"inverse trip at p {p} fell below the window position budget at bins {bins}", expected, trip));
+            }
+        }
+    }
+
+    // Readout scaling audit for the CDF search. A Cdf query must cost about
+    // the same whether the histogram holds 200 bins or 2000: the upper-bound
+    // search pays log steps, so the tenfold bin growth moves the per-query
+    // time by little. The old full-array scan answered this ratio near 7 and
+    // now fails inside this band. The band carries the plan's meaning: the
+    // readout claim is "not slower" per query and flat scaling in bins.
+    [Fact]
+    public void Bench_EmpiricalCdfCdfQueryCostFlatInNumBins()
+    {
+        const int queries = 512;
+        const int repeats = 6;
+
+        var cost = new double[2];
+        foreach (var b in new[] { 0, 1 })
+        {
+            var bins = b == 0 ? 200 : 2000;
+            var data = PropertyHelpers.UniformUnit(bins * 4, 20261209L + bins);
+            RunningStatistics.EmpiricalCdf stat = new(bins);
+            for (var i = 0; i < data.Count; i++)
+            {
+                stat.Fit(data[i]);
+            }
+
+            var xs = GateQuerySweep(stat.Min, stat.Max, queries - 3);
+            cost[b] = BenchmarkHarness.Measure(
+                $"EmpiricalCdf.Cdf, bins {bins}, ns per query",
+                queries,
+                repeats,
+                () => {
+                    var sum = 0.0;
+                    for (var q = 0; q < queries; q++)
+                    {
+                        sum += stat.Cdf(xs[q]);
+                    }
+
+                    return sum;
+                });
+        }
+
+        var ratio = BenchmarkHarness.Compare(
+            "Cdf query cost, bins 2000 against bins 200",
+            cost[0],
+            cost[1]);
+        Assert.True(ratio >= 0.5 && ratio <= 1.5,
+            $"Cdf query cost ratio bins 2000/200 {ratio:F3} outside [0.5, 1.5] " +
+            $"({cost[1]:F4} vs {cost[0]:F4} ns/query): the query no longer stays flat in the bin count (re-gate; do not widen the band)");
+    }
+
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }
