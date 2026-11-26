@@ -34,13 +34,15 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     public double StandardDeviation => Nobs < 2 ? double.NaN : Math.Sqrt(Variance);
 
     /// <summary>
-    /// The third central moment is the measure of the lopsidedness of the distribution
+    /// The third central moment is the measure of the lopsidedness of the distribution.
+    /// This is the standardized sample skewness: it needs at least three observations, and
+    /// returns NaN below that limit, because two points cannot say which way they lean.
     /// </summary>
     public double Skewness
     {
         get
         {
-            if (Nobs < 2) return double.NaN;
+            if (Nobs < 3) return double.NaN;
 
             var n = (double)Nobs;
             var m2 = _c2 / n;
@@ -51,13 +53,14 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
 
     /// <summary>
     /// The fourth central moment is a measure of the heaviness of the tail of the distribution.
-    /// This is the non-excess (historical) kurtosis.
+    /// This is the non-excess (historical) kurtosis. It needs at least four observations, and
+    /// returns NaN below that limit: with three or fewer points there is no tail to weigh.
     /// </summary>
     public double Kurtosis
     {
         get
         {
-            if (Nobs < 2) return double.NaN;
+            if (Nobs < 4) return double.NaN;
 
             var n = (double)Nobs;
             var m2 = _c2 / n;

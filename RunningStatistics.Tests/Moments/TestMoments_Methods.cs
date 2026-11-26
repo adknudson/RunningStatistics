@@ -160,9 +160,24 @@ public partial class TestMoments
         Assert.Equal(1.5, m.Mean);
         Assert.Equal(0.5, m.Variance);
         Assert.Equal(0.7071067811865476, m.StandardDeviation, 10);
-        Assert.Equal(0, m.Skewness);
-        Assert.Equal(1, m.Kurtosis);
-        Assert.Equal(-2, m.ExcessKurtosis);
+        Assert.Equal(double.NaN, m.Skewness);
+        Assert.Equal(double.NaN, m.Kurtosis);
+        Assert.Equal(double.NaN, m.ExcessKurtosis);
+    }
+
+    // The convention needs three observations for sample skewness and four for sample
+    // kurtosis, so a three-observation fit answers skewness but leaves kurtosis NaN.
+    [Fact]
+    public void Fit_ThreeFiniteObservations()
+    {
+        RunningStatistics.Moments m = new();
+        m.Fit(1);
+        m.Fit(2);
+        m.Fit(4);
+
+        Assert.True(!double.IsNaN(m.Skewness));
+        Assert.Equal(double.NaN, m.Kurtosis);
+        Assert.Equal(double.NaN, m.ExcessKurtosis);
     }
     
     [Fact]
