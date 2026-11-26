@@ -48,10 +48,13 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
         checked { _nobs += count; }
         
         var mu = _mean;
+        // Fit validated count and returned on zero, so Nobs >= count > 0 and the weight
+        // count / Nobs is a ratio of non-negative counts in (0, 1]: blend unchecked,
+        // same bits as the guarded form.
         var g = (double) count / Nobs;
         
-        _mean = Utils.Smooth(_mean, value, g);
-        _variance = Utils.Smooth(_variance, (value - _mean) * (value - mu), g);
+        _mean = Utils.SmoothUnchecked(_mean, value, g);
+        _variance = Utils.SmoothUnchecked(_variance, (value - _mean) * (value - mu), g);
     }
 
     internal void UncheckedFit(List<double> values)
@@ -60,11 +63,13 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
 
         var mean = values.Average();
         var variance = ComputeVariance(values, mean);
+        // The batch is non-empty and Nobs absorbed its count, so values.Count / Nobs is
+        // a ratio of non-negative counts in (0, 1].
         var g = (double) values.Count / Nobs;
         var delta = _mean - mean;
 
-        _mean = Utils.Smooth(_mean, mean, g);
-        _variance = Utils.Smooth(_variance, variance, g) + delta * delta * g * (1 - g);
+        _mean = Utils.SmoothUnchecked(_mean, mean, g);
+        _variance = Utils.SmoothUnchecked(_variance, variance, g) + delta * delta * g * (1 - g);
     }
     
     public override void Reset()
@@ -82,11 +87,13 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
 
         if (Nobs == 0) return;
 
+        // Nobs is the merged count, at least variance.Nobs and positive, so variance.Nobs
+        // / Nobs is a ratio of non-negative counts in (0, 1].
         var g = (double) variance.Nobs / Nobs;
         var delta = _mean - variance._mean;
 
-        _mean = Utils.Smooth(_mean, variance._mean, g);
-        _variance = Utils.Smooth(_variance, variance._variance, g) + delta * delta * g * (1 - g);
+        _mean = Utils.SmoothUnchecked(_mean, variance._mean, g);
+        _variance = Utils.SmoothUnchecked(_variance, variance._variance, g) + delta * delta * g * (1 - g);
     }
     
     public static explicit operator double(Variance variance) => variance.Value;

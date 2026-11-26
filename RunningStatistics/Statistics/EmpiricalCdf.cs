@@ -117,14 +117,16 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         
         if (prefixEnd == numBins)
         {
-            // The prefix completed a window, so replay blends now.
+            // The prefix completed a window, so replay blends now. Completing the window
+            // has advanced Nobs to a positive multiple of numBins, so the blend weight
+            // numBins / Nobs lies in (0, 1] and needs no per-blend probability check.
             if (windowPos != 0)
             {
                 // The window mixes slots this call did not write, so replay sorts them.
                 Array.Sort(_buffer);
                 for (var k = 0; k < numBins; k++)
                 {
-                    valuesView[k] = Utils.Smooth(valuesView[k], _buffer[k], (double)numBins / Nobs);
+                    valuesView[k] = Utils.SmoothUnchecked(valuesView[k], _buffer[k], (double)numBins / Nobs);
                 }
             }
             else
@@ -133,7 +135,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
                 // and every sorted slot equals value.
                 for (var k = 0; k < numBins; k++)
                 {
-                    valuesView[k] = Utils.Smooth(valuesView[k], value, (double)numBins / Nobs);
+                    valuesView[k] = Utils.SmoothUnchecked(valuesView[k], value, (double)numBins / Nobs);
                 }
             }
         }
@@ -150,6 +152,8 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
             _extrema.Fit(value, windows * numBins);
             for (var j = 1L; j <= windows; j++)
             {
+                // The weight's denominator is flushed plus at least one window of
+                // observations, never below numBins, so alpha stays in (0, 1].
                 var alpha = (double)numBins / (flushed + j * (long)numBins);
                 for (var s = 0; s < numBins; s++)
                 {
@@ -158,7 +162,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
                 
                 for (var k = 0; k < numBins; k++)
                 {
-                    valuesView[k] = Utils.Smooth(valuesView[k], value, alpha);
+                    valuesView[k] = Utils.SmoothUnchecked(valuesView[k], value, alpha);
                 }
             }
             
@@ -186,9 +190,11 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         
         Array.Sort(_buffer);
         
+        // The flush fired only when the observation count reached a multiple of the
+        // bin count, so NumBins / Nobs is a weight in (0, 1].
         for (var k = 0; k < NumBins; k++)
         {
-            Values[k] = Utils.Smooth(Values[k], _buffer[k], (double) NumBins / Nobs);
+            Values[k] = Utils.SmoothUnchecked(Values[k], _buffer[k], (double) NumBins / Nobs);
         }
     }
 
@@ -247,9 +253,11 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
             if (i + 1 < NumBins) continue;
 
             Array.Sort(_buffer);
+            // A flush fires at a window's last slot, so the merged count is already at
+            // least NumBins here and the weight NumBins / Nobs stays in (0, 1].
             for (var k = 0; k < NumBins; k++)
             {
-                Values[k] = Utils.Smooth(Values[k], _buffer[k], (double) NumBins / Nobs);
+                Values[k] = Utils.SmoothUnchecked(Values[k], _buffer[k], (double) NumBins / Nobs);
             }
         }
     }
@@ -282,26 +290,28 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         }
 
         // The interpolation window: the minimum, the bins in order, then the maximum.
+        // p is a proven probability here, so i is non-negative and its fractional part
+        // r is in [0, 1): the three blends below may skip the probability check.
         var i = (NumBins - 1 + 2) * p;
         var r = i % 1; // fractional part of i
         
         // A position below the first bin interpolates between the minimum and the first bin.
         if (i < 1)
         {
-            return Utils.Smooth(Min, Values[0], r);
+            return Utils.SmoothUnchecked(Min, Values[0], r);
         }
         
         // A position past the last bin interpolates between the last bin and the maximum.
         if (i >= NumBins)
         {
             // ReSharper disable once UseIndexFromEndExpression
-            return Utils.Smooth(Values[Values.Length - 1], Max, r);
+            return Utils.SmoothUnchecked(Values[Values.Length - 1], Max, r);
         }
         
         // Otherwise the position falls between two neighboring bins. Interpolate between them.
         var fi = (int)Math.Floor(i) - 1;
         var ci = (int)Math.Ceiling(i) - 1;
-        return Utils.Smooth(Values[fi], Values[ci], r);
+        return Utils.SmoothUnchecked(Values[fi], Values[ci], r);
     }
 
     /// <summary>
@@ -362,10 +372,12 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         // The query now lies between the window value just below it and the one above it.
         
         // How far the query sits through that span, as a fraction of the span's width.
+        // The search left _values[i - 1] <= x < _values[i], so r is a non-negative gap
+        // over a not-smaller one: a fraction in [0, 1], blendable unchecked.
         var r = (x - _values[i - 1]) / (_values[i] - _values[i - 1]);
         
         // Interpolate between the two window positions and scale by the window length.
-        return Utils.Smooth(i - 1, i, r) / _values.Length;
+        return Utils.SmoothUnchecked(i - 1, i, r) / _values.Length;
     }
 
     public override string ToString() => base.ToString() + $" | NumBins={NumBins}, Min={Min}, Max={Max}";
