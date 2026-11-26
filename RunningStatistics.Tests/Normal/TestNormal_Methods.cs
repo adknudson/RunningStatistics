@@ -514,6 +514,61 @@ public partial class TestNormal
         return sum % 1_000_000.0;
     }
 
+    // The bands below are the AGENTS.md budgets, read against the real class.
+    // Do not widen a band to make a fact green.
+
+    [Fact]
+    public void Bench_StreamFitCostFlatInWorkingSet_Normal()
+    {
+        // Both sweeps fit single observations through the interface over one fixed-seed
+        // dataset. The 1k set stays in cache and shows the arithmetic; the 1M set models
+        // realistic streaming and is memory-bound. The inline update must stay flat in the
+        // working set, the same shape the Mean fact pins.
+        var smallData = PropertyHelpers.UniformUnit(1000, 20251126L);
+        var bigData = PropertyHelpers.UniformUnit(1_000_000, 20251126L);
+
+        var hotNs = BenchmarkHarness.StreamFit(() => new RunningStatistics.Normal(), smallData, 4);
+        var coldNs = BenchmarkHarness.StreamFit(() => new RunningStatistics.Normal(), bigData, 4);
+        var ratio = BenchmarkHarness.Compare(
+            "Normal StreamFit 1M over 1k working set, ns per observation",
+            hotNs,
+            coldNs);
+        Assert.True(ratio >= 0.5 && ratio <= 1.20,
+                    $"StreamFit 1M over 1k ratio {ratio:F3} outside [0.5, 1.20]: the hot loop got slower than the memory-bound one; re-gate, do not re-tune the band");
+    }
+
+    [Fact]
+    public void Bench_NormalWeightedFitIsPerCallCost()
+    {
+        // One weighted call per observation, against one single call per observation. The
+        // weighted path is O(1) in the count, so the two must stay within 20%.
+        var data = PropertyHelpers.UniformUnit(1000, 20251126L);
+        var fitNs = BenchmarkHarness.StreamFit(() => new RunningStatistics.Normal(), data, 4);
+        var weightedNs = BenchmarkHarness.WeightedFit(() => new RunningStatistics.Normal(), data, 1003, 4);
+        var ratio = BenchmarkHarness.Compare(
+            "Normal WeightedFit count=1003 over StreamFit, ns per observation",
+            fitNs,
+            weightedNs);
+        Assert.True(ratio >= 0.5 && ratio <= 1.20,
+                    $"WeightedFit over StreamFit ratio {ratio:F3} outside [0.5, 1.20]: the weighted path spends per-observation work; re-gate, do not re-tune the band");
+    }
+
+    [Fact]
+    public void Bench_NormalMergeIsPerChunkCost()
+    {
+        // Eight chunks merged one by one, against a straight stream. Merge is O(1) per
+        // chunk, so the two must stay within 20%.
+        var data = PropertyHelpers.UniformUnit(1000, 20251126L);
+        var fitNs = BenchmarkHarness.StreamFit(() => new RunningStatistics.Normal(), data, 4);
+        var mergeNs = BenchmarkHarness.MergeChunks(() => new RunningStatistics.Normal(), data, 8, 4);
+        var ratio = BenchmarkHarness.Compare(
+            "Normal MergeChunks 8 chunks over StreamFit, ns per observation",
+            fitNs,
+            mergeNs);
+        Assert.True(ratio >= 0.5 && ratio <= 1.20,
+                    $"MergeChunks over StreamFit ratio {ratio:F3} outside [0.5, 1.20]: merge spends per-observation work; re-gate, do not re-tune the band");
+    }
+
     // The audit gate for the Normal estimator on the one-sign condition-number family.
     // Normal composes the audited Mean and Variance, so the audit expects the margins the
     // sibling gates already recorded: a relative 1e-8 plus ten thousand times the
