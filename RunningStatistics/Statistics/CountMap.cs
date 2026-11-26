@@ -53,6 +53,12 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     public int Count => _dict.Count;
 
     /// <summary>
+    /// The number of unique observations that the map fitted. Same as
+    /// <see cref="Count"/>, but as a <c>long</c> instead.
+    /// </summary>
+    public long UniqueObs => _dict.Count;
+
+    /// <summary>
     /// Gets an enumerable collection of the keys in the count map.
     /// </summary>
     public IEnumerable<TObs> Keys => _dict.Keys;
