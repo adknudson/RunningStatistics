@@ -131,6 +131,35 @@ public partial class TestCountMap
         Assert.Equal(0.228, countMap.Skewness(), 3);
     }
 
+    // Sample skewness answers from three observations up, and sample kurtosis from four
+    // up; below those limits both return NaN, matching the Moments convention.
+    [Fact]
+    public void Skewness_Nbelow3IsNaN()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 1);
+        countMap.Fit(2, 1);
+
+        Assert.Equal(double.NaN, countMap.Skewness());
+
+        countMap.Fit(4, 1);
+        Assert.True(!double.IsNaN(countMap.Skewness()));
+    }
+
+    [Fact]
+    public void Kurtosis_Nbelow4IsNaN()
+    {
+        var countMap = new CountMap<int>();
+        countMap.Fit(1, 1);
+        countMap.Fit(2, 1);
+        countMap.Fit(4, 1);
+
+        Assert.Equal(double.NaN, countMap.Kurtosis());
+
+        countMap.Fit(8, 1);
+        Assert.True(!double.IsNaN(countMap.Kurtosis()));
+    }
+
     [Fact]
     public void Kurtosis_ReturnsCorrectKurtosis()
     {

@@ -178,28 +178,34 @@ public static partial class CountMapExtensions
     }
     
     /// <summary>
-    /// Compute the standardized skewness of a CountMap of integers.
+    /// Compute the standardized skewness of a CountMap of integers. Sample skewness needs
+    /// at least three observations and returns NaN below that limit.
     /// </summary>
     public static double Skewness(this CountMap<int> countMap, double mean, double variance)
     {
+        if (countMap.Nobs < 3) return double.NaN;
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 3) / countMap.Nobs);
     }
     
     /// <summary>
-    /// Compute the standardized skewness of a CountMap of longs.
+    /// Compute the standardized skewness of a CountMap of longs. Sample skewness needs
+    /// at least three observations and returns NaN below that limit.
     /// </summary>
     public static double Skewness(this CountMap<long> countMap, double mean, double variance)
     {
+        if (countMap.Nobs < 3) return double.NaN;
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 3) / countMap.Nobs);
     }
 
     /// <summary>
-    /// Compute the standardized skewness of a CountMap of doubles.
+    /// Compute the standardized skewness of a CountMap of doubles. Sample skewness needs
+    /// at least three observations and returns NaN below that limit.
     /// </summary>
     public static double Skewness(this CountMap<double> countMap, double mean, double variance)
     {
+        if (countMap.Nobs < 3) return double.NaN;
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 3) / countMap.Nobs);
     }
@@ -235,28 +241,34 @@ public static partial class CountMapExtensions
     }
     
     /// <summary>
-    /// Compute the kurtosis of a CountMap of integers.
+    /// Compute the kurtosis of a CountMap of integers. Sample kurtosis needs at least four
+    /// observations and returns NaN below that limit.
     /// </summary>
     public static double Kurtosis(this CountMap<int> countMap, double mean, double variance)
     {
+        if (countMap.Nobs < 4) return double.NaN;
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 4) / countMap.Nobs);
     }
 
     /// <summary>
-    /// Compute the kurtosis of a CountMap of longs.
+    /// Compute the kurtosis of a CountMap of longs. Sample kurtosis needs at least four
+    /// observations and returns NaN below that limit.
     /// </summary>
     public static double Kurtosis(this CountMap<long> countMap, double mean, double variance)
     {
+        if (countMap.Nobs < 4) return double.NaN;
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 4) / countMap.Nobs);
     }
 
     /// <summary>
-    /// Compute the kurtosis of a CountMap of doubles.
+    /// Compute the kurtosis of a CountMap of doubles. Sample kurtosis needs at least four
+    /// observations and returns NaN below that limit.
     /// </summary>
     public static double Kurtosis(this CountMap<double> countMap, double mean, double variance)
     {
+        if (countMap.Nobs < 4) return double.NaN;
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 4) / countMap.Nobs);
     }
