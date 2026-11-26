@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using MathNet.Numerics.Distributions;
 using Xunit;
 
@@ -439,20 +440,27 @@ public partial class TestMoments
     }
 
     // This gate is the audit coverage for the Moments readouts: it runs the existing KappaSweep
-    // datasets against the single-fit route, which is the only route Moments provides, and pins
-    // every getter of the four-moment contract against the two-pass PropertyHelpers reference.
+    // datasets against every route Moments provides, the single-fit replay loop, a fresh batch
+    // fitted with one collection call, and two stacked batch halves that drive the batch route's
+    // pairwise merge against existing state, and pins every getter of the four-moment contract
+    // against the two-pass PropertyHelpers reference.
     // The margins follow the merge gates above: a relative 1e-8 plus ten thousand times the
     // condition number times machine epsilon on mean, variance and standard deviation; an
     // absolute 1e-12 plus one thousand times the condition number times machine epsilon on the
     // standardized ratios. The audit run of 2026-11-19 recorded the worst errors this machine
-    // measured: the mean held within a relative 4.6E-16, the variance and standard deviation at
-    // a relative 2.87E-9 and 1.44E-9 at condition number 1e8, about 1.3 times the condition
-    // number times machine epsilon, and skewness and kurtosis at an absolute 3.12E-8 and 2.10E-8
-    // there, about 700 times inside the absolute margin. Deeper probes saw the spread getters
-    // keep growing near linearly in the condition number: a relative 1.39E-4 on variance at
-    // 1e12. The audit records no failure on this family, and no candidate is staged. A red
-    // Gate_ fact means the Chan update lost accuracy. Fix the algorithm, and do not widen a
-    // tolerance to make a fact pass. The datasets are seeded, so a failure reproduces.
+    // measured on the replay loop: the mean held within a relative 4.6E-16, the variance and
+    // standard deviation at a relative 2.87E-9 and 1.44E-9 at condition number 1e8, about 1.3
+    // times the condition number times machine epsilon, and skewness and kurtosis at an absolute
+    // 3.12E-8 and 2.10E-8 there, about 700 times inside the absolute margin. Deeper probes saw
+    // the loop's spread getters keep growing near linearly in the condition number: a relative
+    // 1.39E-4 on variance at 1e12. The batch route lands in the two-pass shape, so its error
+    // does not grow with the condition number: the 2026-11-26 audit recorded the fresh-batch
+    // mean, skewness, kurtosis and excess kurtosis exact at the last bit against the reference
+    // at every decade, and the fresh-batch variance at a worst relative 1.8E-16 across the
+    // eight decades. The two-half stacked batch, which drives the merge arithmetic against
+    // existing state, holds the same margins the merge gates already carry. A red
+    // Gate_ fact means one of the routes lost accuracy. Fix the algorithm, and do not widen
+    // a tolerance to make a fact pass. The datasets are seeded, so a failure reproduces.
     [Fact]
     public void Gate_MomentsKappaSweepWithinTolerance()
     {
@@ -470,6 +478,15 @@ public partial class TestMoments
             for (var i = 0; i < n; i++) loop.Fit(xs[i]);
 
             AssertMomentsAgainstReference($"loop at kappa {kappa:E0}", reference, loop, relTol, absTol);
+
+            var batch = new RunningStatistics.Moments();
+            batch.Fit(xs);
+            AssertMomentsAgainstReference($"batch at kappa {kappa:E0}", reference, batch, relTol, absTol);
+
+            var stacked = new RunningStatistics.Moments();
+            stacked.Fit(xs.Take(n / 2));
+            stacked.Fit(xs.Skip(n / 2));
+            AssertMomentsAgainstReference($"stacked batches at kappa {kappa:E0}", reference, stacked, relTol, absTol);
         }
     }
 
@@ -484,9 +501,11 @@ public partial class TestMoments
     // their scale is the huge terms' own powers, and the probe held variance and standard
     // deviation to within a relative 3.70E-16, and skewness, kurtosis and excess kurtosis to
     // an absolute 1.07E-14, all at margins of one hundred-millionth, about 2.7E7 times of
-    // headroom. No algorithm swap is queued yet, so this gate asserts the five spread readouts
-    // and leaves Mean to a future candidate, which must extend this gate once it lands. A red
-    // fact means the Chan update lost accuracy; fix the algorithm, do not widen a tolerance.
+    // headroom. The batch route of the collection Fit folds the canceling terms with the
+    // compensated average before it stores any state, so Mean joins the five spread readouts
+    // there: the swap of 2026-11-26 asserts all six getters against a fresh batch on the same
+    // seeded datasets at the same margins. A red fact means one route lost accuracy; fix the
+    // algorithm, do not widen a tolerance.
     [Fact]
     public void Gate_MomentsCancellationWithinTolerance()
     {
@@ -510,6 +529,23 @@ public partial class TestMoments
                         PropertyHelpers.Describe($"kurtosis at kappa {kappa:E0} vs reference", reference.Kurtosis, loop.Kurtosis));
             Assert.True(PropertyHelpers.WithinAbsolute(reference.ExcessKurtosis, loop.ExcessKurtosis, 1e-8),
                         PropertyHelpers.Describe($"excess kurtosis at kappa {kappa:E0} vs reference", reference.ExcessKurtosis, loop.ExcessKurtosis));
+
+            // The batch route claims what the incremental route cannot: the compensated
+            // fold lands on the exact block sums, so Mean is pinned on this family too.
+            var batch = new RunningStatistics.Moments();
+            batch.Fit(xs);
+            Assert.True(PropertyHelpers.Within(reference.Mean, batch.Mean, 1e-8),
+                        PropertyHelpers.Describe($"batch mean at kappa {kappa:E0} vs reference", reference.Mean, batch.Mean));
+            Assert.True(PropertyHelpers.Within(reference.Variance, batch.Variance, 1e-8),
+                        PropertyHelpers.Describe($"batch variance at kappa {kappa:E0} vs reference", reference.Variance, batch.Variance));
+            Assert.True(PropertyHelpers.Within(reference.StandardDeviation, batch.StandardDeviation, 1e-8),
+                        PropertyHelpers.Describe($"batch standard deviation at kappa {kappa:E0} vs reference", reference.StandardDeviation, batch.StandardDeviation));
+            Assert.True(PropertyHelpers.WithinAbsolute(reference.Skewness, batch.Skewness, 1e-8),
+                        PropertyHelpers.Describe($"batch skewness at kappa {kappa:E0} vs reference", reference.Skewness, batch.Skewness));
+            Assert.True(PropertyHelpers.WithinAbsolute(reference.Kurtosis, batch.Kurtosis, 1e-8),
+                        PropertyHelpers.Describe($"batch kurtosis at kappa {kappa:E0} vs reference", reference.Kurtosis, batch.Kurtosis));
+            Assert.True(PropertyHelpers.WithinAbsolute(reference.ExcessKurtosis, batch.ExcessKurtosis, 1e-8),
+                        PropertyHelpers.Describe($"batch excess kurtosis at kappa {kappa:E0} vs reference", reference.ExcessKurtosis, batch.ExcessKurtosis));
         }
     }
 
