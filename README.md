@@ -124,6 +124,12 @@ var q1 = ecdf.Quantile(0.25);
 - The `Extensions` classes add calls such as `beta.Pdf(x)` and `beta.Cdf(x)` for statistics
   like `Beta`.
 
+## Development
+
+Contributors and automated agents should read `AGENTS.md`, which carries the
+algorithm-improvement workflow, and `DEVELOPERS.md`, which defines the
+vocabulary the tests and plans use ("gate", "bench fact", "band", "κ-sweep").
+
 ## Credits
 
 Based on the Julia package [OnlineStats.jl](https://github.com/joshday/OnlineStats.jl)

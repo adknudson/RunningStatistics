@@ -1,7 +1,9 @@
 # AGENTS.md
 
 This file gives rules to automated contributors and to future sessions of this
-project. The rules cover work on the `RunningStatistics` library.
+project. The rules cover work on the `RunningStatistics` library. The file
+`DEVELOPERS.md` defines the vocabulary these rules and the test facts use:
+gate, bench fact, band, κ-sweep, staged candidate, replay.
 
 ## Algorithm improvements: benchmarking and regression gates
 
