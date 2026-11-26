@@ -53,6 +53,14 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     public int Count => _dict.Count;
 
     /// <summary>
+    /// The number of unique observations that the map fitted, read as a long like
+    /// <see cref="Nobs"/>. <see cref="Count"/> stays int to match the <c>Count</c>
+    /// properties of .NET container types; this is the same number on the wide
+    /// side, so callers that pair it with <c>Nobs</c> never convert.
+    /// </summary>
+    public long UniqueObs => _dict.Count;
+
+    /// <summary>
     /// Gets an enumerable collection of the keys in the count map.
     /// </summary>
     public IEnumerable<TObs> Keys => _dict.Keys;
