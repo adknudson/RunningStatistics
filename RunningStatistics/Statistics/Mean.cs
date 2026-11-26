@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace RunningStatistics;
 
@@ -44,29 +43,19 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
 
     public override void Fit(IEnumerable<double> values)
     {
-        var ys = values.ToList();
-        if (ys.Count == 0) return;
-        ys.ForEach(Require.Finite);
-        UncheckedFit(ys);
-    }
-    
-    internal void UncheckedFit(List<double> values)
-    {
-        checked { _nobs += values.Count; }
-        _value = Utils.Smooth(_value, BatchAverage(values), (double)values.Count / Nobs);
-    }
-
-    /// <summary>
-    /// The average of the batch the batch path blends in. The fold carries the correction
-    /// beside its total, one observation at a time, so a batch of canceling terms keeps the
-    /// ones a plain fold would drop once the running total's spacing exceeds them.
-    /// </summary>
-    internal double BatchAverage(List<double> values)
-    {
+        Require.NotNull(values);
+        // One pass over the iterable, no List and no copy: the fold carries the correction
+        // beside its total one observation at a time, so a batch of canceling terms keeps the
+        // ones a plain fold would drop once the running total's spacing exceeds them. Each
+        // value is checked before it is folded and the state is committed only after the whole
+        // batch passed validation, so a value rejected mid-batch leaves the statistic exactly
+        // as it was, and the count while folding supplies the weight the blend needs.
         var total = 0.0;
         var correction = 0.0;
+        var count = 0L;
         foreach (var x in values)
         {
+            Require.Finite(x);
             var t = total + x;
             // A saturated total would send infinities through the two-sum below and turn the
             // batch average into NaN, so the collection step is skipped there and the
@@ -82,9 +71,16 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
             }
 
             total = t;
+            count++;
         }
 
-        return (total + correction) / values.Count;
+        if (count == 0) return;
+        checked { _nobs += count; }
+        // The blend the batch path ran before: the batch weight over the merged count, and the
+        // batch average read once, so the state update matches to the last bit.
+        var g = (double)count / Nobs;
+        var prior = _value;
+        _value = prior + g * ((total + correction) / count - prior);
     }
 
     internal void UncheckedFit(double value, long count)

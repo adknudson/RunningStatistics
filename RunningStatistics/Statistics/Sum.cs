@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace RunningStatistics;
 
@@ -44,11 +43,39 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
 
     public override void Fit(IEnumerable<double> values)
     {
-        var xs = values.ToList();
-        if (xs.Count == 0) return;
-        xs.ForEach(Require.Finite);
-        checked { _nobs += xs.Count; }
-        foreach (var x in xs) Accumulate(x);
+        Require.NotNull(values);
+        // The fold works on locals and commits to state only after the whole batch passed
+        // validation. A value rejected mid-batch therefore leaves the statistic exactly as it
+        // was, the all-or-nothing contract the materialize-and-validate pattern gave without
+        // the List allocation, the copy, or the extra pass. The per-element two-sum below is
+        // the one in Accumulate, unchanged and in the same order, so the committed state is
+        // bit-identical to the two-pass path's.
+        var total = _total;
+        var correction = _correction;
+        var count = 0L;
+        foreach (var x in values)
+        {
+            Require.Finite(x);
+            var t = total + x;
+            // A saturated total would send infinities through the two-sum below and turn the
+            // readout into NaN, so the collection step is skipped there and the infinity stays.
+            if (Math.Abs(t) < double.PositiveInfinity)
+            {
+                // Knuth two-sum: these six operations return exactly the bits that the
+                // rounded addition above lost.
+                var bvirt = t - total;
+                var aver = t - bvirt;
+                correction += (total - aver) + (x - bvirt);
+            }
+
+            total = t;
+            count++;
+        }
+
+        if (count == 0) return;
+        checked { _nobs += count; }
+        _total = total;
+        _correction = correction;
     }
 
     private void Accumulate(double x)

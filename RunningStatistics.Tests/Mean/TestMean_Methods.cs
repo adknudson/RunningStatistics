@@ -289,6 +289,29 @@ public partial class TestMean
         Assert.Equal(2.5, filled.Value);
     }
 
+    [Fact]
+    public void BatchFit_NonFiniteElementThrowsStateUntouched()
+    {
+        // Fitting a collection of doubles checks every element before it adds anything, so
+        // a rejected call leaves the statistic exactly as it was. The counts and the mean
+        // read the same values the test saved before the call. The bad value sits at the
+        // front, the middle and the end of the batch.
+        var fresh = new RunningStatistics.Mean();
+        Assert.Throws<ArgumentException>(() => fresh.Fit(new double[] { 1.0, double.PositiveInfinity, 2.0 }));
+        Assert.Equal(0, fresh.Nobs);
+        Assert.Equal(double.NaN, fresh.Value);
+
+        var fitted = new RunningStatistics.Mean();
+        fitted.Fit(1.5, 3);
+        var nobsBefore = fitted.Nobs;
+        var valueBefore = fitted.Value;
+        Assert.Throws<ArgumentException>(() => fitted.Fit(new double[] { double.NegativeInfinity, 1.0 }));
+        Assert.Throws<ArgumentException>(() => fitted.Fit(new double[] { 1.0, double.NaN, 2.0 }));
+        Assert.Throws<ArgumentException>(() => fitted.Fit(new double[] { 1.0, double.PositiveInfinity }));
+        Assert.Equal(nobsBefore, fitted.Nobs);
+        Assert.Equal(valueBefore, fitted.Value);
+    }
+
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 
     // ---- Correctness gates and regression benches for Mean's batch fold ----
@@ -588,6 +611,10 @@ public partial class TestMean
         // one-million batch is not swept either: a raw fold with no interface dispatch
         // per observation costs about twice as much on a streaming 8 MB batch as on a
         // cache-resident one, and that memory-bound gap is not a regression in the fold.
+        // A second staging run, 2026-11-25, dropped the List copy and the separate
+        // validate pass: the single-pass batch fold cost 0.493 of the two-pass path at
+        // 1k batches (16.5 against 33.5 ns/obs) and 0.901 at 100k batches (13.3 against
+        // 14.8 ns/obs), on bit-identical state.
         var smallBatches = PropertyHelpers.UniformUnit(10_000, 20251126L);
         var bigBatches = PropertyHelpers.UniformUnit(100_000, 20251126L);
 

@@ -160,9 +160,11 @@ public partial class TestSum
     [Fact]
     public void BatchFit_NonFiniteElementThrowsStateUntouched()
     {
-        // Fitting a collection of doubles copies the collection and checks every element before
-        // it adds anything. A rejected call therefore leaves the statistic exactly as it was. The
-        // counts and the sum read the same values the test saved before the call.
+        // Fitting a collection of doubles checks every element before it adds anything, even
+        // when the batch folds in one pass: the fold works on locals and state is committed
+        // only after the whole batch passed validation. A rejected call therefore leaves the
+        // statistic exactly as it was. The counts and the sum read the same values the test
+        // saved before the call.
         var fresh = new RunningStatistics.Sum();
         Assert.Throws<ArgumentException>(() => fresh.Fit(new double[] { 1.0, double.PositiveInfinity, 2.0 }));
         Assert.Equal(0, fresh.Nobs);
@@ -479,6 +481,43 @@ public partial class TestSum
     }
 
     [Fact]
+    public void Bench_SumBatchFitCostFlatInBatchSize()
+    {
+        // The batch path folds the iterable directly, no List and no separate validate
+        // pass. The staging run of 2026-11-25 recorded the materialize-and-two-pass batch
+        // baseline: the single-pass candidate cost 0.445 of it at 1k batches (15.7 vs 35.3
+        // ns/obs) and 0.736 at 100k batches (15.0 vs 20.4 ns/obs), on bit-identical state.
+        // Both sides here process one million observations at cache-resident sizes: one
+        // hundred batches of ten thousand, against ten batches of one hundred thousand.
+        // Per-batch setup is amortized far enough on both sides, so the per-observation
+        // cost of the two sizes must stay within 20% of each other. A fold whose setup
+        // grew with the square of the batch size leaves this fact red. Small batches of
+        // one thousand are NOT swept here: their per-batch noise straddles the band on
+        // slower machines, the way the Sum getter noise straddles its band. A single
+        // one-million batch is not swept either: the memory-bound gap of an 8 MB batch
+        // is not a regression in the fold, the same reason the Mean twin skips it.
+        var smallBatches = PropertyHelpers.UniformUnit(10_000, 20251126L);
+        var bigBatches = PropertyHelpers.UniformUnit(100_000, 20251126L);
+
+        var smallNsPerObs = BenchmarkHarness.Measure(
+            "Sum batch fit, 100 batches of 10000, ns per observation",
+            1_000_000,
+            4,
+            () => SweepSumBatchFits(smallBatches, 100));
+        var bigNsPerObs = BenchmarkHarness.Measure(
+            "Sum batch fit, 10 batches of 100000, ns per observation",
+            1_000_000,
+            4,
+            () => SweepSumBatchFits(bigBatches, 10));
+        var ratio = BenchmarkHarness.Compare(
+            "Sum batch fit 100k batches over 10k batches, ns per observation",
+            smallNsPerObs,
+            bigNsPerObs);
+        Assert.True(ratio >= 0.5 && ratio <= 1.20,
+                    $"batch fit 100k over 10k ratio {ratio:F3} outside [0.5, 1.20]: the fold or its setup does not scale linearly with the batch; re-gate, do not re-tune the band");
+    }
+
+    [Fact]
     public void Bench_SumGetterCostIndependentOfNobs()
     {
         // One statistic sees 2 to the 62nd observations through 61 self merges; the other
@@ -585,6 +624,19 @@ public partial class TestSum
         {
             var copy = stat.Clone();
             s += copy.Nobs;
+        }
+
+        return s;
+    }
+
+    private static double SweepSumBatchFits(List<double> data, int passes)
+    {
+        var s = 0.0;
+        for (var p = 0; p < passes; p++)
+        {
+            var stat = new RunningStatistics.Sum();
+            stat.Fit(data);
+            s += stat.Nobs;
         }
 
         return s;
