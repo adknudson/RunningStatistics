@@ -4,20 +4,7 @@ using System.Collections.Generic;
 namespace RunningStatistics;
 
 /// <summary>
-/// Represents the average value of a series of numbers.
-///
-/// The single-value path blends the new observation into the running mean, which keeps the
-/// error near one epsilon of the mean. The batch path averages the batch first, and that
-/// average used to be a plain fold. A plain fold drops whole units once a term's spacing
-/// exceeds the running total: on canceling blocks whose terms pass 2^53, a plain fold of the
-/// batch reads zero where the exact batch average is a whole unit. This class folds the
-/// batch through the same branch-free two-sum the Sum class uses, so the batch average keeps
-/// the low-order bits a rounded addition drops. The correction lives only inside one batch
-/// fold, so the state stays two fields.
-///
-/// The step that collects those bits is skipped once the batch total saturates to an
-/// infinity, because its subtraction means nothing there. A saturated batch then averages to
-/// that infinity, which is what the plain fold did before.
+/// The running mean of the observations fitted so far.
 /// </summary>
 public sealed class Mean : RunningStatisticBase<double, Mean>
 {

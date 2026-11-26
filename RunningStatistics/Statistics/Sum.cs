@@ -4,19 +4,7 @@ using System.Collections.Generic;
 namespace RunningStatistics;
 
 /// <summary>
-/// Represents a running sum of observations.
-///
-/// The sum keeps a correction next to its running total. Each observation goes in through a
-/// branch-free two-sum, which returns the low-order bits that the rounded addition dropped;
-/// the readout adds those bits back. The error therefore stays near one epsilon of the
-/// running totals, instead of growing with the number of observations. A plain fold loses
-/// whole units once a term's spacing exceeds the size of the answer, which is where this
-/// class keeps them: on canceling blocks whose terms pass 2^53, a plain fold reads zero
-/// where the exact answer is the count of the small terms.
-///
-/// The step that collects those bits is skipped once the running total saturates to an
-/// infinity, because its subtraction means nothing there. A saturated total then reads back
-/// as that infinity, which is what the plain accumulation did before.
+/// The running sum of the observations fitted so far.
 /// </summary>
 public sealed class Sum : RunningStatisticBase<double, Sum>
 {
