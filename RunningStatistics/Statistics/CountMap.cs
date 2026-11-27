@@ -17,7 +17,7 @@ namespace RunningStatistics;
 public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>, IReadOnlyDictionary<TObs, long> 
     where TObs : notnull
 {
-    private readonly Dictionary<TObs, long> _dict = new();
+    private readonly Dictionary<TObs, long> _dict = [];
     private long _nobs;
 
 
@@ -64,6 +64,40 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// Gets an enumerable collection of the keys in the count map.
     /// </summary>
     public IEnumerable<TObs> Keys => _dict.Keys;
+    
+    /// <summary>
+    /// Gets the minimum key in the count map, ordered by the comparer the map was built with.
+    /// </summary>
+    /// <remarks>
+    /// An empty map has no minimum key, and a generic key type has no NaN to stand in, so the
+    /// property throws in that case, the counterpart of the NaN readouts on numeric statistics.
+    /// Use <see cref="TryGetMinKey(out TObs)"/> when a non-throwing read is needed, or the
+    /// two-argument overload that takes a comparer when the keys need another ordering;
+    /// LINQ's comparer form over <see cref="Keys"/> does the same order scan in one call.
+    /// </remarks>
+    /// <exception cref="KeyNotFoundException">
+    /// Thrown if the count map is empty and no minimum key exists.
+    /// </exception>
+    public TObs MinKey => TryGetMinKey(out var min)
+        ? min
+        : throw new KeyNotFoundException("The minimum key does not exist.");
+
+    /// <summary>
+    /// Gets the maximum key in the count map, ordered by the comparer the map was built with.
+    /// </summary>
+    /// <remarks>
+    /// An empty map has no maximum key, and a generic key type has no NaN to stand in, so the
+    /// property throws in that case, the counterpart of the NaN readouts on numeric statistics.
+    /// Use <see cref="TryGetMaxKey(out TObs)"/> when a non-throwing read is needed, or the
+    /// two-argument overload that takes a comparer when the keys need another ordering;
+    /// LINQ's comparer form over <see cref="Keys"/> does the same order scan in one call.
+    /// </remarks>
+    /// <exception cref="KeyNotFoundException">
+    /// Thrown if the count map is empty and no maximum key exists.
+    /// </exception>
+    public TObs MaxKey => TryGetMaxKey(out var max)
+        ? max
+        : throw new KeyNotFoundException("The maximum key does not exist.");
 
     /// <summary>
     /// Gets an enumerable collection of the values in the count map.
@@ -74,6 +108,52 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// Gets the value comparer used for ordering observations.
     /// </summary>
     public IComparer<TObs>? Comparer { get; }
+    
+    /// <summary>
+    /// Gets the observation with the highest count.
+    /// </summary>
+    /// <remarks>
+    /// The map's own iteration order decides which observation is reported when several share
+    /// the highest count, exactly as it did while this read was the
+    /// <c>CountMapExtensions.Mode</c> extension method.
+    /// </remarks>
+    /// <exception cref="Exception">Thrown when the count map has no observations. The mode does not exist.</exception>
+    public TObs Mode
+    {
+        get
+        {
+            if (Nobs == 0)
+            {
+                throw new Exception("Nobs = 0. The mode does not exist.");
+            }
+
+            TObs? mode = default;
+            var maxCount = 0L;
+
+            foreach (var kvp in this)
+            {
+                if (kvp.Value <= maxCount) continue;
+                mode = kvp.Key;
+                maxCount = kvp.Value;
+            }
+
+            return mode ?? throw new NullReferenceException();
+        }
+    }
+    
+    /// <summary>
+    /// Gets the median of a CountMap, that is the result of <c>Quantile(0.5)</c>.
+    /// </summary>
+    /// <remarks>
+    /// This method uses the comparer associated with the CountMap. If the CountMap
+    /// has no comparer, the method uses the default comparer instead. A caller
+    /// that needs to order the keys with another comparer reads
+    /// <c>Quantile(0.5, comparer)</c> instead: a property cannot sit beside a
+    /// same-named method, so the comparer-taking median overload has no member
+    /// of its own.
+    /// </remarks>
+    /// <returns>The median of the count map.</returns>
+    public TObs Median => Quantile(0.5);
 
     
     protected override long GetNobs() => _nobs;
@@ -121,22 +201,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     
     public bool TryGetValue(TObs key, out long value) => _dict.TryGetValue(key, out value);
 
-    /// <summary>
-    /// Gets the minimum key in the count map, ordered by the comparer the map was built with.
-    /// </summary>
-    /// <remarks>
-    /// An empty map has no minimum key, and a generic key type has no NaN to stand in, so the
-    /// property throws in that case, the counterpart of the NaN readouts on numeric statistics.
-    /// Use <see cref="TryGetMinKey(out TObs)"/> when a non-throwing read is needed, or the
-    /// two-argument overload that takes a comparer when the keys need another ordering;
-    /// LINQ's comparer form over <see cref="Keys"/> does the same order scan in one call.
-    /// </remarks>
-    /// <exception cref="KeyNotFoundException">
-    /// Thrown if the count map is empty and no minimum key exists.
-    /// </exception>
-    public TObs MinKey => TryGetMinKey(out var min)
-        ? min
-        : throw new KeyNotFoundException("The minimum key does not exist.");
+    
     
     /// <summary>
     /// Stores the minimum key in the count map in the given reference and reports whether one
@@ -181,23 +246,6 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     public bool TryGetMinKey(out TObs key) => TryGetMinKey(Comparer, out key);
     
     /// <summary>
-    /// Gets the maximum key in the count map, ordered by the comparer the map was built with.
-    /// </summary>
-    /// <remarks>
-    /// An empty map has no maximum key, and a generic key type has no NaN to stand in, so the
-    /// property throws in that case, the counterpart of the NaN readouts on numeric statistics.
-    /// Use <see cref="TryGetMaxKey(out TObs)"/> when a non-throwing read is needed, or the
-    /// two-argument overload that takes a comparer when the keys need another ordering;
-    /// LINQ's comparer form over <see cref="Keys"/> does the same order scan in one call.
-    /// </remarks>
-    /// <exception cref="KeyNotFoundException">
-    /// Thrown if the count map is empty and no maximum key exists.
-    /// </exception>
-    public TObs MaxKey => TryGetMaxKey(out var max)
-        ? max
-        : throw new KeyNotFoundException("The maximum key does not exist.");
-    
-    /// <summary>
     /// Stores the maximum key in the count map in the given reference and reports whether one
     /// exists. The method does not throw for an empty map.
     /// </summary>
@@ -237,38 +285,6 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// <returns>True when the map holds at least one key, false when it is empty.</returns>
     public bool TryGetMaxKey(out TObs key) => TryGetMaxKey(Comparer, out key);
     
-    /// <summary>
-    /// Gets the observation with the highest count.
-    /// </summary>
-    /// <remarks>
-    /// The map's own iteration order decides which observation is reported when several share
-    /// the highest count, exactly as it did while this read was the
-    /// <c>CountMapExtensions.Mode</c> extension method.
-    /// </remarks>
-    /// <exception cref="Exception">Thrown when the count map has no observations. The mode does not exist.</exception>
-    public TObs Mode
-    {
-        get
-        {
-            if (Nobs == 0)
-            {
-                throw new Exception("Nobs = 0. The mode does not exist.");
-            }
-
-            TObs? mode = default;
-            var maxCount = 0L;
-
-            foreach (var kvp in this)
-            {
-                if (kvp.Value <= maxCount) continue;
-                mode = kvp.Key;
-                maxCount = kvp.Value;
-            }
-
-            return mode ?? throw new NullReferenceException();
-        }
-    }
-
     /// <summary>
     /// Gets the p-th quantile of a CountMap, with the keys ordered by the given comparer.
     /// If <c>p</c> is less than or equal to 0, the method returns the minimum key.
@@ -343,20 +359,6 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// has no comparer, the method uses the default comparer instead.
     /// </remarks>
     public TObs Quantile(double p) => Quantile(p, Comparer);
-
-    /// <summary>
-    /// Gets the median of a CountMap, that is the result of <c>Quantile(0.5)</c>.
-    /// </summary>
-    /// <remarks>
-    /// This method uses the comparer associated with the CountMap. If the CountMap
-    /// has no comparer, the method uses the default comparer instead. A caller
-    /// that needs to order the keys with another comparer reads
-    /// <c>Quantile(0.5, comparer)</c> instead: a property cannot sit beside a
-    /// same-named method, so the comparer-taking median overload has no member
-    /// of its own.
-    /// </remarks>
-    /// <returns>The median of the count map.</returns>
-    public TObs Median => Quantile(0.5);
 
     public IEnumerator<KeyValuePair<TObs, long>> GetEnumerator() => _dict.GetEnumerator();
 

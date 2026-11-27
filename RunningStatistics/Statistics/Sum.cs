@@ -16,6 +16,15 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
     /// The current sum of the observations.
     /// </summary>
     public double Value => _total + _correction;
+    
+    /// <summary>
+    /// The mean of the observations fitted so far.
+    /// </summary>
+    /// <remarks>
+    /// With nothing fitted, the mean is undefined, and a double readout has NaN to stand in,
+    /// so the property returns <see cref="double.NaN"/> instead of throwing.
+    /// </remarks>
+    public double Mean => Nobs > 0 ? Value / Nobs : double.NaN;
 
 
     protected override long GetNobs() => _nobs;
@@ -102,15 +111,6 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
         // plain addition folds it in; only the two-sum above contributes exact bits.
         _correction += sum._correction;
     }
-
-    /// <summary>
-    /// The mean of the observations fitted so far.
-    /// </summary>
-    /// <remarks>
-    /// With nothing fitted, the mean is undefined, and a double readout has NaN to stand in,
-    /// so the property returns <see cref="double.NaN"/> instead of throwing.
-    /// </remarks>
-    public double Mean => Nobs > 0 ? Value / Nobs : double.NaN;
 
     public override string ToString() => base.ToString() + $" | Σ={Value}";
 }
