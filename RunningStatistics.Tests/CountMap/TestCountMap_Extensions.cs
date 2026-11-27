@@ -298,7 +298,7 @@ public partial class TestCountMap
         countMap.Fit(new MyNum(2), 3);
         countMap.Fit(new MyNum(3), 1);
 
-        Assert.Equal(new MyNum(1), countMap.MinKey());
+        Assert.Equal(new MyNum(1), countMap.MinKey);
     }
 
     [Fact]
@@ -309,7 +309,7 @@ public partial class TestCountMap
         countMap.Fit(new MyNum(2), 3);
         countMap.Fit(new MyNum(3), 1);
 
-        Assert.Equal(new MyNum(3), countMap.MaxKey());
+        Assert.Equal(new MyNum(3), countMap.MaxKey);
     }
 
     [Fact]

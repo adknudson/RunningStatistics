@@ -122,36 +122,21 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     public bool TryGetValue(TObs key, out long value) => _dict.TryGetValue(key, out value);
 
     /// <summary>
-    /// Finds the minimum key in the count map.
+    /// Gets the minimum key in the count map, ordered by the comparer the map was built with.
     /// </summary>
     /// <remarks>
     /// An empty map has no minimum key, and a generic key type has no NaN to stand in, so the
-    /// method throws in that case, the counterpart of the NaN readouts on numeric statistics.
-    /// Use <see cref="TryGetMinKey(out TObs)"/> when a non-throwing read is needed.
+    /// property throws in that case, the counterpart of the NaN readouts on numeric statistics.
+    /// Use <see cref="TryGetMinKey(out TObs)"/> when a non-throwing read is needed, or the
+    /// two-argument overload that takes a comparer when the keys need another ordering;
+    /// LINQ's comparer form over <see cref="Keys"/> does the same order scan in one call.
     /// </remarks>
-    /// <param name="comparer">The comparer to use for finding the minimum key.
-    /// If null, the method uses the default comparer.</param>
-    /// <returns>The minimum key in the count map, if any exist.</returns>
     /// <exception cref="KeyNotFoundException">
     /// Thrown if the count map is empty and no minimum key exists.
     /// </exception>
-    public TObs MinKey(IComparer<TObs>? comparer)
-    {
-        if (TryGetMinKey(comparer, out var min))
-        {
-            return min;
-        }
-        throw new KeyNotFoundException("The minimum key does not exist.");
-    }
-    
-    /// <summary>
-    /// Finds the minimum key in the count map.
-    /// </summary>
-    /// <returns>The minimum key in the count map, if any exist.</returns>
-    /// <exception cref="KeyNotFoundException">
-    /// Thrown if the count map is empty and no minimum key exists.
-    /// </exception>
-    public TObs MinKey() => MinKey(Comparer);
+    public TObs MinKey => TryGetMinKey(out var min)
+        ? min
+        : throw new KeyNotFoundException("The minimum key does not exist.");
     
     /// <summary>
     /// Stores the minimum key in the count map in the given reference and reports whether one
@@ -196,36 +181,21 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     public bool TryGetMinKey(out TObs key) => TryGetMinKey(Comparer, out key);
     
     /// <summary>
-    /// Finds the maximum key in the count map.
+    /// Gets the maximum key in the count map, ordered by the comparer the map was built with.
     /// </summary>
     /// <remarks>
     /// An empty map has no maximum key, and a generic key type has no NaN to stand in, so the
-    /// method throws in that case, the counterpart of the NaN readouts on numeric statistics.
-    /// Use <see cref="TryGetMaxKey(out TObs)"/> when a non-throwing read is needed.
+    /// property throws in that case, the counterpart of the NaN readouts on numeric statistics.
+    /// Use <see cref="TryGetMaxKey(out TObs)"/> when a non-throwing read is needed, or the
+    /// two-argument overload that takes a comparer when the keys need another ordering;
+    /// LINQ's comparer form over <see cref="Keys"/> does the same order scan in one call.
     /// </remarks>
-    /// <param name="comparer">The comparer to use for finding the maximum key.
-    /// If null, the method uses the default comparer.</param>
-    /// <returns>The maximum key in the count map, if any exist.</returns>
     /// <exception cref="KeyNotFoundException">
     /// Thrown if the count map is empty and no maximum key exists.
     /// </exception>
-    public TObs MaxKey(IComparer<TObs>? comparer)
-    {
-        if (TryGetMaxKey(comparer, out var max))
-        {
-            return max;
-        }
-        throw new KeyNotFoundException("The maximum key does not exist.");
-    }
-    
-    /// <summary>
-    /// Finds the maximum key in the count map.
-    /// </summary>
-    /// <returns>The maximum key in the count map, if any exist.</returns>
-    /// <exception cref="KeyNotFoundException">
-    /// Thrown if the count map is empty and no maximum key exists.
-    /// </exception>
-    public TObs MaxKey() => MaxKey(Comparer);
+    public TObs MaxKey => TryGetMaxKey(out var max)
+        ? max
+        : throw new KeyNotFoundException("The maximum key does not exist.");
     
     /// <summary>
     /// Stores the maximum key in the count map in the given reference and reports whether one
@@ -333,11 +303,10 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
             throw new Exception("The count map is empty. The quantile does not exist.");
         }
 
-        // These read the same end keys as the old extension body did through MinKey/MaxKey,
-        // but through the non-throwing helpers: this class's MinKey/MaxKey are being
-        // reworked in a later commit, and the helpers keep this method independent of
-        // how those reads throw. The empty case was rejected above, so the fall-through
-        // below still throws the KeyNotFoundException the old MinKey/MaxKey calls did.
+        // The end keys come through the non-throwing helpers rather than through the MinKey
+        // and MaxKey readouts, so this scan does not depend on how those readouts report a
+        // missing extreme. The empty map is rejected above, so the helpers cannot fail here;
+        // the fall-through still throws the KeyNotFoundException the old extension body did.
         if (p <= 0)
         {
             if (TryGetMinKey(comparer, out var minKey)) return minKey;

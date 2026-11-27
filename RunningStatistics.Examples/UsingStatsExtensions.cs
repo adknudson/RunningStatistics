@@ -12,11 +12,11 @@ public static class UsingStatsExtensions
         var mCountMap = new CountMap<decimal>();
         var xCountMap = new CountMap<MyNum>();
 
-        var iMin = iCountMap.MinKey();
-        var xMin = xCountMap.MinKey();
+        var iMin = iCountMap.MinKey;
+        var xMin = xCountMap.MinKey;
 
-        var iMax = iCountMap.MaxKey();
-        var xMax = xCountMap.MaxKey();
+        var iMax = iCountMap.MaxKey;
+        var xMax = xCountMap.MaxKey;
         
         var iS = iCountMap.Sum();
         var lS = lCountMap.Sum();
