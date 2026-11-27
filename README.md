@@ -120,9 +120,11 @@ var q1 = ecdf.Quantile(0.25);
   holds observations, and other statistics have their own thresholds. One exception: `Sum.Value`
   returns 0 when nothing is fitted, because an empty sum is defined.
 - Statistics over generic observation types have no `NaN` to return. `Extrema<T>.Min` and
-  `Max` throw `InvalidOperationException`, and `CountMap<T>.MinKey` and `MaxKey` throw
-  `KeyNotFoundException` when nothing is fitted. `TryGetMin`/`TryGetMax` and `TryGetMinKey`/`TryGetMaxKey`
-  read the same values without throwing.
+  `Max` throw `InvalidOperationException`, and `CountMap<T>.MinKey`, `MaxKey`, `Mode` and
+  `Quantile(p)` throw `KeyNotFoundException` when nothing is fitted. `TryGetMin`/`TryGetMax` and
+  `TryGetMinKey`/`TryGetMaxKey` read the same values without throwing. `Sum<decimal>` has
+  no `NaN` either: its `Mean` throws `InvalidOperationException` while no observations are
+  fitted, where the `int`, `long` and `double` overloads answer `NaN`.
 - Input guards differ by statistic, and the difference is deliberate. `Mean`, `Sum`, `Variance`,
   `Normal`, `Moments` and `EmpiricalCdf` require every observation to be finite: `NaN` or ±Infinity
   throws `ArgumentException`. `Extrema` and `Histogram` take ±Infinity, because a minimum, a

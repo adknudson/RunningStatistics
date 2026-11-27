@@ -117,27 +117,35 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// the highest count, exactly as it did while this read was the
     /// <c>CountMapExtensions.Mode</c> extension method.
     /// </remarks>
-    /// <exception cref="Exception">Thrown when the count map has no observations. The mode does not exist.</exception>
+    /// <exception cref="KeyNotFoundException">Thrown when the count map is empty and no mode key exists.</exception>
     public TObs Mode
     {
         get
         {
             if (Nobs == 0)
             {
-                throw new Exception("Nobs = 0. The mode does not exist.");
+                throw new KeyNotFoundException("The count map is empty. The mode does not exist.");
             }
 
             TObs? mode = default;
             var maxCount = 0L;
+            var found = false;
 
             foreach (var kvp in this)
             {
                 if (kvp.Value <= maxCount) continue;
                 mode = kvp.Key;
                 maxCount = kvp.Value;
+                found = true;
             }
 
-            return mode ?? throw new NullReferenceException();
+            // A non-empty map has at least one key whose positive count beats the starting
+            // count of zero, so the scan always finds one and this fallback is defensive
+            // only. The found flag, rather than a null test on mode, also lets a null key
+            // be the mode when the key type allows null keys.
+            return found
+                ? mode!
+                : throw new InvalidOperationException("The mode scan found no key in a non-empty count map.");
         }
     }
     
@@ -309,14 +317,17 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// <param name="comparer">The comparer to use for ordering the keys.
     /// If null, the method uses the default comparer.</param>
     /// <returns>The p-th quantile of the count map.</returns>
-    /// <exception cref="Exception">
-    /// Thrown if the count map is empty or if the quantile cannot be found.
+    /// <exception cref="KeyNotFoundException">
+    /// Thrown if the count map is empty and no quantile key exists.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown if the ordered scan finds no key, an unexpected internal state.
     /// </exception>
     public TObs Quantile(double p, IComparer<TObs>? comparer)
     {
         if (Nobs == 0)
         {
-            throw new Exception("The count map is empty. The quantile does not exist.");
+            throw new KeyNotFoundException("The count map is empty. The quantile does not exist.");
         }
 
         // The end keys come through the non-throwing helpers rather than through the MinKey
@@ -343,8 +354,10 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
             if (cdf >= p) return kvp.Key;
         }
 
-        // This should be unreachable...
-        throw new Exception($"Not able to find the {p} quantile of the count map.");
+        // The scan visits every key and the cumulative frequency ends at one, so this
+        // point should be unreachable: a bare Exception here would hide a broken scan
+        // invariant behind a type no caller could catch specifically anyway.
+        throw new InvalidOperationException($"Not able to find the {p} quantile of the count map.");
     }
 
     /// <summary>

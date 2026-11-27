@@ -33,7 +33,16 @@ public static class GenericSumExtensions
     /// <summary>
     /// Calculate the average of the sum of <see cref="decimal"/>s.
     /// </summary>
-    /// <exception cref="DivideByZeroException">Thrown when the number of observations is zero.</exception>
+    /// <remarks>
+    /// The empty convention across the numeric overloads: an undefined readout of an
+    /// empty statistic answers <see cref="double.NaN"/> where the result type can hold
+    /// it, and throws a specific exception where it cannot. <c>decimal</c> has no NaN,
+    /// so this overload throws <see cref="InvalidOperationException"/> while the sum
+    /// has no observations, the same exception an empty <c>Extrema&lt;T&gt;.Min</c>
+    /// throws. It does not throw <c>DivideByZeroException</c>: the method rejects the
+    /// empty state before any division, so no division by zero ever runs.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Thrown when the number of observations is zero.</exception>
     public static decimal Mean(this Sum<decimal> sum)
     {
         if (sum.Nobs > 0)
@@ -41,7 +50,7 @@ public static class GenericSumExtensions
             return sum.Value / sum.Nobs;
         }
         
-        throw new DivideByZeroException("Average is undefined when the number of observations is zero.");
+        throw new InvalidOperationException("Average is undefined when the number of observations is zero.");
     }
     
     // There is no average for an arbitrary observation type. One would have to ask the type

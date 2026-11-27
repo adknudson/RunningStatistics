@@ -160,7 +160,7 @@ public class TestSumGenericMethods_Decimal : TestSumGenericMethods<decimal>
     protected override decimal From(int value) => value;
 
     [Fact] public void Mean_NoNumbers_Throws()
-        => Assert.Throws<DivideByZeroException>(() => new Sum<decimal>().Mean());
+        => Assert.Throws<InvalidOperationException>(() => new Sum<decimal>().Mean());
 
     [Fact] public void Mean_SingleNumber()
     {

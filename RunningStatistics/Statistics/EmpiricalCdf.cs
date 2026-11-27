@@ -229,7 +229,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     /// <see cref="InexactMerge" /> instead, which resamples the source's quantile curve
     /// onto this object's bin grid.
     /// </remarks>
-    /// <exception cref="Exception">Thrown when the other empirical CDF has a different
+    /// <exception cref="ArgumentException">Thrown when the other empirical CDF has a different
     /// number of bins. This empirical CDF keeps its state when the merge throws.</exception>
     public override void Merge(EmpiricalCdf empiricalCdf)
     {
@@ -238,8 +238,10 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         // to InexactMerge, not to a half-applied merge here.
         if (NumBins != empiricalCdf.NumBins)
         {
-            throw new Exception($"The two {nameof(EmpiricalCdf)} objects must have the same batch size. " +
-                                $"Got {NumBins} and {empiricalCdf.NumBins}.");
+            throw new ArgumentException(
+                $"The two {nameof(EmpiricalCdf)} objects must have the same bin count. " +
+                $"Got {NumBins} and {empiricalCdf.NumBins}.",
+                nameof(empiricalCdf));
         }
 
         // Only observations fully flushed into each object's Values array may carry
