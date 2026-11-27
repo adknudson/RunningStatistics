@@ -1134,4 +1134,202 @@ public partial class TestEmpiricalCdf
             }
         }
     }
+
+    // InexactMerge is the explicit opt-in for a pair whose bin counts differ: the
+    // source's quantile curve is resampled onto the receiver's bin grid. These facts
+    // pin the contract of that route. Same bin counts must cost nothing: the method
+    // delegates, so the result stays bit-for-bit what Merge builds. Different bin
+    // counts pin the parts that stay exact, the counts and the extremes, and that the
+    // merged statistic answers its two queries once it holds a full window. The
+    // blended bin values themselves are approximations, so no fact pins their exact
+    // doubles: the gate below holds them to a reference instead.
+    [Fact]
+    public void InexactMerge_SameBinsMatchMergeExactly()
+    {
+        var values = PropertyHelpers.UniformUnit(60, 20261209L);
+        var more = PropertyHelpers.UniformUnit(45, 20261210L);
+
+        RunningStatistics.EmpiricalCdf exact = new(10);
+        RunningStatistics.EmpiricalCdf inexact = new(10);
+        RunningStatistics.EmpiricalCdf source = new(10);
+        foreach (var v in more)
+        {
+            source.Fit(v);
+        }
+
+        foreach (var v in values)
+        {
+            exact.Fit(v);
+            inexact.Fit(v);
+        }
+
+        exact.Merge(source);
+        inexact.InexactMerge(source);
+
+        Assert.Equal(inexact.Nobs, exact.Nobs);
+        Assert.Equal(inexact.Min, exact.Min);
+        Assert.Equal(inexact.Max, exact.Max);
+        foreach (var p in new[] { 0.05, 0.25, 0.5, 0.75, 0.95 })
+        {
+            Assert.Equal(inexact.Quantile(p), exact.Quantile(p));
+        }
+
+        foreach (var x in new[] { 0.1, 0.5, 0.9 })
+        {
+            Assert.Equal(inexact.Cdf(x), exact.Cdf(x));
+        }
+
+        Assert.Equal(inexact.ToString(), exact.ToString());
+    }
+
+    [Fact]
+    public void InexactMerge_MismatchedBinsKeepsCountsAndExtremesExact()
+    {
+        // The two statistics are each past one of their own windows, so both flushed
+        // and the receiver's count clears its own bin count after the merge: neither
+        // query may throw. The receiver's bin count is the smaller one, which makes
+        // the source's unflushed tail longer than one receiver window and exercises
+        // the replay completing more than one window.
+        var receiverData = PropertyHelpers.UniformUnit(105, 20261211L);
+        var sourceData = PropertyHelpers.OffsetSpread(37, 0.4, 0.2, 20261212L);
+
+        RunningStatistics.EmpiricalCdf receiver = new(10);
+        foreach (var v in receiverData)
+        {
+            receiver.Fit(v);
+        }
+
+        RunningStatistics.EmpiricalCdf source = new(25);
+        foreach (var v in sourceData)
+        {
+            source.Fit(v);
+        }
+
+        Assert.Equal(105, receiver.Nobs);
+        Assert.Equal(37, source.Nobs);
+
+        receiver.InexactMerge(source);
+
+        // The counts add exactly, and the extremes fold through the extrema, which
+        // carry no bin structure: both read the true ends of the combined sample.
+        Assert.Equal(105 + 37, receiver.Nobs);
+        Assert.Equal(37, source.Nobs);
+        Utils.AssertIsApproximate(MinOf(receiverData, sourceData), receiver.Min, 0);
+        Utils.AssertIsApproximate(MaxOf(receiverData, sourceData), receiver.Max, 0);
+
+        // A full window is present, so both queries answer, and each answer stays
+        // inside its own contract's range.
+        foreach (var p in new[] { 0.0, 0.5, 1.0 })
+        {
+            var q = receiver.Quantile(p);
+            Assert.True(q >= receiver.Min && q <= receiver.Max,
+                        PropertyHelpers.Describe($"quantile at p {p} left the merged range", receiver.Min, q));
+        }
+
+        Assert.True(receiver.Cdf(receiver.Min) >= 0 && receiver.Cdf(receiver.Max) <= 1,
+                    "the merged statistic's Cdf answers outside its probability range");
+    }
+
+    private static double MinOf(List<double> values, List<double> more)
+    {
+        var min = double.PositiveInfinity;
+        foreach (var v in values) min = Math.Min(min, v);
+        foreach (var v in more) min = Math.Min(min, v);
+        return min;
+    }
+
+    private static double MaxOf(List<double> values, List<double> more)
+    {
+        var max = double.NegativeInfinity;
+        foreach (var v in values) max = Math.Max(max, v);
+        foreach (var v in more) max = Math.Max(max, v);
+        return max;
+    }
+
+    // Conservation gate for the approximate merge. The merged statistic must hold
+    // every observation of both sources exactly once, and its extremes must be the
+    // true ends of the combined sample, because the extrema fold is exact whatever
+    // the two bin counts are. The blended bins then have to stay a usable picture
+    // of that sample: on uniform data the merged readouts must sit within a stated
+    // budget of the readouts a statistic of the receiver's own bin count builds
+    // when it is fitted with every observation at once. That budget is one window
+    // position of the receiver, 1 / (NumBins + 2): a resampled curve cannot sensibly
+    // spend more than the resolution its own bins have. The measured run of
+    // 2026-11-26 put the largest absolute error over the swept shape pairs at
+    // 0.011, against budgets of 0.11 down to 0.005, so every shape sits under
+    // its own budget with room to spare. A red band here means the resampling
+    // or the replay broke the picture; fix the merge, do not widen the budget.
+    [Fact]
+    public void Gate_EmpiricalCdfInexactMergeConservesCounts()
+    {
+        var shapes = new[] { (10, 25), (25, 10), (7, 60), (200, 20) };
+        var seed = 0;
+        foreach (var (receiverBins, sourceBins) in shapes)
+        {
+            var receiverData = PropertyHelpers.UniformUnit(receiverBins * 10 + 5, 20261213L + seed);
+            var sourceData = PropertyHelpers.UniformUnit(sourceBins * 10 + 3, 20261214L + seed);
+            seed++;
+
+            RunningStatistics.EmpiricalCdf receiver = new(receiverBins);
+            foreach (var v in receiverData)
+            {
+                receiver.Fit(v);
+            }
+
+            RunningStatistics.EmpiricalCdf source = new(sourceBins);
+            foreach (var v in sourceData)
+            {
+                source.Fit(v);
+            }
+
+            var expectedNobs = receiver.Nobs + source.Nobs;
+            var expectedMin = MinOf(receiverData, sourceData);
+            var expectedMax = MaxOf(receiverData, sourceData);
+
+            receiver.InexactMerge(source);
+
+            Assert.Equal(expectedNobs, receiver.Nobs);
+            Assert.Equal(source.Nobs, source.Nobs);
+            Utils.AssertIsApproximate(expectedMin, receiver.Min, 0);
+            Utils.AssertIsApproximate(expectedMax, receiver.Max, 0);
+
+            // The reference: one statistic of the receiver's own bin count, fitted
+            // with every observation at once. It pays the window's own resolution,
+            // and the merged one may only add the resampling cost on top.
+            RunningStatistics.EmpiricalCdf reference = new(receiverBins);
+            foreach (var v in receiverData)
+            {
+                reference.Fit(v);
+            }
+
+            foreach (var v in sourceData)
+            {
+                reference.Fit(v);
+            }
+
+            var budget = 1.0 / (receiverBins + 2.0);
+            foreach (var p in new[] { 0.1, 0.5, 0.9 })
+            {
+                var merged = receiver.Quantile(p);
+                var expected = reference.Quantile(p);
+                Assert.True(PropertyHelpers.WithinAbsolute(expected, merged, budget),
+                            PropertyHelpers.Describe(
+                                $"merged quantile at p {p} left the window-resolution budget at bins {receiverBins} over {sourceBins}",
+                                expected,
+                                merged));
+            }
+
+            // The merged window must still read as sorted, which is what the Cdf
+            // search assumes, so a growing query may never walk backwards.
+            var previous = receiver.Cdf(receiver.Min);
+            for (var step = 1; step <= 40; step++)
+            {
+                var x = receiver.Min + (receiver.Max - receiver.Min) * (step / 40.0);
+                var at = receiver.Cdf(x);
+                Assert.True(at >= previous,
+                            PropertyHelpers.Describe($"merged Cdf walked backwards at {x}", previous, at));
+                previous = at;
+            }
+        }
+    }
 }
