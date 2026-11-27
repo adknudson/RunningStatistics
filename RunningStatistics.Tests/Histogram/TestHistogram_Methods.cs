@@ -284,31 +284,22 @@ public partial class TestHistogram
         Assert.Equal(8, h.Nobs);
     }
 
-    // Decision note: the fallback for mismatched edges in the merge is pinned
-    // exactly as the library behaves today. When the two histograms' edge lists
-    // differ, the merge does not throw. It replays each source bin's count at
-    // that bin's midpoint. The midpoint is an approximation of where the
-    // observations actually were. A midpoint outside the receiver falls into
-    // its out-of-bounds counters instead of a bin. Making this a throw, or
-    // redistributing more finely, would change released behavior. Either
-    // change would need the staged correctness and benchmark gate from the
-    // house rules before adopting it. For the record, the two statistics
-    // differ here: merging empirical cumulative distributions rejects a
-    // batch-size mismatch outright, while a histogram merge approximates. The
-    // same-edges branch, where the code adds counts directly, is pinned by
+    // Policy note (issue #17): the merge now follows the EmpiricalCdf policy.
+    // When the two histograms' bins differ, in their edges or their closure
+    // flags, the merge throws instead of approximating the source at bin
+    // midpoints. The shape check runs before any state change, so a rejected
+    // merge leaves the receiver's bins, counters and total untouched. The
+    // same-bins branch, where the code adds counts directly, is pinned by
     // Merge_MatchingEdgesSumsBinsDirectly and CloneEmpty_AccumulateMergeSumsBinsDirectly,
     // so it is not repeated below.
     //
-    // The scenario pinned here: the receiver covers 0 up to but not including 10,
-    // and 10 to 20 including 10. It holds one observation, 5, in its first bin.
-    // The source uses four bins of width 5, each closed on the left except the
-    // last which closes its right edge. It holds one observation in each bin,
-    // fitted at 1, 6, 11 and 16, with midpoints 2.5, 7.5, 12.5 and 17.5. The
-    // replay sends 2.5 and 7.5 into the receiver's first bin and 12.5 and
-    // 17.5 into its second. This leaves bin counts 3 and 2, a total of one
-    // plus four observations, and out-of-bounds counters still at zero.
+    // The scenario pinned here: the receiver covers 0 up to but not including
+    // 10, and 10 to 20 including 10, and holds one observation, 5. The source
+    // uses four bins of width 5. Five edges against two, so the shapes differ
+    // and the merge must throw with an ArgumentException. The receiver must
+    // still read its one observation, its original counts and zero counters.
     [Fact]
-    public void Merge_MismatchedEdgesRefitsBinMidpoints()
+    public void Merge_MismatchedEdgesThrows()
     {
         RunningStatistics.Histogram receiver = new([0.0, 10.0, 20.0]);
         receiver.Fit(5);
@@ -319,33 +310,30 @@ public partial class TestHistogram
         source.Fit(11);
         source.Fit(16);
 
-        receiver.Merge(source);
+        Assert.Throws<ArgumentException>(
+            () => receiver.Merge(source));
 
-        Assert.Equal([3, 2], BinCounts(receiver));
-        Assert.Equal(5, receiver.Nobs);
+        // A rejected merge must leave the receiver exactly as it was.
+        Assert.Equal([1, 0], BinCounts(receiver));
+        Assert.Equal(1, receiver.Nobs);
         Assert.Equal(0, receiver.OutOfBoundsCounts.Lower);
         Assert.Equal(0, receiver.OutOfBoundsCounts.Upper);
     }
 
-    // The replayed midpoints go through the same unchecked fitting a normal fit
-    // would use. A midpoint outside the receiver lands in its out-of-bounds
-    // counters, like an ordinary out-of-range observation.
+    // The shape check must reject equal bin counts whose edges differ, and it
+    // must run before the out-of-bounds counters fold in. Scenario a: the
+    // receiver covers 10 to 12 and holds an observation at 11. The source
+    // covers 0 to 100 and holds four observations at 50. Both have one bin, so
+    // only an edge comparison rejects the merge. The merge throws, and the
+    // receiver's counter must still read zero, not four: the old code folded
+    // the source's counters in before choosing the branch, and that leak is
+    // what this fact now rules out.
     //
-    // Scenario a: the receiver covers 10 to 12 and holds an observation at 11. The
-    // source covers 0 to 100 and fits 50 with a count of four. The only source
-    // midpoint, 50, sits past the receiver's top edge. Four observations
-    // therefore go to the upper out-of-bounds counter. The total becomes
-    // five, and the bins keep their one count unchanged.
-    //
-    // Scenario b: the source has edges at negative infinity, 0, 10 and positive
-    // infinity. The merge replays its bins into a receiver covering 0 to 10 and
-    // 10 to 20. A bin with an infinite bound reports that infinite bound as its
-    // midpoint. The outer bins therefore replay at negative infinity and
-    // positive infinity, into the lower and upper out-of-bounds counters. Only
-    // the middle bin's midpoint, 5, lands in a bin. Fitting rejects only NaN,
-    // so it accepts the infinities rather than throwing them.
+    // Scenario b: the source has edges at negative infinity, 0, 10 and
+    // positive infinity, three bins against the receiver's two, so the merge
+    // also throws, and the receiver keeps its single observation.
     [Fact]
-    public void Merge_MismatchedEdgesMidpointsFallOutOfBounds()
+    public void Merge_MismatchedEdgesSameBinCountThrowsReceiverUnchanged()
     {
         RunningStatistics.Histogram narrow = new([10.0, 12.0]);
         narrow.Fit(11);
@@ -353,12 +341,13 @@ public partial class TestHistogram
         RunningStatistics.Histogram wide = new([0.0, 100.0]);
         wide.Fit(50, 4);
 
-        narrow.Merge(wide);
+        Assert.Throws<ArgumentException>(
+            () => narrow.Merge(wide));
 
         Assert.Equal([1], BinCounts(narrow));
-        Assert.Equal(5, narrow.Nobs);
+        Assert.Equal(1, narrow.Nobs);
         Assert.Equal(0, narrow.OutOfBoundsCounts.Lower);
-        Assert.Equal(4, narrow.OutOfBoundsCounts.Upper);
+        Assert.Equal(0, narrow.OutOfBoundsCounts.Upper);
 
         RunningStatistics.Histogram receiver = new([0.0, 10.0, 20.0]);
         receiver.Fit(5);
@@ -368,38 +357,37 @@ public partial class TestHistogram
         infinite.Fit(5);
         infinite.Fit(15);
 
-        receiver.Merge(infinite);
+        Assert.Throws<ArgumentException>(
+            () => receiver.Merge(infinite));
 
-        // The middle bin's midpoint, 5, replays into the first bin. Negative infinity goes
-        // to the lower counter and positive infinity to the upper one.
-        Assert.Equal([2, 0], BinCounts(receiver));
-        Assert.Equal(4, receiver.Nobs);
-        Assert.Equal(1, receiver.OutOfBoundsCounts.Lower);
-        Assert.Equal(1, receiver.OutOfBoundsCounts.Upper);
+        Assert.Equal([1, 0], BinCounts(receiver));
+        Assert.Equal(1, receiver.Nobs);
+        Assert.Equal(0, receiver.OutOfBoundsCounts.Lower);
+        Assert.Equal(0, receiver.OutOfBoundsCounts.Upper);
     }
 
     // Matching bins compares both the edge values and the closure flags. Two
     // histograms with identical edges but different closure settings
-    // therefore take the replay branch, not the direct sum. The receiver
-    // covers 0 up to but not including 10, and 10 to 20 including 10, with the
-    // default flags. The source uses the same edges closed on the right
-    // instead. Its two fits of 10 land in the source's first bin because its
-    // left end is open. Adding counts directly would have placed them in the
-    // receiver's second bin. The replay instead puts both observations at the
-    // first bin's midpoint, 5, landing in the receiver's first bin. The
-    // resulting counts, two and zero, are only reachable through that replay.
+    // therefore take the throw, not the direct sum. The receiver covers 0 up
+    // to but not including 10, and 10 to 20 including 10, with the default
+    // flags. The source uses the same edges closed on the right instead. Its
+    // two fits of 10 sit in the source's first bin because its left end is
+    // open, where the receiver would put them in its second. Under the new
+    // policy this merge is refused outright, so the receiver keeps its empty
+    // bins and zero total.
     [Fact]
-    public void Merge_SameEdgesDifferentClosureFlagsRefitsMidpoints()
+    public void Merge_SameEdgesDifferentClosureFlagsThrows()
     {
         RunningStatistics.Histogram receiver = new([0.0, 10.0, 20.0], leftClosed: true, endsClosed: true);
 
         RunningStatistics.Histogram source = new([0.0, 10.0, 20.0], leftClosed: false, endsClosed: false);
         source.Fit(10.0, 2);
 
-        receiver.Merge(source);
+        Assert.Throws<ArgumentException>(
+            () => receiver.Merge(source));
 
-        Assert.Equal([2, 0], BinCounts(receiver));
-        Assert.Equal(2, receiver.Nobs);
+        Assert.Equal([0, 0], BinCounts(receiver));
+        Assert.Equal(0, receiver.Nobs);
         Assert.Equal(0, receiver.OutOfBoundsCounts.Lower);
         Assert.Equal(0, receiver.OutOfBoundsCounts.Upper);
     }
@@ -1032,24 +1020,23 @@ public partial class TestHistogram
         }
     }
 
-    // Merge count conservation across shapes that do not match. A mismatched merge
-    // refits the source's bin counts at the source's midpoints, an approximation of
-    // where the observations sat. That approximation may move a count between bins,
-    // but it must never create or lose one: the merged total's Nobs must equal both
-    // sources' Nobs summed, and its bins plus out-of-bounds counters must add back
-    // to that total. A same-shape merge must add bins directly, with exact per-bin
-    // sums and exact out-of-bounds sums. The audit run of 2026-11-19 found one leak:
-    // with a source holding one out-of-bounds observation, the merged Nobs read 10
-    // against the 11 the two sources held, because the replay walks only the source's
-    // bins while the out-of-bounds counters were folded in separately. Histogram.Merge
-    // now adds the source's counter values to the total in that branch, and the gate
-    // pins the identity again.
+    // Merge policy across shapes that do not match (issue #17). A mismatched
+    // merge now throws instead of refitting the source's bin counts at their
+    // midpoints. The rejection must leave the receiver alone: its bins, its
+    // out-of-bounds counters and its total must all still read the pre-merge
+    // values, and the count identity Nobs = bins + counters must still hold
+    // after the rejection. The audit run of 2026-11-19 found one leak: the
+    // old code folded the source's out-of-bounds counters into the receiver
+    // and its total before choosing the branch, so a rejected merge counted
+    // observations the receiver's bins never held. Histogram.Merge now checks
+    // the shape first, and this gate pins the refusal and the identity.
+    // A same-shape merge must still add bins directly, with exact per-bin
+    // sums and exact out-of-bounds sums.
     [Fact]
-    public void Gate_HistogramMergeConservesCountsAcrossMismatchedShapes()
+    public void Gate_HistogramMergeRejectsMismatchedShapesWithoutLeak()
     {
         var dataA = new[] { 0.0, 0.5, 0.5, 1.0, 1.5, 2.0 };
         var dataB = new[] { 0.4, 1.2, 1.6, 2.4, 2.5 };
-        var dataC = new[] { -3.0, 0.5, 1.5, 2.0, 9.0 };
 
         var a = new RunningStatistics.Histogram([0.0, 1.0, 2.0], true, true);
         for (var i = 0; i < dataA.Length; i++) a.Fit(dataA[i]);
@@ -1057,13 +1044,22 @@ public partial class TestHistogram
         var b = new RunningStatistics.Histogram([0.5, 1.5, 2.5], false, false);
         for (var i = 0; i < dataB.Length; i++) b.Fit(dataB[i]);
 
+        // Two bins against two, but the edges differ, so the merge must throw.
         var total = a.Clone();
-        total.Merge(b);
-        Assert.Equal(a.Nobs + b.Nobs, total.Nobs);
+        Assert.Throws<ArgumentException>(
+            () => total.Merge(b));
+
+        // The rejected merge must not have touched the clone: same counts,
+        // same counters, same total, and the identity still holds.
+        Assert.Equal(BinCounts(a), BinCounts(total));
+        Assert.Equal(a.OutOfBoundsCounts.Lower, total.OutOfBoundsCounts.Lower);
+        Assert.Equal(a.OutOfBoundsCounts.Upper, total.OutOfBoundsCounts.Upper);
+        Assert.Equal(a.Nobs, total.Nobs);
         Assert.Equal(total.Nobs,
                      SumBins(total) + total.OutOfBoundsCounts.Lower + total.OutOfBoundsCounts.Upper);
 
         // The same-shape merge adds bins directly, so every count must be exact.
+        var dataC = new[] { -3.0, 0.5, 1.5, 2.0, 9.0 };
         var c = new RunningStatistics.Histogram([0.0, 1.0, 2.0], true, true);
         for (var i = 0; i < dataC.Length; i++) c.Fit(dataC[i]);
 
