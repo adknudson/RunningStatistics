@@ -15,7 +15,7 @@ Supports .NET Standard 2.0
 | Statistic     | Fits                                                               | Reads out                                                                                            |
 |:--------------|:-------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------|
 | Mean          | `double`                                                           | `Value`                                                                                              |
-| Sum           | `double`                                                           | `Value`, `Mean()`                                                                                    |
+| Sum           | `double`                                                           | `Value`, `Mean`                                                                                      |
 | Sum\<T\>      | any type implementing `IAdditionOperators` and `IAdditiveIdentity` | `Value`                                                                                              |
 | Variance      | `double`                                                           | `Value`, `StandardDeviation`                                                                         |
 | Extrema       | `double`                                                           | `Min`, `Max`, `MinCount`, `MaxCount`                                                                 |

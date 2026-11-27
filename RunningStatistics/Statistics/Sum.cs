@@ -103,10 +103,14 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
         _correction += sum._correction;
     }
 
-    public double Mean()
-    {
-        return Nobs > 0 ? Value / Nobs : double.NaN;
-    }
+    /// <summary>
+    /// The mean of the observations fitted so far.
+    /// </summary>
+    /// <remarks>
+    /// With nothing fitted, the mean is undefined, and a double readout has NaN to stand in,
+    /// so the property returns <see cref="double.NaN"/> instead of throwing.
+    /// </remarks>
+    public double Mean => Nobs > 0 ? Value / Nobs : double.NaN;
 
     public override string ToString() => base.ToString() + $" | Σ={Value}";
 }

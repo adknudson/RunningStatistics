@@ -56,7 +56,7 @@ public static class UsingStatsExtensions
         var mSum = new Sum<decimal>();
         var xSum = new Sum<MyNum>(); // custom number type that implements required methods
 
-        var sM = sum.Mean();
+        var sM = sum.Mean;
         var iM = iSum.Mean();
         var lM = lSum.Mean();
         var dM = dSum.Mean();
