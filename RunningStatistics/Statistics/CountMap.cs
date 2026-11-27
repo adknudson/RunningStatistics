@@ -125,7 +125,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// <remarks>
     /// An empty map has no minimum key, and a generic key type has no NaN to stand in, so the
     /// method throws in that case, the counterpart of the NaN readouts on numeric statistics.
-    /// Use <see cref="TryMinKey(out TObs)"/> when a non-throwing read is needed.
+    /// Use <see cref="TryGetMinKey(out TObs)"/> when a non-throwing read is needed.
     /// </remarks>
     /// <param name="comparer">The comparer to use for finding the minimum key.
     /// If null, the method uses the default comparer.</param>
@@ -135,7 +135,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// </exception>
     public TObs MinKey(IComparer<TObs>? comparer)
     {
-        if (TryMinKey(comparer, out var min))
+        if (TryGetMinKey(comparer, out var min))
         {
             return min;
         }
@@ -159,7 +159,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// If null, the method uses the default comparer.</param>
     /// <param name="key">Receives the minimum key, or the default of the key type when the map is empty.</param>
     /// <returns>True when the map holds at least one key, false when it is empty.</returns>
-    public bool TryMinKey(IComparer<TObs>? comparer, out TObs key)
+    public bool TryGetMinKey(IComparer<TObs>? comparer, out TObs key)
     {
         comparer ??= Comparer<TObs>.Default;
 
@@ -191,7 +191,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// </summary>
     /// <param name="key">Receives the minimum key, or the default of the key type when the map is empty.</param>
     /// <returns>True when the map holds at least one key, false when it is empty.</returns>
-    public bool TryMinKey(out TObs key) => TryMinKey(Comparer, out key);
+    public bool TryGetMinKey(out TObs key) => TryGetMinKey(Comparer, out key);
     
     /// <summary>
     /// Finds the maximum key in the count map.
@@ -199,7 +199,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// <remarks>
     /// An empty map has no maximum key, and a generic key type has no NaN to stand in, so the
     /// method throws in that case, the counterpart of the NaN readouts on numeric statistics.
-    /// Use <see cref="TryMaxKey(out TObs)"/> when a non-throwing read is needed.
+    /// Use <see cref="TryGetMaxKey(out TObs)"/> when a non-throwing read is needed.
     /// </remarks>
     /// <param name="comparer">The comparer to use for finding the maximum key.
     /// If null, the method uses the default comparer.</param>
@@ -209,7 +209,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// </exception>
     public TObs MaxKey(IComparer<TObs>? comparer)
     {
-        if (TryMaxKey(comparer, out var max))
+        if (TryGetMaxKey(comparer, out var max))
         {
             return max;
         }
@@ -233,7 +233,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// If null, the method uses the default comparer.</param>
     /// <param name="key">Receives the maximum key, or the default of the key type when the map is empty.</param>
     /// <returns>True when the map holds at least one key, false when it is empty.</returns>
-    public bool TryMaxKey(IComparer<TObs>? comparer, out TObs key)
+    public bool TryGetMaxKey(IComparer<TObs>? comparer, out TObs key)
     {
         comparer ??= Comparer<TObs>.Default;
         
@@ -263,7 +263,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// </summary>
     /// <param name="key">Receives the maximum key, or the default of the key type when the map is empty.</param>
     /// <returns>True when the map holds at least one key, false when it is empty.</returns>
-    public bool TryMaxKey(out TObs key) => TryMaxKey(Comparer, out key);
+    public bool TryGetMaxKey(out TObs key) => TryGetMaxKey(Comparer, out key);
     
     public IEnumerator<KeyValuePair<TObs, long>> GetEnumerator() => _dict.GetEnumerator();
 
