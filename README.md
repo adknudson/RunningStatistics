@@ -16,10 +16,10 @@ Supports .NET Standard 2.0
 |:--------------|:-------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------|
 | Mean          | `double`                                                           | `Value`                                                                                              |
 | Sum           | `double`                                                           | `Value`, `Mean`                                                                                      |
-| Sum\<T\>      | any type implementing `IAdditionOperators` and `IAdditiveIdentity` | `Value`                                                                                              |
+| Sum\<T\>      | any type implementing `IAdditionOperators` and `IAdditiveIdentity` | `Value`; `Mean` stays an extension method                                                            |
 | Variance      | `double`                                                           | `Value`, `StandardDeviation`                                                                         |
 | Extrema       | `double`                                                           | `Min`, `Max`, `MinCount`, `MaxCount`, `Range`                                         |
-| Extrema\<T\>  | any type implementing `IComparable<T>`                             | same as `Extrema`                                                                                    |
+| Extrema\<T\>  | any type implementing `IComparable<T>`                             | same as `Extrema`, less `Range`: that read stays an extension method                                  |
 | Moments       | `double`                                                           | `Mean`, `Variance`, `StandardDeviation`, `Skewness`, `Kurtosis`, `ExcessKurtosis`                    |
 | EmpiricalCdf  | `double`, into `numBins` bins (default 200)                        | `NumBins`, `Quantile(p)`, `Cdf(x)`, `Median`, `Min`, `Max`                                           |
 | Histogram     | `double`, into bins given as `edges`                               | `NumBins`, `Bins`, `Edges`, `OutOfBoundsCounts`, iteration over `Bin`s with `Lower`, `Upper`, `Nobs` |
@@ -127,8 +127,20 @@ var q1 = ecdf.Quantile(0.25);
 - `Histogram.Bin` is a nested supporting type. A `Histogram` iterates as `Bin`s, each with
   `Lower`, `Upper` and `Nobs`. `Histogram.OutOfBoundsCounts` reports observations below or above
   the bins as a `(long Lower, long Upper)` tuple.
-- The `Extensions` classes add calls such as `beta.Pdf(x)` and `beta.Cdf(x)` for statistics
-  like `Beta`.
+- A readout that takes no argument is a property: `Sum.Mean`, `Extrema.Range`, `Beta.Mean`,
+  `CountMap.MinKey`, `MaxKey`, `Mode` and `Median` read as properties, and `Sum.Value` sits
+  beside them. A readout that takes an argument stays a method, because it has to: `Quantile(p)`,
+  `Pdf(x)` and `Variance(mean, corrected)` pass what they need.
+- The `Extensions` classes keep only the generic arithmetic reads — `Extrema<T>.Range`, `Sum<T>.Mean`
+  and the `CountMap<T>` `Sum`, `Mean`, `Variance`, `StandardDeviation`, `Skewness`, `Kurtosis` and
+  `ExcessKurtosis`. Each of those needs an operator constraint (`T` must subtract, divide, add)
+  that its class does not declare, and a member cannot carry a constraint the class lacks. Putting
+  the constraint on the class would rule out ordinary uses such as `Extrema<MyComparable>`, so those
+  reads stay extension methods and only the constraint-free reads moved inside.
+- `CountMap` orders its keys by the comparer you built it with. `MinKey`, `MaxKey`, `Median` and
+  `Quantile(p)` use that comparer; `TryGetMinKey(comparer, out key)`, `TryGetMaxKey(comparer, out key)`
+  and `Quantile(p, comparer)` take a different one, and `Keys.Min(comparer)` gets the same answer
+  through LINQ.
 
 ## Development
 
