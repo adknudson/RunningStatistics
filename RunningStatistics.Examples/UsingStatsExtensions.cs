@@ -61,6 +61,10 @@ public static class UsingStatsExtensions
         var lM = lSum.Mean();
         var dM = dSum.Mean();
         var mM = mSum.Mean();
-        var xM = xSum.Mean();
+
+        // A custom observation type has no average extension: the library cannot ask such a
+        // type to divide an observation total by a count, so the caller writes its own
+        // arithmetic. MyNum divides by a long, which is what a mean of MyNums needs.
+        var xM = xSum.Value / xSum.Nobs;
     }
 }
