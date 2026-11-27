@@ -24,7 +24,7 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     /// <exception cref="InvalidOperationException">Thrown when no observations have been fitted.</exception>
     public TObs Min => _nobs > 0
         ? _min!
-        : throw new InvalidOperationException("Nobs must be greater than 0");
+        : throw new InvalidOperationException("No observations fitted yet. Use TryGetMin.");
 
     /// <summary>
     /// Gets the maximum value observed.
@@ -37,7 +37,7 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     /// <exception cref="InvalidOperationException">Thrown when no observations have been fitted.</exception>
     public TObs Max => _nobs > 0
         ? _max!
-        : throw new InvalidOperationException("Nobs must be greater than 0");
+        : throw new InvalidOperationException("No observations fitted yet. Use TryGetMax.");
 
     /// <summary>
     /// Stores the minimum value observed in the given reference and reports whether one exists.
