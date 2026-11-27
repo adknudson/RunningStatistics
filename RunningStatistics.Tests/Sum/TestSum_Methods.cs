@@ -64,7 +64,7 @@ public partial class TestSum
     public void Mean_NoNumbers_IsNaN()
     {
         var sum = new RunningStatistics.Sum();
-        Assert.Equal(double.NaN, sum.Mean());
+        Assert.Equal(double.NaN, sum.Mean);
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public partial class TestSum
     {
         var sum = new RunningStatistics.Sum();
         sum.Fit(42);
-        Assert.Equal(42, sum.Mean());
+        Assert.Equal(42, sum.Mean);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public partial class TestSum
         sum.Fit(10);
         sum.Fit(20);
         sum.Fit(30);
-        Assert.Equal(20, sum.Mean());
+        Assert.Equal(20, sum.Mean);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public partial class TestSum
         sum.Fit(-10);
         sum.Fit(-20);
         sum.Fit(-30);
-        Assert.Equal(-20, sum.Mean());
+        Assert.Equal(-20, sum.Mean);
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public partial class TestSum
         sum.Fit(10);
         sum.Fit(-20);
         sum.Fit(30);
-        Assert.Equal(6.67, sum.Mean(), 2);
+        Assert.Equal(6.67, sum.Mean, 2);
     }
 
     // This fact pins the promise about non-finite values exactly as the code behaves today. The
@@ -194,7 +194,7 @@ public partial class TestSum
         pos1.Merge(pos2);
         Assert.Equal(2, pos1.Nobs);
         Assert.Equal(double.PositiveInfinity, pos1.Value);
-        Assert.Equal(double.PositiveInfinity, pos1.Mean());
+        Assert.Equal(double.PositiveInfinity, pos1.Mean);
         Assert.Equal(1, pos2.Nobs);
         Assert.Equal(1.7e308, pos2.Value);
 

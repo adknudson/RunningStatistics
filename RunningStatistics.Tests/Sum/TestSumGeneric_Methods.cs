@@ -188,35 +188,42 @@ public class TestSumGenericMethods_MyNum : TestSumGenericMethods<MyNum>
 {
     protected override MyNum From(int value) => new(value);
 
+    // SumExtensions has no average for a custom observation type, so these facts write the
+    // average the caller would write: the stored total divided by the observation count, in
+    // MyNum's own arithmetic. MyNum divides by a long, and it stores decimals, so an empty
+    // sum divides zero by zero the decimal way and throws, the same way Sum<decimal> does.
     [Fact] public void Mean_NoNumbers_Throws()
-        => Assert.Throws<DivideByZeroException>(() => new Sum<MyNum>().Mean());
+    {
+        var sum = new Sum<MyNum>();
+        Assert.Throws<DivideByZeroException>(() => sum.Value / sum.Nobs);
+    }
 
     [Fact] public void Mean_SingleNumber()
     {
         var sum = new Sum<MyNum>();
         sum.Fit(new MyNum(42));
-        Assert.Equal(new MyNum(42), sum.Mean());
+        Assert.Equal(new MyNum(42), sum.Value / sum.Nobs);
     }
 
     [Fact] public void Mean_PositiveNumbers()
     {
         var sum = new Sum<MyNum>();
         sum.Fit(new MyNum(10)); sum.Fit(new MyNum(20)); sum.Fit(new MyNum(30));
-        Assert.Equal(new MyNum(20), sum.Mean());
+        Assert.Equal(new MyNum(20), sum.Value / sum.Nobs);
     }
 
     [Fact] public void Mean_NegativeNumbers()
     {
         var sum = new Sum<MyNum>();
         sum.Fit(new MyNum(-10)); sum.Fit(new MyNum(-20)); sum.Fit(new MyNum(-30));
-        Assert.Equal(new MyNum(-20), sum.Mean());
+        Assert.Equal(new MyNum(-20), sum.Value / sum.Nobs);
     }
 
     [Fact] public void Mean_MixedNumbers()
     {
         var sum = new Sum<MyNum>();
         sum.Fit(new MyNum(10)); sum.Fit(new MyNum(-20)); sum.Fit(new MyNum(30));
-        Assert.Equal(6.67m, sum.Mean().Value, 2);
+        Assert.Equal(6.67m, (sum.Value / sum.Nobs).Value, 2);
     }
 
     // This fact covers the multiply-capable path. MyNum knows how to multiply itself by a

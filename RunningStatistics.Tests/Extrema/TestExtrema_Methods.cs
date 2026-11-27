@@ -246,7 +246,7 @@ public partial class TestExtrema
         extrema.Fit(1.0);
         extrema.Fit(3.0);
 
-        Assert.Equal(2.0, extrema.Range());
+        Assert.Equal(2.0, extrema.Range);
     }
 
     // Fit only rejects NaN, so it accepts infinities as real observations. A fitted
@@ -294,7 +294,7 @@ public partial class TestExtrema
         Assert.Equal(1, extrema.MinCount);
         Assert.Equal(1, extrema.MaxCount);
         Assert.Equal(2, extrema.Nobs);
-        Assert.Equal(double.PositiveInfinity, extrema.Range());
+        Assert.Equal(double.PositiveInfinity, extrema.Range);
 
         var reversed = new RunningStatistics.Extrema();
         reversed.Fit(double.NegativeInfinity);
@@ -317,11 +317,11 @@ public partial class TestExtrema
     {
         var plus = new RunningStatistics.Extrema();
         plus.Fit(double.PositiveInfinity, 3);
-        Assert.Equal(double.NaN, plus.Range());
+        Assert.Equal(double.NaN, plus.Range);
 
         var minus = new RunningStatistics.Extrema();
         minus.Fit(double.NegativeInfinity, 2);
-        Assert.Equal(double.NaN, minus.Range());
+        Assert.Equal(double.NaN, minus.Range);
     }
 
     // Comparisons treat negative zero and positive zero as equal. The zero fitted first
@@ -527,7 +527,7 @@ public partial class TestExtrema
     public void EmptyStateRange_DoubleNaNVsGenericThrow()
     {
         var d = new RunningStatistics.Extrema();
-        Assert.Equal(double.NaN, d.Range());
+        Assert.Equal(double.NaN, d.Range);
 
         // MyNum supports subtraction, so the Range() extension applies and the accessor
         // throw propagates through it. Extrema of MyComparable has no Range() at all,

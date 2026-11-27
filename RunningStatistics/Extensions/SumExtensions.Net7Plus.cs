@@ -1,7 +1,6 @@
 ﻿#if NET7_0_OR_GREATER
 
 using System;
-using System.Numerics;
 
 namespace RunningStatistics;
 
@@ -45,20 +44,12 @@ public static class GenericSumExtensions
         throw new DivideByZeroException("Average is undefined when the number of observations is zero.");
     }
     
-    /// <summary>
-    /// Calculate the average of the sum of any generic <see cref="T"/> that supports division by a <see cref="long"/>.
-    /// </summary>
-    /// <exception cref="DivideByZeroException">Thrown when the number of observations is zero.</exception>
-    public static T Mean<T>(this Sum<T> sum)
-        where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IDivisionOperators<T, long, T>
-    {
-        if (sum.Nobs > 0)
-        {
-            return sum.Value / sum.Nobs;
-        }
-        
-        throw new DivideByZeroException("Average is undefined when the number of observations is zero.");
-    }
+    // There is no average for an arbitrary observation type. One would have to ask the type
+    // for a division by an observation count, an operator a summing type need not define:
+    // a count is not a quantity of the measured thing, so dividing by it says nothing about
+    // the type. A caller that knows its own arithmetic writes the average it wants, for
+    // example sum.Value / sum.Nobs when the type divides by a long, or
+    // (double)sum.Value / sum.Nobs when the answer should be a double.
 }
 
 #endif

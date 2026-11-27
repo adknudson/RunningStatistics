@@ -72,14 +72,14 @@ public partial class TestCountMap()
     public void MinKey_ThrowsIfEmpty()
     {
         var countMap = new CountMap<int>();
-        Assert.Throws<KeyNotFoundException>(() => countMap.MinKey());
+        Assert.Throws<KeyNotFoundException>(() => countMap.MinKey);
     }
 
     [Fact]
     public void MaxKey_ThrowsIfEmpty()
     {
         var countMap = new CountMap<int>();
-        Assert.Throws<KeyNotFoundException>(() => countMap.MaxKey());
+        Assert.Throws<KeyNotFoundException>(() => countMap.MaxKey);
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public partial class TestCountMap()
         countMap.Fit(2, 1);
         Assert.True(countMap.TryGetMinKey(out var min));
         Assert.Equal(2, min);
-        Assert.Equal(countMap.MinKey(), min);
+        Assert.Equal(countMap.MinKey, min);
     }
 
     [Fact]
@@ -109,7 +109,7 @@ public partial class TestCountMap()
         countMap.Fit(2, 1);
         Assert.True(countMap.TryGetMaxKey(out var max));
         Assert.Equal(5, max);
-        Assert.Equal(countMap.MaxKey(), max);
+        Assert.Equal(countMap.MaxKey, max);
     }
     
     [Fact]
@@ -118,7 +118,7 @@ public partial class TestCountMap()
         var countMap = new CountMap<object>();
         countMap.Fit(new object(), 1);
         countMap.Fit(new object(), 2);
-        Assert.Throws<ArgumentException>(() => countMap.MinKey());
+        Assert.Throws<ArgumentException>(() => countMap.MinKey);
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public partial class TestCountMap()
         var countMap = new CountMap<object>();
         countMap.Fit(new object(), 1);
         countMap.Fit(new object(), 2);
-        Assert.Throws<ArgumentException>(() => countMap.MaxKey());
+        Assert.Throws<ArgumentException>(() => countMap.MaxKey);
     }
     
     [Fact]
@@ -138,7 +138,7 @@ public partial class TestCountMap()
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        Assert.Equal(1, countMap.MinKey());
+        Assert.Equal(1, countMap.MinKey);
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public partial class TestCountMap()
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        Assert.Equal(3, countMap.MaxKey());
+        Assert.Equal(3, countMap.MaxKey);
     }
     
     [Fact]
@@ -160,7 +160,7 @@ public partial class TestCountMap()
         countMap.Fit("b", 3);
         countMap.Fit("c", 1);
 
-        Assert.Equal("a", countMap.MinKey());
+        Assert.Equal("a", countMap.MinKey);
     }
 
     [Fact]
@@ -171,7 +171,7 @@ public partial class TestCountMap()
         countMap.Fit("b", 3);
         countMap.Fit("c", 1);
 
-        Assert.Equal("c", countMap.MaxKey());
+        Assert.Equal("c", countMap.MaxKey);
     }
     
     [Fact]
@@ -182,7 +182,10 @@ public partial class TestCountMap()
         countMap.Fit(1, 2);
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
-        Assert.Equal(3, countMap.MinKey(comparer));
+        // The throwing MinKey readout uses the map's own comparer, so an explicit comparer
+        // goes through the non-throwing overload and the fact asserts the same key.
+        Assert.True(countMap.TryGetMinKey(comparer, out var min));
+        Assert.Equal(3, min);
     }
 
     [Fact]
@@ -193,7 +196,8 @@ public partial class TestCountMap()
         countMap.Fit(1, 2);
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
-        Assert.Equal(1, countMap.MaxKey(comparer));
+        Assert.True(countMap.TryGetMaxKey(comparer, out var max));
+        Assert.Equal(1, max);
     }
     
     [Fact]
@@ -206,7 +210,7 @@ public partial class TestCountMap()
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
         
-        Assert.Equal(3, countMap.MinKey());
+        Assert.Equal(3, countMap.MinKey);
     }
     
     [Fact]
@@ -219,7 +223,7 @@ public partial class TestCountMap()
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
         
-        Assert.Equal(1, countMap.MaxKey());
+        Assert.Equal(1, countMap.MaxKey);
     }
     
     [Fact]
@@ -232,7 +236,10 @@ public partial class TestCountMap()
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
         
-        Assert.Equal(1, countMap.MinKey(null));
+        // A null comparer means the default one, not the map's own, so the min is the
+        // numerically smallest key even though the map was built with a reversed order.
+        Assert.True(countMap.TryGetMinKey(null, out var min));
+        Assert.Equal(1, min);
     }
 
     [Fact]
@@ -245,7 +252,10 @@ public partial class TestCountMap()
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
         
-        Assert.Equal(3, countMap.MaxKey(null));
+        // Same as the min fact: a null comparer selects the default order, so the max is
+        // the numerically largest key rather than the map's reversed one.
+        Assert.True(countMap.TryGetMaxKey(null, out var max));
+        Assert.Equal(3, max);
     }
     
     // This fact pins the Merge contract and the smallest and largest key selection. Merging
@@ -369,8 +379,8 @@ public partial class TestCountMap()
         countMap.Fit(-5, 3);
         
         // with every count tied, the minimum and maximum keys follow key order alone
-        Assert.Equal(-5, countMap.MinKey());
-        Assert.Equal(7, countMap.MaxKey());
+        Assert.Equal(-5, countMap.MinKey);
+        Assert.Equal(7, countMap.MaxKey);
         
         // counts do not sway the outcome: the same keys with skewed counts give the same minimum
         // and maximum keys
@@ -378,8 +388,8 @@ public partial class TestCountMap()
         other.Fit(0, 1);
         other.Fit(7, 1);
         other.Fit(-5, 1);
-        Assert.Equal(countMap.MinKey(), other.MinKey());
-        Assert.Equal(countMap.MaxKey(), other.MaxKey());
+        Assert.Equal(countMap.MinKey, other.MinKey);
+        Assert.Equal(countMap.MaxKey, other.MaxKey);
     }
     
     [Fact]
@@ -444,13 +454,13 @@ public partial class TestCountMap()
         // minimum and the maximum coincide. After the merge they swap, so the minimum key is
         // the largest integer and the maximum key is the smallest.
         clone.Fit(2, 4);
-        Assert.Equal(2, clone.MinKey());
-        Assert.Equal(2, clone.MaxKey());
+        Assert.Equal(2, clone.MinKey);
+        Assert.Equal(2, clone.MaxKey);
 
         // and it survives the clone-then-merge accumulation as well
         clone.Merge(stat);
-        Assert.Equal(3, clone.MinKey());
-        Assert.Equal(1, clone.MaxKey());
+        Assert.Equal(3, clone.MinKey);
+        Assert.Equal(1, clone.MaxKey);
         Assert.Equal(11, clone.Nobs);
         Assert.Equal(3, clone.Count);
         Assert.Equal(7, stat.Nobs);

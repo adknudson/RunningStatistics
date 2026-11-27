@@ -298,7 +298,7 @@ public partial class TestCountMap
         countMap.Fit(new MyNum(2), 3);
         countMap.Fit(new MyNum(3), 1);
 
-        Assert.Equal(new MyNum(1), countMap.MinKey());
+        Assert.Equal(new MyNum(1), countMap.MinKey);
     }
 
     [Fact]
@@ -309,7 +309,7 @@ public partial class TestCountMap
         countMap.Fit(new MyNum(2), 3);
         countMap.Fit(new MyNum(3), 1);
 
-        Assert.Equal(new MyNum(3), countMap.MaxKey());
+        Assert.Equal(new MyNum(3), countMap.MaxKey);
     }
 
     [Fact]
@@ -358,7 +358,7 @@ public partial class TestCountMap
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        Assert.Equal(2, countMap.Mode());
+        Assert.Equal(2, countMap.Mode);
     }
     
     [Fact]
@@ -434,11 +434,11 @@ public partial class TestCountMap
         countMap.Fit(2, 1);
         countMap.Fit(3, 1);
 
-        Assert.Equal(2, countMap.Median());
+        Assert.Equal(2, countMap.Median);
         
         // with an even number of observations, the median is the first observation at which the
         // cumulative proportion of the sample reaches one half
         countMap.Fit(4, 1);
-        Assert.Equal(2, countMap.Median());
+        Assert.Equal(2, countMap.Median);
     }
 }
