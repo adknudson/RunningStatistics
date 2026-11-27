@@ -45,7 +45,9 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     public int NumBins { get; }
     
     /// <summary>
-    /// Gets the median of the empirical CDF.
+    /// Gets the median of the empirical CDF. Returns <see cref="double.NaN"/> while the number
+    /// of observations is below the bin count, the same undefined-readout value the other
+    /// numeric readouts use.
     /// </summary>
     public double Median => Quantile(0.5);
     
@@ -267,19 +269,24 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     /// <summary>
     /// Finds the pth quantile of the empirical CDF.
     /// </summary>
+    /// <remarks>
+    /// The quantile estimate needs every bin filled by at least one full flush of observations.
+    /// While the number of observations is below the bin count, the estimate is undefined and
+    /// the method returns <see cref="double.NaN"/>, the value numeric statistics use for
+    /// undefined readouts. An invalid probability is a caller error and still throws.
+    /// </remarks>
     /// <param name="p">The probability for which to find the quantile. The value must lie between 0 and 1.</param>
-    /// <returns>The pth quantile.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when the number of observations is less than the number of bins.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="p"/> is not a valid probability.</exception>
+    /// <returns>The pth quantile, or <see cref="double.NaN"/> when the number of observations
+    /// is less than the number of bins.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="p"/> is not a valid probability.</exception>
     public double Quantile(double p)
     {
+        Require.ValidProbability(p);
+
         if (Nobs < NumBins)
         {
-            throw new InvalidOperationException(
-                $"The number of observations must be at least {NumBins} to compute the quantile.");
+            return double.NaN;
         }
-        
-        Require.ValidProbability(p);
 
         if (p == 0)
         {
@@ -319,18 +326,24 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     /// <summary>
     /// The probability that X will take on a value less than or equal to x.
     /// </summary>
+    /// <remarks>
+    /// The CDF estimate needs every bin filled by at least one full flush of observations.
+    /// While the number of observations is below the bin count, the estimate is undefined and
+    /// the method returns <see cref="double.NaN"/>, the value numeric statistics use for
+    /// undefined readouts. A NaN query is a caller error and still throws.
+    /// </remarks>
     /// <param name="x">The value for which to compute the CDF.</param>
-    /// <returns>The probability that X will take on a value less than or equal to x.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when the number of observations is less than the number of bins.</exception>
+    /// <returns>The probability that X will take on a value less than or equal to x, or
+    /// <see cref="double.NaN"/> when the number of observations is less than the number of bins.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="x"/> is NaN.</exception>
     public double Cdf(double x)
     {
+        Require.NotNaN(x);
+        
         if (Nobs < NumBins)
         {
-            throw new InvalidOperationException(
-                $"The number of observations must be at least {NumBins} to compute the CDF.");
+            return double.NaN;
         }
-        
-        Require.NotNaN(x);
         
         if (x < Min)
         {

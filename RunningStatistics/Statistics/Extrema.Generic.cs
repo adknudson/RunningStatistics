@@ -16,6 +16,12 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     /// <summary>
     /// Gets the minimum value observed.
     /// </summary>
+    /// <remarks>
+    /// A generic observation type has no NaN to hand back, so an empty statistic reports its
+    /// missing extreme by throwing, the counterpart of the NaN readouts on numeric statistics.
+    /// Use <see cref="TryMin{TObs}(out TObs)"/> when a non-throwing read is needed.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Thrown when no observations have been fitted.</exception>
     public TObs Min => _nobs > 0
         ? _min!
         : throw new InvalidOperationException("Nobs must be greater than 0");
@@ -23,9 +29,51 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     /// <summary>
     /// Gets the maximum value observed.
     /// </summary>
+    /// <remarks>
+    /// A generic observation type has no NaN to hand back, so an empty statistic reports its
+    /// missing extreme by throwing, the counterpart of the NaN readouts on numeric statistics.
+    /// Use <see cref="TryMax{TObs}(out TObs)"/> when a non-throwing read is needed.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Thrown when no observations have been fitted.</exception>
     public TObs Max => _nobs > 0
         ? _max!
         : throw new InvalidOperationException("Nobs must be greater than 0");
+
+    /// <summary>
+    /// Stores the minimum value observed in the given reference and reports whether one exists.
+    /// </summary>
+    /// <param name="value">Receives the minimum value, or the default of the observation type when nothing was fitted.</param>
+    /// <returns>True when at least one observation was fitted, false when the statistic is empty.</returns>
+    public bool TryMin(out TObs value)
+    {
+        if (_nobs == 0)
+        {
+            // Every return must assign the out parameter. A caller who reads the false
+            // return never uses this default, so a null or zero value is safe here.
+            value = default!;
+            return false;
+        }
+
+        value = _min!;
+        return true;
+    }
+
+    /// <summary>
+    /// Stores the maximum value observed in the given reference and reports whether one exists.
+    /// </summary>
+    /// <param name="value">Receives the maximum value, or the default of the observation type when nothing was fitted.</param>
+    /// <returns>True when at least one observation was fitted, false when the statistic is empty.</returns>
+    public bool TryMax(out TObs value)
+    {
+        if (_nobs == 0)
+        {
+            value = default!;
+            return false;
+        }
+
+        value = _max!;
+        return true;
+    }
 
     /// <summary>
     /// Gets the count of observations that have the minimum value.
