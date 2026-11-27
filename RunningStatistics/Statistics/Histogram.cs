@@ -269,7 +269,8 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     /// When the bins differ, in their edges or in their closure flags, the merge throws and
     /// leaves this histogram unchanged. This is the EmpiricalCdf policy: an incompatible
     /// merge is an error, not an approximation. A caller who wants to combine histograms
-    /// with different edges must refit the source's observations into the receiver.
+    /// with different edges should use <see cref="InexactMerge" /> instead, which approximates
+    /// the source's observations at bin midpoints.
     /// </remarks>
     /// <exception cref="ArgumentException">Thrown when the other histogram has bins that
     /// differ from this histogram's, in their edges or their closure flags. This histogram
@@ -298,6 +299,45 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
         for (var j = 0; j < NumBins; j++)
         {
             _bins[j].Merge(histogram._bins[j]);
+        }
+    }
+
+    /// <summary>
+    /// Merges another histogram into this histogram, approximating the source at bin
+    /// midpoints when the two histograms' bins do not match.
+    /// </summary>
+    /// <remarks>
+    /// Same bins: this method merges exactly like <see cref="Merge" />, adding the
+    /// counts of the matching bins directly.
+    ///
+    /// Different bins: the method replays each source bin's count at that bin's midpoint.
+    /// The midpoint approximates where the observations inside the source bin actually
+    /// were. A midpoint outside the receiver falls into its out-of-bounds counters. The
+    /// source's out-of-bounds counters fold in directly, so the merged totals and
+    /// counters stay exact. Only the bin membership is approximate.
+    /// </remarks>
+    public void InexactMerge(Histogram histogram)
+    {
+        if (BinsAreMatching(histogram._bins))
+        {
+            Merge(histogram);
+            return;
+        }
+
+        _lowerOutOfBounds += histogram._lowerOutOfBounds;
+        _upperOutOfBounds += histogram._upperOutOfBounds;
+
+        // The replay below runs through UncheckedFit, which counts each source bin
+        // into the total on its own. Adding the source's out-of-bounds counts here
+        // is the other half of that total, so the source's Nobs is counted exactly
+        // once across both additions.
+        checked { _nobs += histogram._lowerOutOfBounds + histogram._upperOutOfBounds; }
+
+        // Each source bin stands for its count at its midpoint, the midpoint
+        // approximating where the observations inside that bin actually were.
+        foreach (var bin in histogram._bins)
+        {
+            UncheckedFit(bin.Midpoint, bin.Nobs);
         }
     }
 
