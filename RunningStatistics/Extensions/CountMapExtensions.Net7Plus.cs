@@ -47,6 +47,50 @@ public static partial class CountMapExtensions
 
         return m;
     }
+
+    /// <summary>
+    /// Compute the sample variance of a CountMap of any generic type that supports subtraction,
+    /// multiplication, and division by a <see cref="long"/>. The uncorrected form divides the
+    /// sum of squared deviations by <c>Nobs</c>; the corrected form divides it by
+    /// <c>Nobs - 1</c>, so it throws when the count map holds fewer than two observations.
+    /// </summary>
+    public static T Variance<T>(this CountMap<T> countMap, T mean, bool corrected = true)
+        where T :
+        IAdditionOperators<T, T, T>,
+        IAdditiveIdentity<T, T>,
+        ISubtractionOperators<T, T, T>,
+        IMultiplyOperators<T, T, T>,
+        IMultiplyOperators<T, long, T>,
+        IDivisionOperators<T, long, T>
+    {
+        var total = T.AdditiveIdentity;
+
+        foreach (var (x, k) in countMap)
+        {
+            var d = x - mean;
+            total += d * d * k;
+        }
+
+        // Folding the Bessel factor into the denominator keeps the divide in the T
+        // domain: total / Nobs * Nobs / (Nobs - 1) is exactly total / (Nobs - 1).
+        return corrected ? total / (countMap.Nobs - 1) : total / countMap.Nobs;
+    }
+
+    /// <summary>
+    /// Compute the sample variance of a CountMap of any generic type that supports the
+    /// arithmetic above and the mean's division by a <see cref="long"/>.
+    /// </summary>
+    public static T Variance<T>(this CountMap<T> countMap, bool corrected = true)
+        where T :
+        IAdditionOperators<T, T, T>,
+        IAdditiveIdentity<T, T>,
+        ISubtractionOperators<T, T, T>,
+        IMultiplyOperators<T, T, T>,
+        IMultiplyOperators<T, long, T>,
+        IDivisionOperators<T, long, T>
+    {
+        return countMap.Variance(countMap.Mean(), corrected);
+    }
 }
 
 #endif

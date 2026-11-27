@@ -285,6 +285,21 @@ public partial class TestCountMap
         Assert.Equal(1.833m, countMap.Mean().Value, 3);
         Assert.IsType<MyNum>(countMap.Mean());
     }
+
+    // The generic variance keeps the result in the observation type, so the
+    // assertion reads the MyNum's decimal value, like the mean fact above.
+    [Fact]
+    public void Variance_ReturnsCorrectVarianceForMyNum()
+    {
+        var countMap = new CountMap<MyNum>();
+        countMap.Fit(new MyNum(1), 2);
+        countMap.Fit(new MyNum(2), 3);
+        countMap.Fit(new MyNum(3), 1);
+
+        Assert.IsType<MyNum>(countMap.Variance());
+        Assert.Equal(0.567m, countMap.Variance().Value, 3);
+        Assert.Equal(0.567m, countMap.Variance(countMap.Mean()).Value, 3);
+    }
     
     [Fact]
     public void Mode_ReturnsObservationWithHighestCount()
