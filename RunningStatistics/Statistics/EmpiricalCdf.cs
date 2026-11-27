@@ -126,7 +126,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
                 Array.Sort(_buffer);
                 for (var k = 0; k < numBins; k++)
                 {
-                    valuesView[k] = Utils.SmoothUnchecked(valuesView[k], _buffer[k], (double)numBins / Nobs);
+                    valuesView[k] = Utils.Smooth(valuesView[k], _buffer[k], (double)numBins / Nobs);
                 }
             }
             else
@@ -135,7 +135,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
                 // and every sorted slot equals value.
                 for (var k = 0; k < numBins; k++)
                 {
-                    valuesView[k] = Utils.SmoothUnchecked(valuesView[k], value, (double)numBins / Nobs);
+                    valuesView[k] = Utils.Smooth(valuesView[k], value, (double)numBins / Nobs);
                 }
             }
         }
@@ -162,7 +162,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
                 
                 for (var k = 0; k < numBins; k++)
                 {
-                    valuesView[k] = Utils.SmoothUnchecked(valuesView[k], value, alpha);
+                    valuesView[k] = Utils.Smooth(valuesView[k], value, alpha);
                 }
             }
             
@@ -194,7 +194,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         // bin count, so NumBins / Nobs is a weight in (0, 1].
         for (var k = 0; k < NumBins; k++)
         {
-            Values[k] = Utils.SmoothUnchecked(Values[k], _buffer[k], (double) NumBins / Nobs);
+            Values[k] = Utils.Smooth(Values[k], _buffer[k], (double) NumBins / Nobs);
         }
     }
 
@@ -231,6 +231,8 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         var flushedTotal = thisFlushed + otherFlushed;
         if (flushedTotal > 0)
         {
+            // alpha is a ratio of two non-negative flush counts, so it lies in [0, 1]
+            // and the bins can blend without the per-blend probability check.
             var alpha = (double) otherFlushed / flushedTotal;
             for (var k = 0; k < NumBins; k++)
             {
@@ -257,7 +259,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
             // least NumBins here and the weight NumBins / Nobs stays in (0, 1].
             for (var k = 0; k < NumBins; k++)
             {
-                Values[k] = Utils.SmoothUnchecked(Values[k], _buffer[k], (double) NumBins / Nobs);
+                Values[k] = Utils.Smooth(Values[k], _buffer[k], (double) NumBins / Nobs);
             }
         }
     }
@@ -298,20 +300,20 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         // A position below the first bin interpolates between the minimum and the first bin.
         if (i < 1)
         {
-            return Utils.SmoothUnchecked(Min, Values[0], r);
+            return Utils.Smooth(Min, Values[0], r);
         }
         
         // A position past the last bin interpolates between the last bin and the maximum.
         if (i >= NumBins)
         {
             // ReSharper disable once UseIndexFromEndExpression
-            return Utils.SmoothUnchecked(Values[Values.Length - 1], Max, r);
+            return Utils.Smooth(Values[Values.Length - 1], Max, r);
         }
         
         // Otherwise the position falls between two neighboring bins. Interpolate between them.
         var fi = (int)Math.Floor(i) - 1;
         var ci = (int)Math.Ceiling(i) - 1;
-        return Utils.SmoothUnchecked(Values[fi], Values[ci], r);
+        return Utils.Smooth(Values[fi], Values[ci], r);
     }
 
     /// <summary>
@@ -377,7 +379,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         var r = (x - _values[i - 1]) / (_values[i] - _values[i - 1]);
         
         // Interpolate between the two window positions and scale by the window length.
-        return Utils.SmoothUnchecked(i - 1, i, r) / _values.Length;
+        return Utils.Smooth(i - 1, i, r) / _values.Length;
     }
 
     public override string ToString() => base.ToString() + $" | NumBins={NumBins}, Min={Min}, Max={Max}";

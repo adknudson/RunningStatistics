@@ -53,8 +53,8 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
         // same bits as the guarded form.
         var g = (double) count / Nobs;
         
-        _mean = Utils.SmoothUnchecked(_mean, value, g);
-        _variance = Utils.SmoothUnchecked(_variance, (value - _mean) * (value - mu), g);
+        _mean = Utils.Smooth(_mean, value, g);
+        _variance = Utils.Smooth(_variance, (value - _mean) * (value - mu), g);
     }
 
     internal void UncheckedFit(List<double> values)
@@ -68,8 +68,8 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
         var g = (double) values.Count / Nobs;
         var delta = _mean - mean;
 
-        _mean = Utils.SmoothUnchecked(_mean, mean, g);
-        _variance = Utils.SmoothUnchecked(_variance, variance, g) + delta * delta * g * (1 - g);
+        _mean = Utils.Smooth(_mean, mean, g);
+        _variance = Utils.Smooth(_variance, variance, g) + delta * delta * g * (1 - g);
     }
     
     public override void Reset()
@@ -92,8 +92,8 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
         var g = (double) variance.Nobs / Nobs;
         var delta = _mean - variance._mean;
 
-        _mean = Utils.SmoothUnchecked(_mean, variance._mean, g);
-        _variance = Utils.SmoothUnchecked(_variance, variance._variance, g) + delta * delta * g * (1 - g);
+        _mean = Utils.Smooth(_mean, variance._mean, g);
+        _variance = Utils.Smooth(_variance, variance._variance, g) + delta * delta * g * (1 - g);
     }
     
     public static explicit operator double(Variance variance) => variance.Value;

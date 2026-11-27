@@ -76,7 +76,7 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
         // The public Fit checked value and count, and count is positive past the zero
         // return, so the weight count / Nobs is a ratio of non-negative counts with
         // Nobs >= count: a valid probability, blendable unchecked at the identical bit.
-        _value = Utils.SmoothUnchecked(_value, value, (double)count / Nobs);
+        _value = Utils.Smooth(_value, value, (double)count / Nobs);
     }
 
     public override void Reset()
@@ -93,7 +93,7 @@ public sealed class Mean : RunningStatisticBase<double, Mean>
         // Nobs is at least other.Nobs and positive past the ternary, so the merged
         // weight other.Nobs / Nobs is a ratio of non-negative counts in (0, 1]: the
         // unchecked blend costs the same bits.
-        _value = Nobs == 0 ? 0 : Utils.SmoothUnchecked(_value, other._value, (double)other.Nobs / Nobs);
+        _value = Nobs == 0 ? 0 : Utils.Smooth(_value, other._value, (double)other.Nobs / Nobs);
     }
 
     public override string ToString() => base.ToString() + $" | μ={Value}";
