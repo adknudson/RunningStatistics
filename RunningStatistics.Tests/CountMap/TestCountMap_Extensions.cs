@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using System;
+using Xunit;
 
 namespace RunningStatistics.Tests.CountMap;
 
@@ -46,6 +47,35 @@ public partial class TestCountMap
         countMap.Fit(3, 1);
 
         Assert.Equal(0.567, countMap.Variance(), 3);
+    }
+
+    // The Moments limit: the corrected variance needs two observations, the uncorrected
+    // one needs one. Below the limit double kinds answer NaN, and the decimal and
+    // generic kinds throw, since those types have no NaN to return.
+    [Fact]
+    public void Variance_AreNaNWhenFewerThanTwoObservations()
+    {
+        var empty = new CountMap<double>();
+        Assert.True(double.IsNaN(empty.Variance()));
+        Assert.True(double.IsNaN(empty.Variance(false)));
+        Assert.True(double.IsNaN(empty.StandardDeviation()));
+
+        var single = new CountMap<double>();
+        single.Fit(5, 1);
+        Assert.True(double.IsNaN(single.Variance()));
+        Assert.Equal(0.0, single.Variance(false));
+    }
+
+    [Fact]
+    public void Variance_ThrowsWhenFewerThanTwoObservationsForDecimalAndMyNum()
+    {
+        var singleDec = new CountMap<decimal>();
+        singleDec.Fit(5, 1);
+        Assert.Throws<DivideByZeroException>(() => singleDec.Variance());
+
+        var singleMy = new CountMap<MyNum>();
+        singleMy.Fit(new MyNum(5), 1);
+        Assert.Throws<DivideByZeroException>(() => singleMy.Variance());
     }
 
     [Fact]
@@ -158,6 +188,25 @@ public partial class TestCountMap
 
         countMap.Fit(8, 1);
         Assert.True(!double.IsNaN(countMap.Kurtosis()));
+    }
+
+    // Zero spread: Moments guards m2 <= 0; the extensions guard the variance
+    // argument, so constant maps and hand-passed zero variances answer NaN.
+    [Fact]
+    public void SkewnessAndKurtosis_AreNaNForConstantData()
+    {
+        var constant = new CountMap<double>();
+        constant.Fit(5, 4);
+
+        Assert.True(double.IsNaN(constant.Skewness()));
+        Assert.True(double.IsNaN(constant.Kurtosis()));
+
+        var spread = new CountMap<double>();
+        spread.Fit(1, 2);
+        spread.Fit(2, 3);
+        spread.Fit(3, 1);
+        Assert.True(double.IsNaN(spread.Skewness(spread.Mean(), 0.0)));
+        Assert.True(double.IsNaN(spread.Kurtosis(spread.Mean(), 0.0)));
     }
 
     [Fact]

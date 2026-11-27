@@ -111,28 +111,34 @@ public static partial class CountMapExtensions
     }
     
     /// <summary>
-    /// Compute the sample variance of a CountMap of integers.
+    /// Compute the sample variance of a CountMap of integers. The corrected form answers NaN
+    /// below two observations; the uncorrected form below one.
     /// </summary>
     public static double Variance(this CountMap<int> countMap, double mean, bool corrected = true)
     {
+        if (countMap.Nobs < (corrected ? 2 : 1)) return double.NaN;
         var v = countMap.Sum(x => x.Value * Math.Pow(x.Key - mean, 2) / countMap.Nobs);
         return corrected ? v * Utils.Bessel(countMap.Nobs) : v;
     }
 
     /// <summary>
-    /// Compute the sample variance of a CountMap of longs.
+    /// Compute the sample variance of a CountMap of longs. The corrected form answers NaN
+    /// below two observations; the uncorrected form below one.
     /// </summary>
     public static double Variance(this CountMap<long> countMap, double mean, bool corrected = true)
     {
+        if (countMap.Nobs < (corrected ? 2 : 1)) return double.NaN;
         var v = countMap.Sum(x => x.Value * Math.Pow(x.Key - mean, 2) / countMap.Nobs);
         return corrected ? v * Utils.Bessel(countMap.Nobs) : v;
     }
 
     /// <summary>
-    /// Compute the sample variance of a CountMap of doubles.
+    /// Compute the sample variance of a CountMap of doubles. The corrected form answers NaN
+    /// below two observations; the uncorrected form below one.
     /// </summary>
     public static double Variance(this CountMap<double> countMap, double mean, bool corrected = true)
     {
+        if (countMap.Nobs < (corrected ? 2 : 1)) return double.NaN;
         var v = countMap.Sum(x => x.Value * Math.Pow(x.Key - mean, 2) / countMap.Nobs);
         return corrected ? v * Utils.Bessel(countMap.Nobs) : v;
     }
@@ -143,11 +149,17 @@ public static partial class CountMapExtensions
     /// arithmetic, so no binary rounding error enters the result.
     /// </summary>
     /// <exception cref="DivideByZeroException">
-    /// Thrown by the corrected form when the count map holds a single observation, since
-    /// decimal division by zero throws instead of yielding infinity.
+    /// Thrown when the count map has too few observations: the corrected form needs at
+    /// least two, the uncorrected form at least one. decimal has no NaN to hand back, so
+    /// this follows the decimal Mean precedent of throwing.
     /// </exception>
     public static decimal Variance(this CountMap<decimal> countMap, decimal mean, bool corrected = true)
     {
+        if (countMap.Nobs < (corrected ? 2 : 1))
+        {
+            throw new DivideByZeroException("Variance is undefined: the corrected form needs at least two observations, the uncorrected form at least one.");
+        }
+
         var v = countMap.Sum(x => x.Value * (x.Key - mean) * (x.Key - mean)) / countMap.Nobs;
         return corrected ? v * countMap.Nobs / (countMap.Nobs - 1) : v;
     }
@@ -222,45 +234,54 @@ public static partial class CountMapExtensions
     
     /// <summary>
     /// Compute the standardized skewness of a CountMap of integers. Sample skewness needs
-    /// at least three observations and returns NaN below that limit.
+    /// at least three observations and returns NaN below that limit. A zero or negative
+    /// variance also gives NaN: the standardization divides by the spread, and constant
+    /// data has none, the same limit Moments guards on its central second moment.
     /// </summary>
     public static double Skewness(this CountMap<int> countMap, double mean, double variance)
     {
         if (countMap.Nobs < 3) return double.NaN;
+        if (variance <= 0) return double.NaN;
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 3) / countMap.Nobs);
     }
     
     /// <summary>
     /// Compute the standardized skewness of a CountMap of longs. Sample skewness needs
-    /// at least three observations and returns NaN below that limit.
+    /// at least three observations and returns NaN below that limit. A zero or negative
+    /// variance also gives NaN: the standardization divides by the spread.
     /// </summary>
     public static double Skewness(this CountMap<long> countMap, double mean, double variance)
     {
         if (countMap.Nobs < 3) return double.NaN;
+        if (variance <= 0) return double.NaN;
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 3) / countMap.Nobs);
     }
 
     /// <summary>
     /// Compute the standardized skewness of a CountMap of doubles. Sample skewness needs
-    /// at least three observations and returns NaN below that limit.
+    /// at least three observations and returns NaN below that limit. A zero or negative
+    /// variance also gives NaN: the standardization divides by the spread.
     /// </summary>
     public static double Skewness(this CountMap<double> countMap, double mean, double variance)
     {
         if (countMap.Nobs < 3) return double.NaN;
+        if (variance <= 0) return double.NaN;
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 3) / countMap.Nobs);
     }
 
     /// <summary>
     /// Compute the standardized skewness of a CountMap of decimals. Sample skewness needs
-    /// at least three observations and returns NaN below that limit. The standardized
+    /// at least three observations and returns NaN below that limit. A zero or negative
+    /// variance also gives NaN: the standardization divides by the spread. The standardized
     /// result is a double because it involves division by a square root.
     /// </summary>
     public static double Skewness(this CountMap<decimal> countMap, decimal mean, decimal variance)
     {
         if (countMap.Nobs < 3) return double.NaN;
+        if (variance <= 0) return double.NaN;
         var std = Math.Sqrt((double)variance);
         return countMap.Sum(x => x.Value * Math.Pow(((double)x.Key - (double)mean) / std, 3) / countMap.Nobs);
     }
@@ -307,45 +328,53 @@ public static partial class CountMapExtensions
     
     /// <summary>
     /// Compute the kurtosis of a CountMap of integers. Sample kurtosis needs at least four
-    /// observations and returns NaN below that limit.
+    /// observations and returns NaN below that limit. A zero or negative variance also gives
+    /// NaN: the standardization divides by the spread.
     /// </summary>
     public static double Kurtosis(this CountMap<int> countMap, double mean, double variance)
     {
         if (countMap.Nobs < 4) return double.NaN;
+        if (variance <= 0) return double.NaN;
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 4) / countMap.Nobs);
     }
 
     /// <summary>
     /// Compute the kurtosis of a CountMap of longs. Sample kurtosis needs at least four
-    /// observations and returns NaN below that limit.
+    /// observations and returns NaN below that limit. A zero or negative variance also gives
+    /// NaN: the standardization divides by the spread.
     /// </summary>
     public static double Kurtosis(this CountMap<long> countMap, double mean, double variance)
     {
         if (countMap.Nobs < 4) return double.NaN;
+        if (variance <= 0) return double.NaN;
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 4) / countMap.Nobs);
     }
 
     /// <summary>
     /// Compute the kurtosis of a CountMap of doubles. Sample kurtosis needs at least four
-    /// observations and returns NaN below that limit.
+    /// observations and returns NaN below that limit. A zero or negative variance also gives
+    /// NaN: the standardization divides by the spread.
     /// </summary>
     public static double Kurtosis(this CountMap<double> countMap, double mean, double variance)
     {
         if (countMap.Nobs < 4) return double.NaN;
+        if (variance <= 0) return double.NaN;
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 4) / countMap.Nobs);
     }
 
     /// <summary>
     /// Compute the kurtosis of a CountMap of decimals. Sample kurtosis needs at least four
-    /// observations and returns NaN below that limit. The standardized result is a double
+    /// observations and returns NaN below that limit. A zero or negative variance also gives
+    /// NaN: the standardization divides by the spread. The standardized result is a double
     /// because it involves division by a square root.
     /// </summary>
     public static double Kurtosis(this CountMap<decimal> countMap, decimal mean, decimal variance)
     {
         if (countMap.Nobs < 4) return double.NaN;
+        if (variance <= 0) return double.NaN;
         var std = Math.Sqrt((double)variance);
         return countMap.Sum(x => x.Value * Math.Pow(((double)x.Key - (double)mean) / std, 4) / countMap.Nobs);
     }
