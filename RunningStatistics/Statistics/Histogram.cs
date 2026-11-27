@@ -256,46 +256,88 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
 
     public override Histogram CloneEmpty() => new(_edges, LeftClosed, EndsClosed);
 
+    /// <summary>
+    /// Merges another histogram into this histogram.
+    /// </summary>
+    /// <param name="histogram">The other histogram to merge in. Its bins must match this
+    /// histogram's, in their bounds and their closure flags.</param>
     /// <remarks>
-    /// The merge works in two branches. Same bins mean the same number of bins with equal
-    /// bounds and equal closure flags. In that case, the merge adds the counts of the matching
-    /// bins directly and the result stays exact.
+    /// The merge works only when the two histograms have the same bins: the same number of
+    /// bins, with equal bounds and equal closure flags. The merge then adds the counts of
+    /// the matching bins directly, and the result stays exact.
     ///
-    /// When the bins differ, in their edges or in their closure flags, the merge does not throw.
-    /// Instead it refits each source bin's count at that bin's midpoint. The midpoint
-    /// approximates where the observations actually were. A midpoint outside the receiver falls
-    /// into its out-of-bounds counters. The merge folds the source's out-of-bounds counters in
-    /// both branches.
+    /// When the bins differ, in their edges or in their closure flags, the merge throws and
+    /// leaves this histogram unchanged. This is the EmpiricalCdf policy: an incompatible
+    /// merge is an error, not an approximation. A caller who wants to combine histograms
+    /// with different edges should use <see cref="InexactMerge" /> instead, which approximates
+    /// the source's observations at bin midpoints.
     /// </remarks>
+    /// <exception cref="ArgumentException">Thrown when the other histogram has bins that
+    /// differ from this histogram's, in their edges or their closure flags. This histogram
+    /// keeps its state when the merge throws.</exception>
     public override void Merge(Histogram histogram)
     {
+        // Check the shapes before touching any state, so a rejected merge leaves
+        // this histogram exactly as it was. The old code folded the out-of-bounds
+        // counters in first, which corrupted the receiver before the branch
+        // decision.
+        if (!BinsAreMatching(histogram._bins))
+        {
+            var detail = NumBins == histogram.NumBins
+                ? "The bins differ in their edges or closure flags."
+                : $"Got {NumBins} bins and {histogram.NumBins} bins.";
+            throw new ArgumentException(
+                "The two Histogram objects must have the same bins. " + detail,
+                nameof(histogram));
+        }
+
         _lowerOutOfBounds += histogram._lowerOutOfBounds;
         _upperOutOfBounds += histogram._upperOutOfBounds;
 
+        checked { _nobs += histogram.Nobs; }
+
+        for (var j = 0; j < NumBins; j++)
+        {
+            _bins[j].Merge(histogram._bins[j]);
+        }
+    }
+
+    /// <summary>
+    /// Merges another histogram into this histogram, approximating the source at bin
+    /// midpoints when the two histograms' bins do not match.
+    /// </summary>
+    /// <remarks>
+    /// Same bins: this method merges exactly like <see cref="Merge" />, adding the
+    /// counts of the matching bins directly.
+    ///
+    /// Different bins: the method replays each source bin's count at that bin's midpoint.
+    /// The midpoint approximates where the observations inside the source bin actually
+    /// were. A midpoint outside the receiver falls into its out-of-bounds counters. The
+    /// source's out-of-bounds counters fold in directly, so the merged totals and
+    /// counters stay exact. Only the bin membership is approximate.
+    /// </remarks>
+    public void InexactMerge(Histogram histogram)
+    {
         if (BinsAreMatching(histogram._bins))
         {
-            checked { _nobs += histogram.Nobs; }
-
-            for (var j = 0; j < NumBins; j++)
-            {
-                _bins[j].Merge(histogram._bins[j]);
-            }
+            Merge(histogram);
+            return;
         }
-        else
-        {
-            // The out-of-bounds counters were folded into this histogram above, but
-            // those observations never go through the replay below, which only walks
-            // the source's bins. The total has to pick them up here. Without this,
-            // a mismatched merge drops the source's out-of-bounds observations from
-            // Nobs while its counters still report them, so the count identity
-            // Nobs = bins + counters no longer holds.
-            checked { _nobs += histogram._lowerOutOfBounds + histogram._upperOutOfBounds; }
 
-            // Using midpoints of source bins as approximate locations for merging
-            foreach (var bin in histogram._bins)
-            {
-                UncheckedFit(bin.Midpoint, bin.Nobs);
-            }
+        _lowerOutOfBounds += histogram._lowerOutOfBounds;
+        _upperOutOfBounds += histogram._upperOutOfBounds;
+
+        // The replay below runs through UncheckedFit, which counts each source bin
+        // into the total on its own. Adding the source's out-of-bounds counts here
+        // is the other half of that total, so the source's Nobs is counted exactly
+        // once across both additions.
+        checked { _nobs += histogram._lowerOutOfBounds + histogram._upperOutOfBounds; }
+
+        // Each source bin stands for its count at its midpoint, the midpoint
+        // approximating where the observations inside that bin actually were.
+        foreach (var bin in histogram._bins)
+        {
+            UncheckedFit(bin.Midpoint, bin.Nobs);
         }
     }
 
