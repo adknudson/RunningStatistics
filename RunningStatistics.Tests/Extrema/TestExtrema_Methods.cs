@@ -486,7 +486,7 @@ public partial class TestExtrema
     //
     // Generic side: no sentinel value could stand in for a missing extreme of an arbitrary
     // type, so the generic Extrema throws from Min and Max when empty, with the message
-    // "Nobs must be greater than 0". TryMin and TryMax give callers a non-throwing read;
+    // "Nobs must be greater than 0". TryGetMin and TryGetMax give callers a non-throwing read;
     // their facts live in the generic test files. The range extension subtracts the two
     // accessors, so it propagates the same throw. That extension only exists for types
     // that support subtraction, such as MyNum but not MyComparable.

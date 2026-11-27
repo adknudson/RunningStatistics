@@ -83,7 +83,7 @@ public partial class TestCountMap()
     }
 
     [Fact]
-    public void TryMinKey_FalseWhenEmptyAndMatchesMinKeyWhenFilled()
+    public void TryGetMinKey_FalseWhenEmptyAndMatchesMinKeyWhenFilled()
     {
         var empty = new CountMap<int>();
         Assert.False(empty.TryGetMinKey(out var emptyKey));
@@ -98,7 +98,7 @@ public partial class TestCountMap()
     }
 
     [Fact]
-    public void TryMaxKey_FalseWhenEmptyAndMatchesMaxKeyWhenFilled()
+    public void TryGetMaxKey_FalseWhenEmptyAndMatchesMaxKeyWhenFilled()
     {
         var empty = new CountMap<int>();
         Assert.False(empty.TryGetMaxKey(out var emptyKey));

@@ -121,7 +121,7 @@ var q1 = ecdf.Quantile(0.25);
   returns 0 when nothing is fitted, because an empty sum is defined.
 - Statistics over generic observation types have no `NaN` to return. `Extrema<T>.Min` and
   `Max` throw `InvalidOperationException`, and `CountMap<T>.MinKey` and `MaxKey` throw
-  `KeyNotFoundException` when nothing is fitted. `TryMin`/`TryMax` and `TryMinKey`/`TryMaxKey`
+  `KeyNotFoundException` when nothing is fitted. `TryGetMin`/`TryGetMax` and `TryGetMinKey`/`TryGetMaxKey`
   read the same values without throwing.
 - `Beta` also fits pre-counted results with `Fit(successes, failures)`.
 - `Histogram.Bin` is a nested supporting type. A `Histogram` iterates as `Bin`s, each with

@@ -19,7 +19,7 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     /// <remarks>
     /// A generic observation type has no NaN to hand back, so an empty statistic reports its
     /// missing extreme by throwing, the counterpart of the NaN readouts on numeric statistics.
-    /// Use <see cref="TryMin{TObs}(out TObs)"/> when a non-throwing read is needed.
+    /// Use <see cref="TryGetMin{TObs}(out TObs)"/> when a non-throwing read is needed.
     /// </remarks>
     /// <exception cref="InvalidOperationException">Thrown when no observations have been fitted.</exception>
     public TObs Min => _nobs > 0
@@ -32,7 +32,7 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     /// <remarks>
     /// A generic observation type has no NaN to hand back, so an empty statistic reports its
     /// missing extreme by throwing, the counterpart of the NaN readouts on numeric statistics.
-    /// Use <see cref="TryMax{TObs}(out TObs)"/> when a non-throwing read is needed.
+    /// Use <see cref="TryGetMax{TObs}(out TObs)"/> when a non-throwing read is needed.
     /// </remarks>
     /// <exception cref="InvalidOperationException">Thrown when no observations have been fitted.</exception>
     public TObs Max => _nobs > 0
@@ -44,7 +44,7 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     /// </summary>
     /// <param name="value">Receives the minimum value, or the default of the observation type when nothing was fitted.</param>
     /// <returns>True when at least one observation was fitted, false when the statistic is empty.</returns>
-    public bool TryMin(out TObs value)
+    public bool TryGetMin(out TObs value)
     {
         if (_nobs == 0)
         {
@@ -63,7 +63,7 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     /// </summary>
     /// <param name="value">Receives the maximum value, or the default of the observation type when nothing was fitted.</param>
     /// <returns>True when at least one observation was fitted, false when the statistic is empty.</returns>
-    public bool TryMax(out TObs value)
+    public bool TryGetMax(out TObs value)
     {
         if (_nobs == 0)
         {
