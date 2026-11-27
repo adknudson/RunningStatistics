@@ -18,7 +18,7 @@ Supports .NET Standard 2.0
 | Sum           | `double`                                                           | `Value`, `Mean`                                                                                      |
 | Sum\<T\>      | any type implementing `IAdditionOperators` and `IAdditiveIdentity` | `Value`                                                                                              |
 | Variance      | `double`                                                           | `Value`, `StandardDeviation`                                                                         |
-| Extrema       | `double`                                                           | `Min`, `Max`, `MinCount`, `MaxCount`                                                                 |
+| Extrema       | `double`                                                           | `Min`, `Max`, `MinCount`, `MaxCount`, `Range`                                         |
 | Extrema\<T\>  | any type implementing `IComparable<T>`                             | same as `Extrema`                                                                                    |
 | Moments       | `double`                                                           | `Mean`, `Variance`, `StandardDeviation`, `Skewness`, `Kurtosis`, `ExcessKurtosis`                    |
 | EmpiricalCdf  | `double`, into `numBins` bins (default 200)                        | `NumBins`, `Quantile(p)`, `Cdf(x)`, `Median`, `Min`, `Max`                                           |

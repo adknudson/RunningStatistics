@@ -130,10 +130,15 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
         }
     }
 
-    public double Range()
-    {
-        return Max - Min;
-    }
+    /// <summary>
+    /// Gets the distance between the largest and smallest observation.
+    /// </summary>
+    /// <remarks>
+    /// An empty statistic has no range. The Min and Max readouts already hand back NaN when
+    /// nothing was fitted, so the subtraction carries that undefined value through and the
+    /// range of an empty statistic reads as NaN.
+    /// </remarks>
+    public double Range => Max - Min;
 
     public override string ToString() => base.ToString() + $" | Min={Min} (n={MinCount:N0}), Max={Max} (n={MaxCount:N0})";
 }
