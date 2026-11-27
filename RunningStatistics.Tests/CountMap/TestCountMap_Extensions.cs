@@ -353,6 +353,28 @@ public partial class TestCountMap
         Assert.Equal(3, countMap.Quantile(0.95));
         Assert.Equal(3, countMap.Quantile(1.00));
     }
+
+    // Tie rule: when p lands exactly on a cumulative frequency, the scan
+    // returns the key at which the frequency is reached, on either parity
+    // of the unique-key count. The odd-key assertions fail on main, where
+    // the odd branch accepted only a frequency strictly greater than p.
+    [Fact]
+    public void Quantile_ReturnsFirstKeyReachingCumulativeFrequency()
+    {
+        var evenKeys = new CountMap<int>();
+        evenKeys.Fit(1, 1);
+        evenKeys.Fit(2, 1);
+
+        Assert.Equal(1, evenKeys.Quantile(0.5));
+
+        var oddKeys = new CountMap<int>();
+        oddKeys.Fit(1, 1);
+        oddKeys.Fit(2, 1);
+        oddKeys.Fit(3, 1);
+
+        Assert.Equal(1, oddKeys.Quantile(1.0 / 3));
+        Assert.Equal(2, oddKeys.Quantile(2.0 / 3));
+    }
     
     [Fact]
     public void Median_ReturnsCorrectMedianObservation()

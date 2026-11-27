@@ -494,7 +494,22 @@ public static partial class CountMapExtensions
     /// Compute the p-th quantile of a CountMap.
     /// If <c>p</c> is less than or equal to 0, the method returns the minimum key.
     /// If <c>p</c> is greater than or equal to 1, the method returns the maximum key.
+    /// Otherwise the keys are scanned in order and the running cumulative frequency
+    /// is compared against <c>p</c>; the method returns the first key at which the
+    /// running frequency reaches or passes <c>p</c>.
     /// </summary>
+    /// <remarks>
+    /// Tie rule: the scan accepts the first key whose cumulative frequency is
+    /// greater than or equal to <c>p</c>, the inverse empirical CDF (generalized
+    /// inverse, R type 1) convention. When <c>p</c> equals a cumulative frequency
+    /// exactly, the method returns the key at which that frequency is reached —
+    /// the lower of the two neighboring observations in the sorted sample — not
+    /// the next key up. The rule is the same for every count map; it does not
+    /// depend on the parity of <c>Nobs</c> or on the number of unique keys.
+    /// This is the median convention the CountMap median follows: with an even
+    /// number of observations, the median is the first observation at which the
+    /// cumulative proportion reaches one half.
+    /// </remarks>
     /// <param name="countMap">The count map to compute the quantile for.</param>
     /// <param name="p">The quantile to compute. Pass a value between 0 and 1.</param>
     /// <param name="comparer">The comparer to use for ordering the keys.
@@ -513,27 +528,16 @@ public static partial class CountMapExtensions
 
         if (p <= 0) return countMap.MinKey(comparer);
         if (p >= 1) return countMap.MaxKey(comparer);
-        
+
         var cdf = 0.0;
         var nobs = (double)countMap.Nobs;
-        
-        if (countMap.Count % 2 == 0)
+
+        foreach (var kvp in countMap.OrderBy(kvp => kvp.Key, comparer))
         {
-            foreach (var kvp in countMap.OrderBy(kvp => kvp.Key, comparer))
-            {
-                cdf += kvp.Value / nobs;
-                if (cdf >= p) return kvp.Key;
-            }
+            cdf += kvp.Value / nobs;
+            if (cdf >= p) return kvp.Key;
         }
-        else
-        {
-            foreach (var kvp in countMap.OrderBy(kvp => kvp.Key, comparer))
-            {
-                cdf += kvp.Value / nobs;
-                if (cdf > p) return kvp.Key;
-            }
-        }
-        
+
         // This should be unreachable...
         throw new Exception($"Not able to find the {p} quantile of the count map.");
     }
