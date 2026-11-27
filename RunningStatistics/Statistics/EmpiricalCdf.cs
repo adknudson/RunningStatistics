@@ -211,8 +211,29 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     
     public override EmpiricalCdf CloneEmpty() => new(NumBins);
 
+    /// <summary>
+    /// Merges another empirical CDF into this empirical CDF.
+    /// </summary>
+    /// <param name="empiricalCdf">The other empirical CDF to merge in. Its bin count must
+    /// match this empirical CDF's.</param>
+    /// <remarks>
+    /// The merge works only when the two objects share a bin count: the merge then blends
+    /// the matching bins and replays the source's unflushed tail, and the result stays
+    /// exact.
+    ///
+    /// When the bin counts differ, the merge throws and leaves this empirical CDF
+    /// unchanged. An incompatible merge is an error, not a silent approximation. A caller
+    /// who wants to combine two empirical CDFs of different sizes should use
+    /// <see cref="InexactMerge" /> instead, which resamples the source's quantile curve
+    /// onto this object's bin grid.
+    /// </remarks>
+    /// <exception cref="Exception">Thrown when the other empirical CDF has a different
+    /// number of bins. This empirical CDF keeps its state when the merge throws.</exception>
     public override void Merge(EmpiricalCdf empiricalCdf)
     {
+        // The shape check runs before any state is touched, so a rejected merge leaves
+        // this object exactly as it was: an approximation of a mismatched pair belongs
+        // to InexactMerge, not to a half-applied merge here.
         if (NumBins != empiricalCdf.NumBins)
         {
             throw new Exception($"The two {nameof(EmpiricalCdf)} objects must have the same batch size. " +
@@ -263,7 +284,103 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
             }
         }
     }
-    
+
+    /// <summary>
+    /// Merges another empirical CDF into this empirical CDF, approximating the other's
+    /// distribution on this empirical CDF's bin grid when the two bin counts differ.
+    /// </summary>
+    /// <param name="empiricalCdf">The other empirical CDF to merge in. It may have any
+    /// number of bins.</param>
+    /// <remarks>
+    /// Same bin count: this method merges exactly like <see cref="Merge" />, so the exact
+    /// path pays nothing for the approximation.
+    ///
+    /// Different bin counts: the other's bins cannot be blended one for one, so the method
+    /// reads the other's quantile curve instead. That curve is sampled at this object's
+    /// own bin positions and blended in, and the other's unflushed raw tail is replayed
+    /// through this object's own buffer and flush.
+    ///
+    /// What stays exact: the observation counts, the minimum and the maximum, and this
+    /// object's own bins, which carry their own history untouched by the resampling. The
+    /// replayed tail values are exact too.
+    ///
+    /// What is approximate: the other's distribution, because its quantile curve is only
+    /// known at this object's bin positions. Between those positions the other's bin values
+    /// are estimates, so readouts that land away from them inherit that estimate. The other
+    /// object keeps its own state; only this object sees the approximation.
+    /// </remarks>
+    public void InexactMerge(EmpiricalCdf empiricalCdf)
+    {
+        if (NumBins == empiricalCdf.NumBins)
+        {
+            Merge(empiricalCdf);
+            return;
+        }
+
+        // Only observations a flush has already blended into the bin arrays may carry
+        // weight in this blend. Each side's slots past its own flushed region are stale,
+        // and they hold zeros until that side's first flush, so both flush counts must be
+        // read before anything here mutates this object or its extrema. This object's
+        // flushed region runs on its own bin count, the other's on the other's.
+        var otherPartial = empiricalCdf.Nobs % empiricalCdf.NumBins;
+        var thisFlushed = Nobs - (Nobs % NumBins);
+        var otherFlushed = empiricalCdf.Nobs - otherPartial;
+
+        // A side with no flushed observation contributes no curve at all, so a pair that
+        // has never flushed blends nothing: its whole history is raw and the replay below
+        // carries it. A non-negative flush count sum also means the blend weight below is
+        // a ratio of counts, hence a probability in [0, 1] that needs no per-blend check.
+        if (otherFlushed > 0)
+        {
+            var alpha = (double)otherFlushed / (thisFlushed + otherFlushed);
+
+            // The other's curve is sampled at this object's bin positions. Quantile maps
+            // a probability onto the window position (NumBins + 1) p, so this object's
+            // bin k, zero-based, sits at probability (k + 1) / (NumBins + 1). Sampling
+            // that way keeps the blended bins in the same order the window needs: both
+            // curves are non-decreasing, and one weight across two sorted runs leaves a
+            // sorted run.
+            //
+            // The other's Quantile only answers once its own count reaches its own bin
+            // count, which is exactly when its flushed count is positive: the guard above
+            // is that precondition, and the sampled probabilities are all proper ones.
+            var valuesView = Values;
+            for (var k = 0; k < NumBins; k++)
+            {
+                var otherEstimate = empiricalCdf.Quantile((k + 1.0) / (NumBins + 1));
+                valuesView[k] = Utils.Smooth(valuesView[k], otherEstimate, alpha);
+            }
+        }
+
+        // Counts, min and max for all of the source's observations, including its
+        // unflushed tail. The extrema carry no bin structure, so this fold stays exact
+        // whatever the two bin counts are.
+        _extrema.Merge(empiricalCdf._extrema);
+
+        // Replay the source's still-unflushed buffer values through this object's own
+        // buffer and flush. Their counts and extremes were already merged above, so they
+        // must not be fitted to the extrema a second time here. Placing them in order
+        // puts them at the tail positions of the merged observation stream, on this
+        // object's bin count: a source tail longer than one of this object's windows
+        // simply completes more than one window, and each of those flushes blends the
+        // window the replay built.
+        for (var r = 0; r < otherPartial; r++)
+        {
+            var i = (int)((Nobs - otherPartial + r) % NumBins);
+            _buffer[i] = empiricalCdf._buffer[r];
+
+            if (i + 1 < NumBins) continue;
+
+            Array.Sort(_buffer);
+            // A flush fires at a window's last slot, so the merged count is already at
+            // least NumBins here and the weight NumBins / Nobs stays in (0, 1].
+            for (var k = 0; k < NumBins; k++)
+            {
+                Values[k] = Utils.Smooth(Values[k], _buffer[k], (double)NumBins / Nobs);
+            }
+        }
+    }
+
     /// <summary>
     /// Finds the pth quantile of the empirical CDF.
     /// </summary>
