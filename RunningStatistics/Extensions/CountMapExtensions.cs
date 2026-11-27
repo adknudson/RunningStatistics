@@ -101,6 +101,14 @@ public static partial class CountMapExtensions
     {
         return countMap.Variance(countMap.Mean(), corrected);
     }
+
+    /// <summary>
+    /// Compute the sample variance of a CountMap of decimals.
+    /// </summary>
+    public static decimal Variance(this CountMap<decimal> countMap, bool corrected = true)
+    {
+        return countMap.Variance(countMap.Mean(), corrected);
+    }
     
     /// <summary>
     /// Compute the sample variance of a CountMap of integers.
@@ -128,6 +136,21 @@ public static partial class CountMapExtensions
         var v = countMap.Sum(x => x.Value * Math.Pow(x.Key - mean, 2) / countMap.Nobs);
         return corrected ? v * Utils.Bessel(countMap.Nobs) : v;
     }
+
+    /// <summary>
+    /// Compute the sample variance of a CountMap of decimals. The result is a decimal:
+    /// the sum of squared deviations and the Bessel correction both stay in decimal
+    /// arithmetic, so no binary rounding error enters the result.
+    /// </summary>
+    /// <exception cref="DivideByZeroException">
+    /// Thrown by the corrected form when the count map holds a single observation, since
+    /// decimal division by zero throws instead of yielding infinity.
+    /// </exception>
+    public static decimal Variance(this CountMap<decimal> countMap, decimal mean, bool corrected = true)
+    {
+        var v = countMap.Sum(x => x.Value * (x.Key - mean) * (x.Key - mean)) / countMap.Nobs;
+        return corrected ? v * countMap.Nobs / (countMap.Nobs - 1) : v;
+    }
     
     /// <summary>
     /// Compute the sample standard deviation of a CountMap of integers.
@@ -154,6 +177,16 @@ public static partial class CountMapExtensions
     }
 
     /// <summary>
+    /// Compute the sample standard deviation of a CountMap of decimals. The result is a
+    /// double: the square root of a decimal is generally irrational, so it has no exact
+    /// decimal representation.
+    /// </summary>
+    public static double StandardDeviation(this CountMap<decimal> countMap, bool corrected = true)
+    {
+        return Math.Sqrt((double)countMap.Variance(corrected));
+    }
+
+    /// <summary>
     /// Compute the sample standard deviation of a CountMap of integers.
     /// </summary>
     public static double StandardDeviation(this CountMap<int> countMap, double mean, bool corrected = true)
@@ -175,6 +208,16 @@ public static partial class CountMapExtensions
     public static double StandardDeviation(this CountMap<double> countMap, double mean, bool corrected = true)
     {
         return Math.Sqrt(countMap.Variance(mean, corrected));
+    }
+
+    /// <summary>
+    /// Compute the sample standard deviation of a CountMap of decimals. The result is a
+    /// double for the same reason as the other standard deviation: the square root of a
+    /// decimal is generally irrational.
+    /// </summary>
+    public static double StandardDeviation(this CountMap<decimal> countMap, decimal mean, bool corrected = true)
+    {
+        return Math.Sqrt((double)countMap.Variance(mean, corrected));
     }
     
     /// <summary>
@@ -209,6 +252,18 @@ public static partial class CountMapExtensions
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 3) / countMap.Nobs);
     }
+
+    /// <summary>
+    /// Compute the standardized skewness of a CountMap of decimals. Sample skewness needs
+    /// at least three observations and returns NaN below that limit. The standardized
+    /// result is a double because it involves division by a square root.
+    /// </summary>
+    public static double Skewness(this CountMap<decimal> countMap, decimal mean, decimal variance)
+    {
+        if (countMap.Nobs < 3) return double.NaN;
+        var std = Math.Sqrt((double)variance);
+        return countMap.Sum(x => x.Value * Math.Pow(((double)x.Key - (double)mean) / std, 3) / countMap.Nobs);
+    }
     
     /// <summary>
     /// Compute the standardized skewness of a CountMap of integers.
@@ -234,6 +289,16 @@ public static partial class CountMapExtensions
     /// Compute the standardized skewness of a CountMap of doubles.
     /// </summary>
     public static double Skewness(this CountMap<double> countMap)
+    {
+        var mean = countMap.Mean();
+        var variance = countMap.Variance(mean, false);
+        return countMap.Skewness(mean, variance);
+    }
+
+    /// <summary>
+    /// Compute the standardized skewness of a CountMap of decimals.
+    /// </summary>
+    public static double Skewness(this CountMap<decimal> countMap)
     {
         var mean = countMap.Mean();
         var variance = countMap.Variance(mean, false);
@@ -272,6 +337,18 @@ public static partial class CountMapExtensions
         var std = Math.Sqrt(variance);
         return countMap.Sum(x => x.Value * Math.Pow((x.Key - mean) / std, 4) / countMap.Nobs);
     }
+
+    /// <summary>
+    /// Compute the kurtosis of a CountMap of decimals. Sample kurtosis needs at least four
+    /// observations and returns NaN below that limit. The standardized result is a double
+    /// because it involves division by a square root.
+    /// </summary>
+    public static double Kurtosis(this CountMap<decimal> countMap, decimal mean, decimal variance)
+    {
+        if (countMap.Nobs < 4) return double.NaN;
+        var std = Math.Sqrt((double)variance);
+        return countMap.Sum(x => x.Value * Math.Pow(((double)x.Key - (double)mean) / std, 4) / countMap.Nobs);
+    }
     
     /// <summary>
     /// Compute the kurtosis of a CountMap of integers.
@@ -304,6 +381,16 @@ public static partial class CountMapExtensions
     }
 
     /// <summary>
+    /// Compute the kurtosis of a CountMap of decimals.
+    /// </summary>
+    public static double Kurtosis(this CountMap<decimal> countMap)
+    {
+        var mean = countMap.Mean();
+        var variance = countMap.Variance(mean, false);
+        return countMap.Kurtosis(mean, variance);
+    }
+
+    /// <summary>
     /// Compute the excess kurtosis of a CountMap of integers.
     /// </summary>
     public static double ExcessKurtosis(this CountMap<int> countMap, double mean, double variance)
@@ -323,6 +410,14 @@ public static partial class CountMapExtensions
     /// Compute the excess kurtosis of a CountMap of doubles.
     /// </summary>
     public static double ExcessKurtosis(this CountMap<double> countMap, double mean, double variance)
+    {
+        return countMap.Kurtosis(mean, variance) - 3;
+    }
+
+    /// <summary>
+    /// Compute the excess kurtosis of a CountMap of decimals.
+    /// </summary>
+    public static double ExcessKurtosis(this CountMap<decimal> countMap, decimal mean, decimal variance)
     {
         return countMap.Kurtosis(mean, variance) - 3;
     }
@@ -351,6 +446,16 @@ public static partial class CountMapExtensions
     /// Compute the excess kurtosis of a CountMap of doubles.
     /// </summary>
     public static double ExcessKurtosis(this CountMap<double> countMap)
+    {
+        var mean = countMap.Mean();
+        var variance = countMap.Variance(mean, false);
+        return countMap.ExcessKurtosis(mean, variance);
+    }
+
+    /// <summary>
+    /// Compute the excess kurtosis of a CountMap of decimals.
+    /// </summary>
+    public static double ExcessKurtosis(this CountMap<decimal> countMap)
     {
         var mean = countMap.Mean();
         var variance = countMap.Variance(mean, false);

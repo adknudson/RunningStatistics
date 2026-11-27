@@ -181,6 +181,65 @@ public partial class TestCountMap
 
         Assert.Equal(-0.893, countMap.ExcessKurtosis(), 3);
     }
+
+    // The decimal overloads reuse the int data, so the expected values match the
+    // int facts to the same three digits; variance alone stays a decimal.
+    [Fact]
+    public void Variance_ReturnsCorrectVarianceForDecimal()
+    {
+        var countMap = new CountMap<decimal>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
+
+        Assert.Equal(0.567m, countMap.Variance(), 3);
+        Assert.Equal(0.567m, countMap.Variance(countMap.Mean()), 3);
+    }
+
+    [Fact]
+    public void StdDev_ReturnsCorrectStandardDeviationForDecimal()
+    {
+        var countMap = new CountMap<decimal>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
+
+        Assert.Equal(0.753, countMap.StandardDeviation(), 3);
+        Assert.Equal(0.753, countMap.StandardDeviation(countMap.Mean()), 3);
+    }
+
+    [Fact]
+    public void Skewness_ReturnsCorrectSkewnessForDecimal()
+    {
+        var countMap = new CountMap<decimal>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
+
+        Assert.Equal(0.228, countMap.Skewness(), 3);
+    }
+
+    [Fact]
+    public void Kurtosis_ReturnsCorrectKurtosisForDecimal()
+    {
+        var countMap = new CountMap<decimal>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
+
+        Assert.Equal(2.107, countMap.Kurtosis(), 3);
+    }
+
+    [Fact]
+    public void ExcessKurtosis_ReturnsCorrectExcessKurtosisForDecimal()
+    {
+        var countMap = new CountMap<decimal>();
+        countMap.Fit(1, 2);
+        countMap.Fit(2, 3);
+        countMap.Fit(3, 1);
+
+        Assert.Equal(-0.893, countMap.ExcessKurtosis(), 3);
+    }
     
     [Fact]
     public void MinKey_ReturnsMinimumKeyForMyNum()
