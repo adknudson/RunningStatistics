@@ -23,7 +23,7 @@ Supports .NET Standard 2.0
 | Moments       | `double`                                                           | `Mean`, `Variance`, `StandardDeviation`, `Skewness`, `Kurtosis`, `ExcessKurtosis`                    |
 | EmpiricalCdf  | `double`, into `numBins` bins (default 200)                        | `NumBins`, `Quantile(p)`, `Cdf(x)`, `Median`, `Min`, `Max`                                           |
 | Histogram     | `double`, into bins given as `edges`                               | `NumBins`, `Bins`, `Edges`, `OutOfBoundsCounts`, iteration over `Bin`s with `Lower`, `Upper`, `Nobs` |
-| CountMap\<T\> | any type                                                           | `Count`, `Keys`, `Values`, `MinKey`, `MaxKey`, and read-only `Dictionary` access                     |
+| CountMap\<T\> | any type                                                           | `Count`, `Keys`, `Values`, `Mode`, `Median`, `Quantile(p)`, `MinKey`, `MaxKey`, and read-only `Dictionary` access |
 | Normal        | `double`                                                           | `Mean`, `Variance`, `StandardDeviation`, `Pdf(x)`, `Cdf(x)`, `Quantile(p)`                           |
 | Beta          | `bool`                                                             | `Successes`, `Failures`, `Mean`, `Median`, `Mode`, `Variance`, `Pdf(x)`, `Cdf(x)`                    |
 

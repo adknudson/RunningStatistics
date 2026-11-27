@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 #if NET5_0_OR_GREATER
 using System.Runtime.InteropServices;
 #endif
@@ -265,6 +267,128 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// <returns>True when the map holds at least one key, false when it is empty.</returns>
     public bool TryGetMaxKey(out TObs key) => TryGetMaxKey(Comparer, out key);
     
+    /// <summary>
+    /// Gets the observation with the highest count.
+    /// </summary>
+    /// <remarks>
+    /// The map's own iteration order decides which observation is reported when several share
+    /// the highest count, exactly as it did while this read was the
+    /// <c>CountMapExtensions.Mode</c> extension method.
+    /// </remarks>
+    /// <exception cref="Exception">Thrown when the count map has no observations. The mode does not exist.</exception>
+    public TObs Mode
+    {
+        get
+        {
+            if (Nobs == 0)
+            {
+                throw new Exception("Nobs = 0. The mode does not exist.");
+            }
+
+            TObs? mode = default;
+            var maxCount = 0L;
+
+            foreach (var kvp in this)
+            {
+                if (kvp.Value <= maxCount) continue;
+                mode = kvp.Key;
+                maxCount = kvp.Value;
+            }
+
+            return mode ?? throw new NullReferenceException();
+        }
+    }
+
+    /// <summary>
+    /// Gets the p-th quantile of a CountMap, with the keys ordered by the given comparer.
+    /// If <c>p</c> is less than or equal to 0, the method returns the minimum key.
+    /// If <c>p</c> is greater than or equal to 1, the method returns the maximum key.
+    /// Otherwise the keys are scanned in order and the running cumulative frequency
+    /// is compared against <c>p</c>; the method returns the first key at which the
+    /// running frequency reaches or passes <c>p</c>.
+    /// </summary>
+    /// <remarks>
+    /// Tie rule: the scan accepts the first key whose cumulative frequency is
+    /// greater than or equal to <c>p</c>, the inverse empirical CDF (generalized
+    /// inverse, R type 1) convention. When <c>p</c> equals a cumulative frequency
+    /// exactly, the method returns the key at which that frequency is reached —
+    /// the lower of the two neighboring observations in the sorted sample — not
+    /// the next key up. The rule is the same for every count map; it does not
+    /// depend on the parity of <c>Nobs</c> or on the number of unique keys.
+    /// This is the median convention the CountMap median follows: with an even
+    /// number of observations, the median is the first observation at which the
+    /// cumulative proportion reaches one half.
+    /// </remarks>
+    /// <param name="p">The quantile to compute. Pass a value between 0 and 1.</param>
+    /// <param name="comparer">The comparer to use for ordering the keys.
+    /// If null, the method uses the default comparer.</param>
+    /// <returns>The p-th quantile of the count map.</returns>
+    /// <exception cref="Exception">
+    /// Thrown if the count map is empty or if the quantile cannot be found.
+    /// </exception>
+    public TObs Quantile(double p, IComparer<TObs>? comparer)
+    {
+        if (Nobs == 0)
+        {
+            throw new Exception("The count map is empty. The quantile does not exist.");
+        }
+
+        // These read the same end keys as the old extension body did through MinKey/MaxKey,
+        // but through the non-throwing helpers: this class's MinKey/MaxKey are being
+        // reworked in a later commit, and the helpers keep this method independent of
+        // how those reads throw. The empty case was rejected above, so the fall-through
+        // below still throws the KeyNotFoundException the old MinKey/MaxKey calls did.
+        if (p <= 0)
+        {
+            if (TryGetMinKey(comparer, out var minKey)) return minKey;
+            throw new KeyNotFoundException("The minimum key does not exist.");
+        }
+        if (p >= 1)
+        {
+            if (TryGetMaxKey(comparer, out var maxKey)) return maxKey;
+            throw new KeyNotFoundException("The maximum key does not exist.");
+        }
+
+        var cdf = 0.0;
+        var nobs = (double)Nobs;
+
+        foreach (var kvp in this.OrderBy(kvp => kvp.Key, comparer))
+        {
+            cdf += kvp.Value / nobs;
+            if (cdf >= p) return kvp.Key;
+        }
+
+        // This should be unreachable...
+        throw new Exception($"Not able to find the {p} quantile of the count map.");
+    }
+
+    /// <summary>
+    /// Gets the p-th quantile of a CountMap.
+    /// If <c>p</c> is less than or equal to 0, the method returns the minimum key.
+    /// If <c>p</c> is greater than or equal to 1, the method returns the maximum key.
+    /// </summary>
+    /// <param name="p">The quantile to compute. Pass a value between 0 and 1.</param>
+    /// <returns>The p-th quantile of the count map.</returns>
+    /// <remarks>
+    /// This method uses the comparer associated with the CountMap. If the CountMap
+    /// has no comparer, the method uses the default comparer instead.
+    /// </remarks>
+    public TObs Quantile(double p) => Quantile(p, Comparer);
+
+    /// <summary>
+    /// Gets the median of a CountMap, that is the result of <c>Quantile(0.5)</c>.
+    /// </summary>
+    /// <remarks>
+    /// This method uses the comparer associated with the CountMap. If the CountMap
+    /// has no comparer, the method uses the default comparer instead. A caller
+    /// that needs to order the keys with another comparer reads
+    /// <c>Quantile(0.5, comparer)</c> instead: a property cannot sit beside a
+    /// same-named method, so the comparer-taking median overload has no member
+    /// of its own.
+    /// </remarks>
+    /// <returns>The median of the count map.</returns>
+    public TObs Median => Quantile(0.5);
+
     public IEnumerator<KeyValuePair<TObs, long>> GetEnumerator() => _dict.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
