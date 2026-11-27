@@ -256,6 +256,11 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
 
     public override Histogram CloneEmpty() => new(_edges, LeftClosed, EndsClosed);
 
+    /// <summary>
+    /// Merges another histogram into this histogram.
+    /// </summary>
+    /// <param name="histogram">The other histogram to merge in. Its bins must match this
+    /// histogram's, in their bounds and their closure flags.</param>
     /// <remarks>
     /// The merge works only when the two histograms have the same bins: the same number of
     /// bins, with equal bounds and equal closure flags. The merge then adds the counts of
