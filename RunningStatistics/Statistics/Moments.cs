@@ -131,6 +131,7 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     // number, while the replay loop's error grows with the condition number.
     public override void Fit(IEnumerable<double> values)
     {
+        Require.NotNull(values);
         var ys = values.ToList();
         if (ys.Count == 0) return;
         ys.ForEach(Require.Finite);

@@ -132,6 +132,7 @@ public sealed partial class Beta : RunningStatisticBase<bool, Beta>
     
     public override void Fit(IEnumerable<bool> values)
     {
+        Require.NotNull(values);
         var bs = values.ToList();
         var n = bs.Count;
         var s = bs.Count(b => b);

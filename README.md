@@ -123,7 +123,12 @@ var q1 = ecdf.Quantile(0.25);
   `Max` throw `InvalidOperationException`, and `CountMap<T>.MinKey` and `MaxKey` throw
   `KeyNotFoundException` when nothing is fitted. `TryGetMin`/`TryGetMax` and `TryGetMinKey`/`TryGetMaxKey`
   read the same values without throwing.
-- `Beta` also fits pre-counted results with `Fit(successes, failures)`.
+- Input guards differ by statistic, and the difference is deliberate. `Mean`, `Sum`, `Variance`,
+  `Normal`, `Moments` and `EmpiricalCdf` require every observation to be finite: `NaN` or ±Infinity
+  throws `ArgumentException`. `Extrema` and `Histogram` take ±Infinity, because a minimum, a
+  maximum and an out-of-bounds count are defined there, and throw `ArgumentException` only for `NaN`.
+  The generic `Extrema<T>` rejects a null observation.
+- A `null` collection is rejected with `ArgumentNullException` before anything is fitted.
 - `Histogram.Bin` is a nested supporting type. A `Histogram` iterates as `Bin`s, each with
   `Lower`, `Upper` and `Nobs`. `Histogram.OutOfBoundsCounts` reports observations below or above
   the bins as a `(long Lower, long Upper)` tuple.
