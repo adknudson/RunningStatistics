@@ -38,6 +38,8 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
     
     public override void Fit(double value, long count)
     {
+        // A minimum and a maximum over infinite observations are defined, so an infinite value
+        // carries information the caller wants rather than an error: only NaN is refused here.
         Require.NotNaN(value);
         Require.NonNegative(count);
         if (count == 0) return;

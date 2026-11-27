@@ -41,6 +41,7 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
 
     public override void Fit(IEnumerable<double> values)
     {
+        Require.NotNull(values);
         var ys = values.ToList();
         if (ys.Count == 0) return;
         ys.ForEach(Require.Finite);

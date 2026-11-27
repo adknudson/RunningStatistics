@@ -145,6 +145,8 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
 
     public override void Fit(double value, long count)
     {
+        // Histogram edges may be infinite, so an infinite observation is a data point that
+        // belongs in the out-of-bounds counts. Only NaN is refused here.
         Require.NotNaN(value);
         Require.NonNegative(count);
         if (count == 0) return;
