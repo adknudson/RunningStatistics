@@ -9,7 +9,7 @@ namespace RunningStatistics;
 /// <summary>
 /// Represents a Beta distribution for running statistics.
 /// </summary>
-public sealed class Beta : RunningStatisticBase<bool, Beta>
+public sealed partial class Beta : RunningStatisticBase<bool, Beta>
 {
     private long _a, _b;
 
@@ -59,7 +59,7 @@ public sealed class Beta : RunningStatisticBase<bool, Beta>
     /// and at least one observed failure.
     /// </summary>
     public double Median => _a > 0 && _b > 0 
-        ? this.Quantile(0.5)
+        ? Quantile(0.5)
         : double.NaN;
 
     /// <summary>

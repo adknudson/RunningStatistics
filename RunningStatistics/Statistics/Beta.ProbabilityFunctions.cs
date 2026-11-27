@@ -1,14 +1,12 @@
 ﻿using System;
-// ReSharper disable ConvertIfStatementToSwitchStatement
-// ReSharper disable CompareOfFloatsByEqualityOperator
 
 namespace RunningStatistics;
 
-public static class BetaExtensions
+public sealed partial class Beta
 {
-    public static double Pdf(this Beta beta, double x)
+    public double Pdf(double x)
     {
-        return BetaPdf(beta.Successes, beta.Failures, x);
+        return BetaPdf(Successes, Failures, x);
     }
     
     private static double BetaPdf(double a, double b, double x)
@@ -83,13 +81,14 @@ public static class BetaExtensions
         return aa + bb + cc;
     }
     
-    public static double Cdf(this Beta beta, double x)
+    public double Cdf(double x)
     {
-        if (beta is { Successes: 0, Failures: 0 })
+        if (Successes == 0 && Failures == 0)
         {
             throw new ArgumentException("CDF is undefined for both a = 0 and b = 0"); 
         }
-        return BetaCdf(beta.Successes, beta.Failures, x);
+        
+        return BetaCdf(Successes, Failures, x);
     }
     
     private static double BetaCdf(double a, double b, double x)
@@ -124,10 +123,10 @@ public static class BetaExtensions
         return SpecialFunctions.UnsafeBetaRegularized(a, b, x);
     }
     
-    public static double Quantile(this Beta beta, double p)
+    public double Quantile(double p)
     {
         Require.ValidProbability(p);
-        return BetaInvCdf(beta.Successes, beta.Failures, p);
+        return BetaInvCdf(Successes, Failures, p);
     }
     
     private static double BetaInvCdf(double a, double b, double p)
