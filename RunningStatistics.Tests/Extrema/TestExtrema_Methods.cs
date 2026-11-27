@@ -476,18 +476,20 @@ public partial class TestExtrema
         Assert.Equal(5, first.Nobs);
     }
 
-    // The two Extrema types disagree on how an empty statistic reports its extremes. These
-    // facts pin both sides as they behave today, with no library change.
+    // The two Extrema types now follow one documented convention split by observation type
+    // (issue #12). The facts pin both sides after that standardization.
     //
-    // The double Extrema returns NaN from Min and Max without throwing. Its Range() comes out
-    // as NaN, because it subtracts those NaN accessors. ToString renders both extremes as
+    // Numeric side: the double Extrema reads NaN from Min and Max when empty, because a
+    // double statistic can name an undefined readout with NaN. Its Range() comes out as
+    // NaN, because it subtracts those NaN accessors. ToString renders both extremes as
     // "NaN (n=0)".
     //
-    // The generic Extrema of a comparable type throws from Min and Max, with the message
-    // "Nobs must be greater than 0". No sentinel value could stand in for a missing extreme
-    // of an arbitrary type. Its range extension subtracts the two accessors, so it
-    // propagates the same throw. That extension only exists for types that support
-    // subtraction, such as MyNum but not MyComparable.
+    // Generic side: no sentinel value could stand in for a missing extreme of an arbitrary
+    // type, so the generic Extrema throws from Min and Max when empty, with the message
+    // "Nobs must be greater than 0". TryGetMin and TryGetMax give callers a non-throwing read;
+    // their facts live in the generic test files. The range extension subtracts the two
+    // accessors, so it propagates the same throw. That extension only exists for types
+    // that support subtraction, such as MyNum but not MyComparable.
     //
     // ToString of the generic type reads the raw private fields instead of the throwing
     // accessors. For a reference type the fields are still null, so they print as empty text.

@@ -30,7 +30,7 @@ public partial class TestEmpiricalCdf
     }
     
     [Fact]
-    public void Quantile_ThrowsWhenFewerObservationsThanBins()
+    public void Quantile_ReturnsNaNWhenFewerObservationsThanBins()
     {
         RunningStatistics.EmpiricalCdf cdf = new(20);
         var rng = new Random();
@@ -40,8 +40,10 @@ public partial class TestEmpiricalCdf
             cdf.Fit(rng.NextDouble());
         }
 
-        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(0.25));
-        Assert.Throws<InvalidOperationException>(() => cdf.Median);
+        // The numeric convention: an undefined readout reads NaN instead of throwing.
+        Assert.Equal(double.NaN, cdf.Quantile(0.25));
+        Assert.Equal(double.NaN, cdf.Median);
+        Assert.Equal(double.NaN, cdf.Cdf(0.5));
     }
 
     [Fact]
@@ -567,13 +569,13 @@ public partial class TestEmpiricalCdf
     }
 
     [Fact]
-    public void SmallBuffer_CdfThrowsContract()
+    public void SmallBuffer_CdfReturnsNaNContract()
     {
         // The buffer is under-filled, with fewer observations than the batch size. The
-        // cumulative-distribution query throws its small-buffer error for every input,
-        // including inputs below the minimum, inside the range or at the maximum. Those
-        // inputs would be perfectly valid questions once the statistic fills up. The
-        // small-buffer check runs before the NaN check and the range logic.
+        // cumulative-distribution query answers NaN for every valid input, including
+        // inputs below the minimum, inside the range or at the maximum. Those inputs
+        // would be perfectly valid questions once the statistic fills up. The numeric
+        // convention from issue #12: an undefined readout reads NaN, it does not throw.
         RunningStatistics.EmpiricalCdf cdf = new(10);
         for (var v = 1.0; v <= 9.0; v++)
         {
@@ -587,20 +589,20 @@ public partial class TestEmpiricalCdf
         Utils.AssertIsApproximate(1.0, cdf.Min, 0);
         Utils.AssertIsApproximate(9.0, cdf.Max, 0);
 
-        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(0.5));
-        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(1.0));
-        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(5.0));
-        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(9.0));
-        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(10.0));
+        Assert.Equal(double.NaN, cdf.Cdf(0.5));
+        Assert.Equal(double.NaN, cdf.Cdf(1.0));
+        Assert.Equal(double.NaN, cdf.Cdf(5.0));
+        Assert.Equal(double.NaN, cdf.Cdf(9.0));
+        Assert.Equal(double.NaN, cdf.Cdf(10.0));
 
-        // The small-buffer check runs before the NaN check. A query of NaN here
-        // reports the small-buffer error, not the bad-value error a filled statistic
-        // gives. The fact QuantileAndCdf_RejectNaN pins the filled-statistic case.
-        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(double.NaN));
+        // The bad-value check runs before the bin-count guard, so a NaN query here
+        // reports the bad-value error, not a small-buffer answer. The filled-statistic
+        // case sits in the fact QuantileAndCdf_RejectNaN.
+        Assert.Throws<ArgumentException>(() => cdf.Cdf(double.NaN));
     }
 
     [Fact]
-    public void SmallBuffer_QuantileThrowsContract()
+    public void SmallBuffer_QuantileReturnsNaNContract()
     {
         RunningStatistics.EmpiricalCdf cdf = new(10);
         for (var v = 1.0; v <= 9.0; v++)
@@ -612,35 +614,35 @@ public partial class TestEmpiricalCdf
         // a filled statistic, the end points 0 and 1 answer with the minimum and the
         // maximum. The small-buffer fact above already pins an interior probability
         // and the median.
-        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(0.0));
-        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(0.75));
-        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(1.0));
+        Assert.Equal(double.NaN, cdf.Quantile(0.0));
+        Assert.Equal(double.NaN, cdf.Quantile(0.75));
+        Assert.Equal(double.NaN, cdf.Quantile(1.0));
 
-        // The small-buffer check runs before the probability-range check. Even an
-        // impossible probability here reports the small-buffer error, not the out-of-
-        // range error a filled statistic would give. The fact Quantile_EdgeCases pins
+        // The probability-range check runs before the bin-count guard. Even an
+        // impossible probability here reports the out-of-range error, the same error
+        // a filled statistic would give. The fact Quantile_EdgeCases pins
         // the filled-statistic case.
-        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(-0.1));
-        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(1.1));
-        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => cdf.Quantile(-0.1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => cdf.Quantile(1.1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => cdf.Quantile(double.NaN));
     }
 
     [Fact]
     public void SmallBuffer_ExactlyNumBinsSucceeds()
     {
-        // This pins the exact transition between throwing and working. One observation
-        // short of a full batch still throws. At exactly one full batch the first flush
-        // happens, with blend weight one, and both queries succeed. The sample is
-        // deliberately unsorted, which exercises the flush's own sorting. Its values
-        // are 1, 2, 3 and 4.
+        // This pins the exact transition between answering NaN and answering a value.
+        // One observation short of a full batch still answers NaN. At exactly one full
+        // batch the first flush happens, with blend weight one, and both queries
+        // succeed. The sample is deliberately unsorted, which exercises the flush's
+        // own sorting. Its values are 1, 2, 3 and 4.
         RunningStatistics.EmpiricalCdf cdf = new(4);
         foreach (var v in new[] { 3.0, 1.0, 4.0 })
         {
             cdf.Fit(v);
         }
 
-        Assert.Throws<InvalidOperationException>(() => cdf.Cdf(3.5));
-        Assert.Throws<InvalidOperationException>(() => cdf.Quantile(0.5));
+        Assert.Equal(double.NaN, cdf.Cdf(3.5));
+        Assert.Equal(double.NaN, cdf.Quantile(0.5));
 
         cdf.Fit(2.0);
         Assert.Equal(4, cdf.Nobs);
@@ -668,9 +670,8 @@ public partial class TestEmpiricalCdf
     public void SmallBuffer_MergeThresholdTransition()
     {
         // This merges statistics that are each below one batch. The merged statistic's
-        // count is the sum of the two. Whether it still throws the small-buffer error
-        // depends on that combined count alone, not on whether either source ever
-        // completed a flush.
+        // count is the sum of the two. Whether it still answers NaN depends on that
+        // combined count alone, not on whether either source ever completed a flush.
         const int bins = 10;
         RunningStatistics.EmpiricalCdf a = new(bins);
         foreach (var v in new[] { 4.0, 3.0, 2.0, 1.0 })
@@ -684,8 +685,8 @@ public partial class TestEmpiricalCdf
             b.Fit(v);
         }
 
-        Assert.Throws<InvalidOperationException>(() => a.Cdf(5.0));
-        Assert.Throws<InvalidOperationException>(() => b.Quantile(0.5));
+        Assert.Equal(double.NaN, a.Cdf(5.0));
+        Assert.Equal(double.NaN, b.Quantile(0.5));
 
         a.Merge(b);
 
@@ -693,13 +694,13 @@ public partial class TestEmpiricalCdf
         Assert.Equal(5, b.Nobs);
 
         // The combined count, four plus five, is still short of a full batch. The
-        // merged statistic keeps throwing the small-buffer error even for inputs that
-        // would otherwise be valid. The merge leaves the source statistic untouched
-        // and still small.
-        Assert.Throws<InvalidOperationException>(() => a.Cdf(1.0));
-        Assert.Throws<InvalidOperationException>(() => a.Quantile(0.0));
-        Assert.Throws<InvalidOperationException>(() => a.Quantile(1.0));
-        Assert.Throws<InvalidOperationException>(() => b.Cdf(7.0));
+        // merged statistic keeps answering NaN even for inputs that would otherwise
+        // be valid. The merge leaves the source statistic untouched and still
+        // small.
+        Assert.Equal(double.NaN, a.Cdf(1.0));
+        Assert.Equal(double.NaN, a.Quantile(0.0));
+        Assert.Equal(double.NaN, a.Quantile(1.0));
+        Assert.Equal(double.NaN, b.Cdf(7.0));
 
         RunningStatistics.EmpiricalCdf c = new(bins);
         c.Fit(10.0);
@@ -708,7 +709,7 @@ public partial class TestEmpiricalCdf
 
         // The combined count is now exactly one full batch. The last replayed
         // observation, 10.0, closes the buffer and triggers the flush. The queries
-        // that just threw now succeed over the merged sample of 1 through 10.
+        // that just answered NaN now succeed over the merged sample of 1 through 10.
         Assert.Equal(10, a.Nobs);
         Assert.Equal(1, c.Nobs);
         Utils.AssertIsApproximate(1.0, a.Min, 0);

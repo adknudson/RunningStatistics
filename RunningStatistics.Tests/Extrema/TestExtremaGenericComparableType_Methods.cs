@@ -205,5 +205,26 @@ public partial class TestExtremaGenericComparableType
         Assert.Equal(4, a.Nobs);
     }
 
+    [Fact]
+    public void TryGetMinAndTryGetMax_ResolveTheThrowingAccessorsForMyComparable()
+    {
+        Extrema<MyComparable> extrema = new();
+
+        // Empty readouts: Min and Max throw, so the Try reads are the non-throwing way to
+        // ask. They report false and the out reference stays at the type default.
+        Assert.False(extrema.TryGetMin(out var _));
+        Assert.False(extrema.TryGetMax(out var _));
+
+        extrema.Fit(new MyComparable(3.0m));
+        extrema.Fit(new MyComparable(7.0m));
+
+        Assert.True(extrema.TryGetMin(out var min));
+        Assert.True(extrema.TryGetMax(out var max));
+        Assert.Equal(new MyComparable(3.0m), min);
+        Assert.Equal(new MyComparable(7.0m), max);
+        Assert.Equal(min, extrema.Min);
+        Assert.Equal(max, extrema.Max);
+    }
+
     // Null-collection rejection lives in AbstractRunningStatsTest.FitNullCollections_ThrowsStateUntouched.
 }

@@ -122,6 +122,11 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// <summary>
     /// Finds the minimum key in the count map.
     /// </summary>
+    /// <remarks>
+    /// An empty map has no minimum key, and a generic key type has no NaN to stand in, so the
+    /// method throws in that case, the counterpart of the NaN readouts on numeric statistics.
+    /// Use <see cref="TryGetMinKey(out TObs)"/> when a non-throwing read is needed.
+    /// </remarks>
     /// <param name="comparer">The comparer to use for finding the minimum key.
     /// If null, the method uses the default comparer.</param>
     /// <returns>The minimum key in the count map, if any exist.</returns>
@@ -130,24 +135,11 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// </exception>
     public TObs MinKey(IComparer<TObs>? comparer)
     {
-        comparer ??= Comparer<TObs>.Default;
-
-        using var enumerator = _dict.Keys.GetEnumerator();
-        if (!enumerator.MoveNext())
+        if (TryGetMinKey(comparer, out var min))
         {
-            throw new KeyNotFoundException("The minimum key does not exist.");
+            return min;
         }
-
-        var min = enumerator.Current;
-        while (enumerator.MoveNext())
-        {
-            if (comparer.Compare(enumerator.Current, min) < 0)
-            {
-                min = enumerator.Current;
-            }
-        }
-
-        return min!;
+        throw new KeyNotFoundException("The minimum key does not exist.");
     }
     
     /// <summary>
@@ -160,8 +152,55 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     public TObs MinKey() => MinKey(Comparer);
     
     /// <summary>
+    /// Stores the minimum key in the count map in the given reference and reports whether one
+    /// exists. The method does not throw for an empty map.
+    /// </summary>
+    /// <param name="comparer">The comparer to use for finding the minimum key.
+    /// If null, the method uses the default comparer.</param>
+    /// <param name="key">Receives the minimum key, or the default of the key type when the map is empty.</param>
+    /// <returns>True when the map holds at least one key, false when it is empty.</returns>
+    public bool TryGetMinKey(IComparer<TObs>? comparer, out TObs key)
+    {
+        comparer ??= Comparer<TObs>.Default;
+
+        using var enumerator = _dict.Keys.GetEnumerator();
+        if (!enumerator.MoveNext())
+        {
+            // Every return must assign the out parameter; the false return tells callers
+            // to ignore this default key.
+            key = default!;
+            return false;
+        }
+
+        var min = enumerator.Current;
+        while (enumerator.MoveNext())
+        {
+            if (comparer.Compare(enumerator.Current, min) < 0)
+            {
+                min = enumerator.Current;
+            }
+        }
+
+        key = min!;
+        return true;
+    }
+    
+    /// <summary>
+    /// Stores the minimum key in the count map in the given reference and reports whether one
+    /// exists. The method does not throw for an empty map.
+    /// </summary>
+    /// <param name="key">Receives the minimum key, or the default of the key type when the map is empty.</param>
+    /// <returns>True when the map holds at least one key, false when it is empty.</returns>
+    public bool TryGetMinKey(out TObs key) => TryGetMinKey(Comparer, out key);
+    
+    /// <summary>
     /// Finds the maximum key in the count map.
     /// </summary>
+    /// <remarks>
+    /// An empty map has no maximum key, and a generic key type has no NaN to stand in, so the
+    /// method throws in that case, the counterpart of the NaN readouts on numeric statistics.
+    /// Use <see cref="TryGetMaxKey(out TObs)"/> when a non-throwing read is needed.
+    /// </remarks>
     /// <param name="comparer">The comparer to use for finding the maximum key.
     /// If null, the method uses the default comparer.</param>
     /// <returns>The maximum key in the count map, if any exist.</returns>
@@ -170,12 +209,39 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// </exception>
     public TObs MaxKey(IComparer<TObs>? comparer)
     {
+        if (TryGetMaxKey(comparer, out var max))
+        {
+            return max;
+        }
+        throw new KeyNotFoundException("The maximum key does not exist.");
+    }
+    
+    /// <summary>
+    /// Finds the maximum key in the count map.
+    /// </summary>
+    /// <returns>The maximum key in the count map, if any exist.</returns>
+    /// <exception cref="KeyNotFoundException">
+    /// Thrown if the count map is empty and no maximum key exists.
+    /// </exception>
+    public TObs MaxKey() => MaxKey(Comparer);
+    
+    /// <summary>
+    /// Stores the maximum key in the count map in the given reference and reports whether one
+    /// exists. The method does not throw for an empty map.
+    /// </summary>
+    /// <param name="comparer">The comparer to use for finding the maximum key.
+    /// If null, the method uses the default comparer.</param>
+    /// <param name="key">Receives the maximum key, or the default of the key type when the map is empty.</param>
+    /// <returns>True when the map holds at least one key, false when it is empty.</returns>
+    public bool TryGetMaxKey(IComparer<TObs>? comparer, out TObs key)
+    {
         comparer ??= Comparer<TObs>.Default;
         
         using var enumerator = _dict.Keys.GetEnumerator();
         if (!enumerator.MoveNext())
         {
-            throw new KeyNotFoundException("The maximum key does not exist.");
+            key = default!;
+            return false;
         }
         
         var max = enumerator.Current;
@@ -187,17 +253,17 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
             }
         }
         
-        return max!;
+        key = max!;
+        return true;
     }
     
     /// <summary>
-    /// Finds the maximum key in the count map.
+    /// Stores the maximum key in the count map in the given reference and reports whether one
+    /// exists. The method does not throw for an empty map.
     /// </summary>
-    /// <returns>The maximum key in the count map, if any exist.</returns>
-    /// <exception cref="KeyNotFoundException">
-    /// Thrown if the count map is empty and no maximum key exists.
-    /// </exception>
-    public TObs MaxKey() => MaxKey(Comparer);
+    /// <param name="key">Receives the maximum key, or the default of the key type when the map is empty.</param>
+    /// <returns>True when the map holds at least one key, false when it is empty.</returns>
+    public bool TryGetMaxKey(out TObs key) => TryGetMaxKey(Comparer, out key);
     
     public IEnumerator<KeyValuePair<TObs, long>> GetEnumerator() => _dict.GetEnumerator();
 

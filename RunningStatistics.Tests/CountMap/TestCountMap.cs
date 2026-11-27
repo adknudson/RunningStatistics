@@ -81,6 +81,36 @@ public partial class TestCountMap()
         var countMap = new CountMap<int>();
         Assert.Throws<KeyNotFoundException>(() => countMap.MaxKey());
     }
+
+    [Fact]
+    public void TryGetMinKey_FalseWhenEmptyAndMatchesMinKeyWhenFilled()
+    {
+        var empty = new CountMap<int>();
+        Assert.False(empty.TryGetMinKey(out var emptyKey));
+        Assert.Equal(0, emptyKey);
+
+        var countMap = new CountMap<int>();
+        countMap.Fit(5, 1);
+        countMap.Fit(2, 1);
+        Assert.True(countMap.TryGetMinKey(out var min));
+        Assert.Equal(2, min);
+        Assert.Equal(countMap.MinKey(), min);
+    }
+
+    [Fact]
+    public void TryGetMaxKey_FalseWhenEmptyAndMatchesMaxKeyWhenFilled()
+    {
+        var empty = new CountMap<int>();
+        Assert.False(empty.TryGetMaxKey(out var emptyKey));
+        Assert.Equal(0, emptyKey);
+
+        var countMap = new CountMap<int>();
+        countMap.Fit(5, 1);
+        countMap.Fit(2, 1);
+        Assert.True(countMap.TryGetMaxKey(out var max));
+        Assert.Equal(5, max);
+        Assert.Equal(countMap.MaxKey(), max);
+    }
     
     [Fact]
     public void MinKey_ThrowsIfObservationIsNotComparable()
