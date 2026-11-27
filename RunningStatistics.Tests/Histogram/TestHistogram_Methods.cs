@@ -291,7 +291,8 @@ public partial class TestHistogram
     // merge leaves the receiver's bins, counters and total untouched. The
     // same-bins branch, where the code adds counts directly, is pinned by
     // Merge_MatchingEdgesSumsBinsDirectly and CloneEmpty_AccumulateMergeSumsBinsDirectly,
-    // so it is not repeated below.
+    // so it is not repeated below. The approximate path the old fallback took
+    // now belongs to InexactMerge, and the InexactMerge facts below pin it.
     //
     // The scenario pinned here: the receiver covers 0 up to but not including
     // 10, and 10 to 20 including 10, and holds one observation, 5. The source
@@ -390,6 +391,114 @@ public partial class TestHistogram
         Assert.Equal(0, receiver.Nobs);
         Assert.Equal(0, receiver.OutOfBoundsCounts.Lower);
         Assert.Equal(0, receiver.OutOfBoundsCounts.Upper);
+    }
+
+    // InexactMerge is the explicit opt-in for shapes that differ. These facts
+    // pin the approximation at the same scenarios the old Merge fallback
+    // pinned, under the new method name: the source's bins replay at their
+    // midpoints, its out-of-bounds counters fold in directly, and totals and
+    // counters stay exact while only bin membership approximates.
+    [Fact]
+    public void InexactMerge_MismatchedEdgesRefitsBinMidpoints()
+    {
+        RunningStatistics.Histogram receiver = new([0.0, 10.0, 20.0]);
+        receiver.Fit(5);
+
+        RunningStatistics.Histogram source = new([0.0, 5.0, 10.0, 15.0, 20.0]);
+        source.Fit(1);
+        source.Fit(6);
+        source.Fit(11);
+        source.Fit(16);
+
+        receiver.InexactMerge(source);
+
+        // Midpoints 2.5 and 7.5 go into the receiver's first bin, and 12.5 and
+        // 17.5 into its second. Counts 3 and 2, total five.
+        Assert.Equal([3, 2], BinCounts(receiver));
+        Assert.Equal(5, receiver.Nobs);
+        Assert.Equal(0, receiver.OutOfBoundsCounts.Lower);
+        Assert.Equal(0, receiver.OutOfBoundsCounts.Upper);
+    }
+
+    [Fact]
+    public void InexactMerge_MismatchedEdgesMidpointsFallOutOfBounds()
+    {
+        RunningStatistics.Histogram narrow = new([10.0, 12.0]);
+        narrow.Fit(11);
+
+        RunningStatistics.Histogram wide = new([0.0, 100.0]);
+        wide.Fit(50, 4);
+
+        narrow.InexactMerge(wide);
+
+        // The only midpoint, 50, sits past the receiver's top edge, so its
+        // four observations go to the upper counter.
+        Assert.Equal([1], BinCounts(narrow));
+        Assert.Equal(5, narrow.Nobs);
+        Assert.Equal(0, narrow.OutOfBoundsCounts.Lower);
+        Assert.Equal(4, narrow.OutOfBoundsCounts.Upper);
+
+        RunningStatistics.Histogram receiver = new([0.0, 10.0, 20.0]);
+        receiver.Fit(5);
+
+        RunningStatistics.Histogram infinite = new([double.NegativeInfinity, 0.0, 10.0, double.PositiveInfinity]);
+        infinite.Fit(-1);
+        infinite.Fit(5);
+        infinite.Fit(15);
+
+        receiver.InexactMerge(infinite);
+
+        // A bin with an infinite bound reports that bound as its midpoint, so
+        // the outer bins replay at the infinities, into the counters. Only the
+        // middle bin's midpoint, 5, lands in a bin.
+        Assert.Equal([2, 0], BinCounts(receiver));
+        Assert.Equal(4, receiver.Nobs);
+        Assert.Equal(1, receiver.OutOfBoundsCounts.Lower);
+        Assert.Equal(1, receiver.OutOfBoundsCounts.Upper);
+    }
+
+    [Fact]
+    public void InexactMerge_SameEdgesDifferentClosureFlagsRefitsMidpoints()
+    {
+        RunningStatistics.Histogram receiver = new([0.0, 10.0, 20.0], leftClosed: true, endsClosed: true);
+
+        RunningStatistics.Histogram source = new([0.0, 10.0, 20.0], leftClosed: false, endsClosed: false);
+        source.Fit(10.0, 2);
+
+        receiver.InexactMerge(source);
+
+        // The closure flags differ, so the merge replays: both observations
+        // stand at the first bin's midpoint, 5, in the receiver's first bin.
+        Assert.Equal([2, 0], BinCounts(receiver));
+        Assert.Equal(2, receiver.Nobs);
+        Assert.Equal(0, receiver.OutOfBoundsCounts.Lower);
+        Assert.Equal(0, receiver.OutOfBoundsCounts.Upper);
+    }
+
+    // On same bins, InexactMerge must pay nothing for its approximation: it
+    // must produce exactly what Merge produces, so the direct sum still runs
+    // there.
+    [Fact]
+    public void InexactMerge_SameBinsMatchMergeExactly()
+    {
+        RunningStatistics.Histogram exact = new(_edges);
+        RunningStatistics.Histogram inexact = new(_edges);
+        RunningStatistics.Histogram source = new(_edges);
+        source.Fit(10);
+        source.Fit(1000);
+
+        exact.Fit(-1);
+        exact.Fit(5);
+        inexact.Fit(-1);
+        inexact.Fit(5);
+
+        exact.Merge(source);
+        inexact.InexactMerge(source);
+
+        Assert.Equal(BinCounts(exact), BinCounts(inexact));
+        Assert.Equal(exact.Nobs, inexact.Nobs);
+        Assert.Equal(exact.OutOfBoundsCounts.Lower, inexact.OutOfBoundsCounts.Lower);
+        Assert.Equal(exact.OutOfBoundsCounts.Upper, inexact.OutOfBoundsCounts.Upper);
     }
 
     // The fact merges the data as two stats, one for the first half and one for
@@ -1075,6 +1184,33 @@ public partial class TestHistogram
 
         Assert.Equal(a.OutOfBoundsCounts.Lower + c.OutOfBoundsCounts.Lower, sums.OutOfBoundsCounts.Lower);
         Assert.Equal(a.OutOfBoundsCounts.Upper + c.OutOfBoundsCounts.Upper, sums.OutOfBoundsCounts.Upper);
+    }
+
+    // InexactMerge must not create or lose counts. The merged total must
+    // equal both sources' totals, and the merged bins plus the merged
+    // out-of-bounds counters must add back to that total. This gate carries
+    // the conservation pin the old Merge fallback held; Merge now rejects
+    // these shapes, so the approximate route lives in InexactMerge.
+    [Fact]
+    public void Gate_HistogramInexactMergeConservesCountsAcrossMismatchedShapes()
+    {
+        var dataA = new[] { 0.0, 0.5, 0.5, 1.0, 1.5, 2.0 };
+        var dataB = new[] { 0.4, 1.2, 1.6, 2.4, 2.5 };
+
+        var a = new RunningStatistics.Histogram([0.0, 1.0, 2.0], true, true);
+        for (var i = 0; i < dataA.Length; i++) a.Fit(dataA[i]);
+
+        var b = new RunningStatistics.Histogram([0.5, 1.5, 2.5], false, false);
+        for (var i = 0; i < dataB.Length; i++) b.Fit(dataB[i]);
+
+        var total = a.Clone();
+        total.InexactMerge(b);
+
+        // Every source observation is counted once: the total, then the
+        // identity that the bins plus the counters add back to it.
+        Assert.Equal(a.Nobs + b.Nobs, total.Nobs);
+        Assert.Equal(total.Nobs,
+                     SumBins(total) + total.OutOfBoundsCounts.Lower + total.OutOfBoundsCounts.Upper);
     }
 
     // The double steps away from a positive finite value along the doubles. The step
