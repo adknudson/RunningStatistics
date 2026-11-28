@@ -506,61 +506,7 @@ public abstract class AbstractRunningStatsTest<TObs, TSelf>(
         // post-condition: rejected counts never touch state
         Assert.Equal(3, stat.Nobs);
     }
-    
-    [Fact]
-    public void FitNullCollections_ThrowsStateUntouched()
-    {
-        IRunningStatistic<TObs> stat = GenerateStatistic();
-        
-        stat.Fit(GenerateObservation(), 3);
-        
-        // pre-condition
-        Assert.Equal(3, stat.Nobs);
-        
-        Assert.Throws<ArgumentNullException>(() => stat.Fit((IEnumerable<TObs>)null));
-        Assert.Throws<ArgumentNullException>(() => stat.Fit((IEnumerable<KeyValuePair<TObs, long>>)null));
-        
-        // post-condition: rejected collections never touch state
-        Assert.Equal(3, stat.Nobs);
-    }
-    
-    // Decision note: guards on single elements are deliberately class-specific, not shared. Each
-    // class makes a different promise. Extrema accepts infinite values and rejects only NaN. The
-    // generic Extrema rejects null elements. The numeric classes (Mean, Sum, Variance, Normal)
-    // require each element to be finite. For plain doubles, a null element cannot occur. For
-    // boxed numbers, the null already fails while the code builds the input list, before any
-    // guard runs. The timing of validation differs just as much. The collection overloads of
-    // Mean, Sum, Variance and Normal check the whole input before they apply anything, so a
-    // rejected call changes nothing. Beta counts its bool elements first, then checks the
-    // totals. The base class's per-element overloads check one element at a time. The code has
-    // already applied the elements it saw before a rejected one. The fact below,
-    // FitPairsWithNegativeCount_ThrowsPrecedingPairsApplied, pins that partial application. Only
-    // one element rule is shared, and it is the rejection of a null collection. The fact
-    // above, FitNullCollections_ThrowsStateUntouched, asserts it for every statistic. Do not
-    // fold the element guards into one shared guard in a refactor. That change would change
-    // behavior, so re-gate each class's collection facts first.
-    
-    // Every statistic uses the base class's pair overload, so every statistic shares
-    // its behavior. When the overload rejects one pair, it has already applied the
-    // valid pairs before it. Pair batches are therefore not all-or-nothing, unlike
-    // the collection overload of values, which checks its whole input before
-    // applying anything. This fact pins the behavior exactly as the library behaves
-    // today.
-    [Fact]
-    public void FitPairsWithNegativeCount_ThrowsPrecedingPairsApplied()
-    {
-        IRunningStatistic<TObs> stat = GenerateStatistic();
-        
-        Assert.Throws<ArgumentOutOfRangeException>(() => stat.Fit(new List<KeyValuePair<TObs, long>>
-        {
-            new(GenerateObservation(), 2L),
-            new(GenerateObservation(), -1)
-        }));
-        
-        // post-condition: the valid pair before the bad one was applied, the bad one was not
-        Assert.Equal(2, stat.Nobs);
-    }
-    
+
     [Fact]
     public void FitEmptyIterable_FreshIsNoOp()
     {

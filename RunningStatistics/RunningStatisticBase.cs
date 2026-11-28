@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -22,8 +21,6 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
 
     public virtual void Fit(IEnumerable<TObs> values)
     {
-        Require.NotNull(values);
-        
         var stat = CloneEmpty();
         foreach (var value in values)
         {
@@ -44,8 +41,6 @@ public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs
 
     public virtual void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs)
     {
-        Require.NotNull(keyValuePairs);
-        
         var stat = CloneEmpty();
         foreach (var (x, k) in keyValuePairs)
         {

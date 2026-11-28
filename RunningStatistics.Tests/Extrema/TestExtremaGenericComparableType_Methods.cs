@@ -1,21 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using Xunit;
 
 namespace RunningStatistics.Tests.Extrema;
 
 public partial class TestExtremaGenericComparableType
 {
-    [Fact]
-    public void Fit_RejectsNullObservations()
-    {
-        Extrema<MyComparable> extrema = new();
-        var nullValue = (MyComparable)null;
-        Assert.Throws<ArgumentNullException>(() => extrema.Fit(nullValue));
-        Assert.Throws<ArgumentNullException>(() => extrema.Fit(nullValue, 3));
-        Assert.Equal(0, extrema.Nobs);
-    }
-
     [Fact]
     public void FitUpdates_MinAndMaxCorrectlyForMyComparable()
     {

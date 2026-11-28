@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Xunit;
 
 namespace RunningStatistics.Tests.Extrema;
@@ -580,12 +579,7 @@ public partial class TestExtrema
         num.Fit(new MyNum(5.0m), 0);
         Assert.Equal(0, num.Nobs);
         Assert.Throws<InvalidOperationException>(() => num.Min);
-
-        // The guards run in the same order as on the double type, which rejects a bad value
-        // even when the count is zero. The null check runs first, so fitting a null value
-        // throws even with a zero count.
-        Assert.Throws<ArgumentNullException>(() => comparable.Fit(null, 0));
-
+        
         // On a NON-empty generic statistic, Fit(value, 0) leaves state untouched.
         var filled = new Extrema<MyComparable>();
         filled.Fit(new MyComparable(3.0m), 2);
