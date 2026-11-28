@@ -211,9 +211,7 @@ public partial class TestExtremaGenericNumberType
         extrema.Fit(new MyNum(1.0m));
         extrema.Fit(new MyNum(3.0m));
         
-        var range = extrema.Range();
-        
-        Assert.Equal(new MyNum(2.0m), range);
+        Assert.Equal(new MyNum(2.0m), extrema.Range);
     }
 
     [Fact]

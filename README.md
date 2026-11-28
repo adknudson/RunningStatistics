@@ -19,7 +19,7 @@ Supports .NET 10+. If you need support for an older framework, use version 3 of 
 | Sum\<T\>      | any type implementing `IAdditionOperators` and `IAdditiveIdentity` | `Value`; `Mean` for any type implementing `INumberBase`                                              |
 | Variance      | `double`                                                           | `Value`, `StandardDeviation`                                                                         |
 | Extrema       | `double`                                                           | `Min`, `Max`, `MinCount`, `MaxCount`, `Range`                                                        |
-| Extrema\<T\>  | any type implementing `IComparable<T>`                             | same as `Extrema`, less `Range`: that read stays an extension method                                 |
+| Extrema\<T\>  | any type, ordered by an `IComparer<T>` (default unless given)      | same as `Extrema`, less `Range`: that read stays an extension method                                 |
 | Moments       | `double`                                                           | `Mean`, `Variance`, `StandardDeviation`, `Skewness`, `Kurtosis`, `ExcessKurtosis`                    |
 | EmpiricalCdf  | `double`, into `numBins` bins (default 200)                        | `NumBins`, `Quantile(p)`, `Cdf(x)`, `Median`, `Min`, `Max`                                           |
 | Histogram     | `double`, into bins given as `edges`                               | `NumBins`, `Bins`, `Edges`, `OutOfBoundsCounts`, iteration over `Bin`s with `Lower`, `Upper`, `Nobs` |
