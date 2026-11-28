@@ -19,10 +19,26 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
     public double Value => Nobs < 2 ? double.NaN : _variance * Utils.Bessel(Nobs);
 
     /// <summary>
+    /// Gets the mean of the observations. Returns <see cref="double.NaN"/> if there are no
+    /// observations.
+    /// </summary>
+    public double Mean => Nobs > 0 ? _mean : double.NaN;
+
+    /// <summary>
     /// The corrected sample standard deviation. Returns <see cref="double.NaN"/> if the number of
     /// observations is less than 2.
     /// </summary>
     public double StandardDeviation => Math.Sqrt(Value);
+
+    /// <summary>
+    /// Gets the raw value of the mean.
+    /// </summary>
+    internal double RawMean => _mean;
+
+    /// <summary>
+    /// Gets the raw, uncorrected variance of the observations.
+    /// </summary>
+    internal double RawVariance => _variance;
 
 
     protected override long GetNobs() => _nobs;

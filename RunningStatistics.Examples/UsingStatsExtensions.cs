@@ -28,7 +28,6 @@ public static class UsingStatsExtensions
         var lM = lCountMap.Mean();
         var dM = dCountMap.Mean();
         var mM = mCountMap.Mean();
-        var xM = xCountMap.Mean();
 
         var iV = iCountMap.Variance();
         var lV = lCountMap.Variance();
