@@ -16,14 +16,14 @@ Supports .NET 10+. If you need support for an older framework, use version 3 of 
 |:--------------|:-------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------|
 | Mean          | `double`                                                           | `Value`                                                                                              |
 | Sum           | `double`                                                           | `Value`, `Mean`                                                                                      |
-| Sum\<T\>      | any type implementing `IAdditionOperators` and `IAdditiveIdentity` | `Value`; `Mean` only for `int`, `long`, `double`, `decimal`                                          |
+| Sum\<T\>      | any type implementing `IAdditionOperators` and `IAdditiveIdentity` | `Value`; `Mean` for any type implementing `INumberBase`                                              |
 | Variance      | `double`                                                           | `Value`, `StandardDeviation`                                                                         |
-| Extrema       | `double`                                                           | `Min`, `Max`, `MinCount`, `MaxCount`, `Range`                                         |
-| Extrema\<T\>  | any type implementing `IComparable<T>`                             | same as `Extrema`, less `Range`: that read stays an extension method                                  |
+| Extrema       | `double`                                                           | `Min`, `Max`, `MinCount`, `MaxCount`, `Range`                                                        |
+| Extrema\<T\>  | any type implementing `IComparable<T>`                             | same as `Extrema`, less `Range`: that read stays an extension method                                 |
 | Moments       | `double`                                                           | `Mean`, `Variance`, `StandardDeviation`, `Skewness`, `Kurtosis`, `ExcessKurtosis`                    |
 | EmpiricalCdf  | `double`, into `numBins` bins (default 200)                        | `NumBins`, `Quantile(p)`, `Cdf(x)`, `Median`, `Min`, `Max`                                           |
 | Histogram     | `double`, into bins given as `edges`                               | `NumBins`, `Bins`, `Edges`, `OutOfBoundsCounts`, iteration over `Bin`s with `Lower`, `Upper`, `Nobs` |
-| CountMap\<T\> | any type                                                           | `Count`, `Keys`, `Values`, `Mode`, `Median`, `Quantile(p)`, `MinKey`, `MaxKey`, and read-only `Dictionary` access |
+| CountMap\<T\> | any type                                                           | `Count`, `Keys`, `Values`, `Mode`, `Median`, `Quantile(p)`, `MinKey`, `MaxKey`                       |
 | Normal        | `double`                                                           | `Mean`, `Variance`, `StandardDeviation`, `Pdf(x)`, `Cdf(x)`, `Quantile(p)`                           |
 | Beta          | `bool`                                                             | `Successes`, `Failures`, `Mean`, `Median`, `Mode`, `Variance`, `Pdf(x)`, `Cdf(x)`                    |
 

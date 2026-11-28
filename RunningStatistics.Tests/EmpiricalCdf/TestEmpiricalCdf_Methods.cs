@@ -69,7 +69,7 @@ public partial class TestEmpiricalCdf
     {
         RunningStatistics.EmpiricalCdf a = new(10);
         RunningStatistics.EmpiricalCdf b = new(20);
-        Assert.Throws<Exception>(() => a.Merge(b));
+        Assert.Throws<ArgumentException>(() => a.Merge(b));
     }
 
     [Fact]

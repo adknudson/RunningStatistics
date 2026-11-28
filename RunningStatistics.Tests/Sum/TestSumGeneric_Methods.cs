@@ -67,27 +67,27 @@ public class TestSumGenericMethods_Int : TestSumGenericMethods<int>
     protected override int From(int value) => value;
 
     [Fact] public void Mean_NoNumbers_IsNaN()
-        => Assert.Equal(double.NaN, new Sum<int>().Mean());
+        => Assert.Equal(double.NaN, new Sum<int>().Mean);
 
     [Fact] public void Mean_SingleNumber()
     {
         var sum = new Sum<int>();
         sum.Fit(42);
-        Assert.Equal(42.0, sum.Mean());
+        Assert.Equal(42.0, sum.Mean);
     }
 
     [Fact] public void Mean_PositiveNumbers()
     {
         var sum = new Sum<int>();
         sum.Fit(10); sum.Fit(20); sum.Fit(30);
-        Assert.Equal(20.0, sum.Mean());
+        Assert.Equal(20.0, sum.Mean);
     }
 
     [Fact] public void Mean_MixedNumbers()
     {
         var sum = new Sum<int>();
         sum.Fit(10); sum.Fit(-20); sum.Fit(30);
-        Assert.Equal(6.67, sum.Mean(), 2);
+        Assert.Equal(6.67, sum.Mean, 2);
     }
 }
 
@@ -96,27 +96,27 @@ public class TestSumGenericMethods_Long : TestSumGenericMethods<long>
     protected override long From(int value) => value;
 
     [Fact] public void Mean_NoNumbers_IsNaN()
-        => Assert.Equal(double.NaN, new Sum<long>().Mean());
+        => Assert.Equal(double.NaN, new Sum<long>().Mean);
 
     [Fact] public void Mean_SingleNumber()
     {
         var sum = new Sum<long>();
         sum.Fit(42L);
-        Assert.Equal(42.0, sum.Mean());
+        Assert.Equal(42.0, sum.Mean);
     }
 
     [Fact] public void Mean_PositiveNumbers()
     {
         var sum = new Sum<long>();
         sum.Fit(10L); sum.Fit(20L); sum.Fit(30L);
-        Assert.Equal(20.0, sum.Mean());
+        Assert.Equal(20.0, sum.Mean);
     }
 
     [Fact] public void Mean_MixedNumbers()
     {
         var sum = new Sum<long>();
         sum.Fit(10L); sum.Fit(-20L); sum.Fit(30L);
-        Assert.Equal(6.67, sum.Mean(), 2);
+        Assert.Equal(6.67, sum.Mean, 2);
     }
 }
 
@@ -125,34 +125,59 @@ public class TestSumGenericMethods_Double : TestSumGenericMethods<double>
     protected override double From(int value) => value;
 
     [Fact] public void Mean_NoNumbers_IsNaN()
-        => Assert.Equal(double.NaN, new Sum<double>().Mean());
+        => Assert.Equal(double.NaN, new Sum<double>().Mean);
 
     [Fact] public void Mean_SingleNumber()
     {
         var sum = new Sum<double>();
         sum.Fit(42.0);
-        Assert.Equal(42.0, sum.Mean());
+        Assert.Equal(42.0, sum.Mean);
     }
 
     [Fact] public void Mean_PositiveNumbers()
     {
         var sum = new Sum<double>();
         sum.Fit(10.0); sum.Fit(20.0); sum.Fit(30.0);
-        Assert.Equal(20.0, sum.Mean());
+        Assert.Equal(20.0, sum.Mean);
     }
 
     [Fact] public void Mean_MixedNumbers()
     {
         var sum = new Sum<double>();
         sum.Fit(10.0); sum.Fit(-20.0); sum.Fit(30.0);
-        Assert.Equal(6.67, sum.Mean(), 2);
+        Assert.Equal(6.67, sum.Mean, 2);
     }
 }
 
 public class TestSumGenericMethods_Float : TestSumGenericMethods<float>
 {
-    // float has no Mean() extension, so only Sum/Value tests from the base apply.
+    // The float Mean extension stays in float, so the facts compare against float literals
+    // rather than the widened answers the other integral types get.
     protected override float From(int value) => value;
+
+    [Fact] public void Mean_NoNumbers_IsNaN()
+        => Assert.True(float.IsNaN(new Sum<float>().Mean));
+
+    [Fact] public void Mean_SingleNumber()
+    {
+        var sum = new Sum<float>();
+        sum.Fit(42f);
+        Assert.Equal(42f, sum.Mean);
+    }
+
+    [Fact] public void Mean_PositiveNumbers()
+    {
+        var sum = new Sum<float>();
+        sum.Fit(10f); sum.Fit(20f); sum.Fit(30f);
+        Assert.Equal(20f, sum.Mean);
+    }
+
+    [Fact] public void Mean_MixedNumbers()
+    {
+        var sum = new Sum<float>();
+        sum.Fit(10f); sum.Fit(-20f); sum.Fit(30f);
+        Assert.Equal(6.67f, sum.Mean, 2);
+    }
 }
 
 public class TestSumGenericMethods_Decimal : TestSumGenericMethods<decimal>
@@ -160,27 +185,27 @@ public class TestSumGenericMethods_Decimal : TestSumGenericMethods<decimal>
     protected override decimal From(int value) => value;
 
     [Fact] public void Mean_NoNumbers_Throws()
-        => Assert.Throws<DivideByZeroException>(() => new Sum<decimal>().Mean());
+        => Assert.Throws<DivideByZeroException>(() => new Sum<decimal>().Mean);
 
     [Fact] public void Mean_SingleNumber()
     {
         var sum = new Sum<decimal>();
         sum.Fit(42m);
-        Assert.Equal(42m, sum.Mean());
+        Assert.Equal(42m, sum.Mean);
     }
 
     [Fact] public void Mean_PositiveNumbers()
     {
         var sum = new Sum<decimal>();
         sum.Fit(10m); sum.Fit(20m); sum.Fit(30m);
-        Assert.Equal(20m, sum.Mean());
+        Assert.Equal(20m, sum.Mean);
     }
 
     [Fact] public void Mean_MixedNumbers()
     {
         var sum = new Sum<decimal>();
         sum.Fit(10m); sum.Fit(-20m); sum.Fit(30m);
-        Assert.Equal(6.67m, sum.Mean(), 2);
+        Assert.Equal(6.67m, sum.Mean, 2);
     }
 }
 
@@ -188,10 +213,11 @@ public class TestSumGenericMethods_MyNum : TestSumGenericMethods<MyNum>
 {
     protected override MyNum From(int value) => new(value);
 
-    // SumExtensions has no average for a custom observation type, so these facts write the
-    // average the caller would write: the stored total divided by the observation count, in
-    // MyNum's own arithmetic. MyNum divides by a long, and it stores decimals, so an empty
-    // sum divides zero by zero the decimal way and throws, the same way Sum<decimal> does.
+    // The average extension covers only types that implement INumberBase, and MyNum declares
+    // the individual operator interfaces instead, so these facts write the average the caller
+    // would write: the stored total divided by the observation count, in MyNum's own arithmetic.
+    // MyNum divides by a long, and it stores decimals, so an empty sum divides zero by zero the
+    // decimal way and throws, the same way Sum<decimal> does.
     [Fact] public void Mean_NoNumbers_Throws()
     {
         var sum = new Sum<MyNum>();
@@ -309,7 +335,8 @@ public class TestSumGenericMethods_MyNum : TestSumGenericMethods<MyNum>
 
 public class TestSumGenericMethods_MyAddOnlyNum : TestSumGenericMethods<MyAddOnlyNum>
 {
-    // MyAddOnlyNum has no Mean() extension, so only Sum/Value tests from the base apply.
+    // MyAddOnlyNum implements no INumberBase, so the Mean extension does not cover it: only the
+    // Sum/Value tests from the base apply.
     protected override MyAddOnlyNum From(int value) => new(value);
 
     [Fact] public void FallbackFit_ModerateCount_ExactSum()
@@ -328,8 +355,9 @@ public class TestSumGenericMethods_MyAddOnlyNum : TestSumGenericMethods<MyAddOnl
 
 public class TestSumGenericMethods_MyBigAddOnlyNum : TestSumGenericMethods<MyBigAddOnlyNum>
 {
-    // MyBigAddOnlyNum has no average extension, so only the sum and value tests from the base
-    // apply here. Unlike MyAddOnlyNum, which stores whole numbers as int, it stores them as
+    // MyBigAddOnlyNum implements no INumberBase, so the Mean extension does not cover it: only
+    // the sum and value tests from the base apply here. Unlike MyAddOnlyNum, which stores whole
+    // numbers as int, it stores them as
     // longs. A product like the largest long count times a value of one is therefore still
     // exactly representable.
     protected override MyBigAddOnlyNum From(int value) => new(value);

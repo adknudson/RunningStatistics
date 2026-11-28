@@ -1,45 +1,45 @@
 ﻿using System;
+using System.Numerics;
 
 namespace RunningStatistics;
 
-public static class GenericSumExtensions
+public static class SumExtensions
 {
-    /// <summary>
-    /// Calculate the average of the sum of <see cref="int"/>s.
-    /// </summary>
-    public static double Mean(this Sum<int> sum)
+    extension<T>(Sum<T> sum) where T : INumberBase<T>
     {
-        return sum.Nobs > 0 ? (double)sum.Value / sum.Nobs : double.NaN;
+        /// <summary>
+        /// Calculate the average of the sum of any observation type that implements <see cref="INumberBase{T}"/>.
+        /// The total widens to a <see cref="double"/> before the divide, so the answer keeps the fraction.
+        /// An empty sum hands back <see cref="double.NaN" />.
+        /// </summary>
+        public double Mean => sum.Nobs > 0 ? double.CreateChecked(sum.Value) / sum.Nobs : double.NaN;
     }
     
-    /// <summary>
-    /// Calculate the average of the sum of <see cref="long"/>s.
-    /// </summary>
-    public static double Mean(this Sum<long> sum)
+    extension(Sum<float> sum)
     {
-        return sum.Nobs > 0 ? (double)sum.Value / sum.Nobs : double.NaN;
+        /// <summary>
+        /// Calculate the average of the sum of <see cref="float"/>s, kept in <see cref="float"/>.
+        /// An empty sum hands back <see cref="float.NaN" />.
+        /// </summary>
+        public float Mean => sum.Nobs > 0 ? sum.Value / sum.Nobs : float.NaN;
     }
     
-    /// <summary>
-    /// Calculate the average of the sum of <see cref="double"/>s.
-    /// </summary>
-    public static double Mean(this Sum<double> sum)
+    extension(Sum<decimal> sum)
     {
-        return sum.Nobs > 0 ? sum.Value / sum.Nobs : double.NaN;
-    }
-    
-    /// <summary>
-    /// Calculate the average of the sum of <see cref="decimal"/>s.
-    /// </summary>
-    /// <exception cref="DivideByZeroException">Thrown when the number of observations is zero.</exception>
-    public static decimal Mean(this Sum<decimal> sum)
-    {
-        if (sum.Nobs > 0)
+        /// <summary>
+        /// Calculate the average of the sum of <see cref="decimal"/>s, kept in <see cref="decimal"/>.
+        /// </summary>
+        /// <exception cref="DivideByZeroException">
+        /// Thrown when <c>Nobs</c> is zero.
+        /// </exception>
+        public decimal Mean
         {
-            return sum.Value / sum.Nobs;
+            get
+            {
+                if (sum.Nobs > 0) return sum.Value / sum.Nobs;
+                // decimal doesn't have NaN values, so this is its proxy. Leave as DivideByZeroException.
+                throw new DivideByZeroException("Average is undefined when the number of observations is zero.");
+            }
         }
-        
-        // decimal doesn't have NaN values, so this is its proxy. Leave as DivideByZeroException.
-        throw new DivideByZeroException("Average is undefined when the number of observations is zero.");
     }
 }
