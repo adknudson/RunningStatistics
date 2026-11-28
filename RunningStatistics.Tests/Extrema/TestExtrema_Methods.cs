@@ -511,7 +511,7 @@ public partial class TestExtrema
         Assert.Equal(0, d.MinCount);
         Assert.Equal(0, d.MaxCount);
 
-        var comparable = new RunningStatistics.Extrema<MyComparable>();
+        var comparable = new Extrema<MyComparable>();
         Assert.Equal(0, comparable.Nobs);
         Assert.Equal(0, comparable.MinCount);
         Assert.Equal(0, comparable.MaxCount);
@@ -520,7 +520,7 @@ public partial class TestExtrema
         var maxThrow = Assert.Throws<InvalidOperationException>(() => comparable.Max);
         Assert.Equal("No observations fitted yet. Use TryGetMax.", maxThrow.Message);
 
-        var num = new RunningStatistics.Extrema<MyNum>();
+        var num = new Extrema<MyNum>();
         Assert.Equal(0, num.Nobs);
         Assert.Equal(0, num.MinCount);
         Assert.Equal(0, num.MaxCount);
@@ -537,7 +537,7 @@ public partial class TestExtrema
         // MyNum supports subtraction, so the Range() extension applies and the accessor
         // throw propagates through it. Extrema of MyComparable has no Range() at all,
         // because MyComparable does not support subtraction.
-        var num = new RunningStatistics.Extrema<MyNum>();
+        var num = new Extrema<MyNum>();
         Assert.Throws<InvalidOperationException>(() => num.Range);
     }
 
@@ -551,7 +551,7 @@ public partial class TestExtrema
         // empty state therefore renders per the shape of the type. MyComparable is a reference
         // type whose fields are still null, so it prints empty text without throwing, as the
         // lines below show. Asking the accessors directly would throw.
-        var comparable = new RunningStatistics.Extrema<MyComparable>();
+        var comparable = new Extrema<MyComparable>();
         Assert.Contains("Min= (n=0), Max= (n=0)", comparable.ToString());
         Assert.Throws<InvalidOperationException>(() => comparable.Min);
 
@@ -560,7 +560,7 @@ public partial class TestExtrema
         // reads NaN for the double, empty text for a reference type, and the default value for
         // a value type. The accessors still throw, so this leaked value is only visible
         // through ToString, as the lines below show.
-        var num = new RunningStatistics.Extrema<MyNum>();
+        var num = new Extrema<MyNum>();
         Assert.Contains("Min=0 (n=0), Max=0 (n=0)", num.ToString());
         Assert.Throws<InvalidOperationException>(() => num.Min);
     }
@@ -568,7 +568,7 @@ public partial class TestExtrema
     [Fact]
     public void EmptyStateFitZeroCount_KeepsGenericEmptyState()
     {
-        var comparable = new RunningStatistics.Extrema<MyComparable>();
+        var comparable = new Extrema<MyComparable>();
         comparable.Fit(new MyComparable(5.0m), 0);
         Assert.Equal(0, comparable.Nobs);
         Assert.Equal(0, comparable.MinCount);
@@ -576,7 +576,7 @@ public partial class TestExtrema
         Assert.Throws<InvalidOperationException>(() => comparable.Min);
         Assert.Throws<InvalidOperationException>(() => comparable.Max);
 
-        var num = new RunningStatistics.Extrema<MyNum>();
+        var num = new Extrema<MyNum>();
         num.Fit(new MyNum(5.0m), 0);
         Assert.Equal(0, num.Nobs);
         Assert.Throws<InvalidOperationException>(() => num.Min);
@@ -584,10 +584,10 @@ public partial class TestExtrema
         // The guards run in the same order as on the double type, which rejects a bad value
         // even when the count is zero. The null check runs first, so fitting a null value
         // throws even with a zero count.
-        Assert.Throws<ArgumentNullException>(() => comparable.Fit((MyComparable)null, 0));
+        Assert.Throws<ArgumentNullException>(() => comparable.Fit(null, 0));
 
         // On a NON-empty generic statistic, Fit(value, 0) leaves state untouched.
-        var filled = new RunningStatistics.Extrema<MyComparable>();
+        var filled = new Extrema<MyComparable>();
         filled.Fit(new MyComparable(3.0m), 2);
         filled.Fit(new MyComparable(8.0m), 0);
         Assert.Equal(2, filled.Nobs);
@@ -613,8 +613,8 @@ public partial class TestExtrema
         Assert.Equal(0, d.MinCount);
         Assert.Equal(0, d.MaxCount);
 
-        var g = new RunningStatistics.Extrema<MyComparable>();
-        g.Merge(new RunningStatistics.Extrema<MyComparable>());
+        var g = new Extrema<MyComparable>();
+        g.Merge(new Extrema<MyComparable>());
         Assert.Equal(0, g.Nobs);
         Assert.Equal(0, g.MinCount);
         Assert.Equal(0, g.MaxCount);
@@ -636,10 +636,10 @@ public partial class TestExtrema
         Assert.Equal(1, d.MinCount);
         Assert.Equal(1, d.MaxCount);
 
-        var gSource = new RunningStatistics.Extrema<MyComparable>();
+        var gSource = new Extrema<MyComparable>();
         gSource.Fit(new MyComparable(2.0m));
         gSource.Fit(new MyComparable(5.0m));
-        var g = new RunningStatistics.Extrema<MyComparable>();
+        var g = new Extrema<MyComparable>();
         g.Merge(gSource);
         Assert.Equal(2, g.Nobs);
         Assert.Equal(new MyComparable(2.0m), g.Min);
@@ -660,9 +660,9 @@ public partial class TestExtrema
         Assert.Equal(3, d.MinCount);
         Assert.Equal(3, d.MaxCount);
 
-        var g = new RunningStatistics.Extrema<MyComparable>();
+        var g = new Extrema<MyComparable>();
         g.Fit(new MyComparable(4.0m), 3);
-        g.Merge(new RunningStatistics.Extrema<MyComparable>());
+        g.Merge(new Extrema<MyComparable>());
         Assert.Equal(3, g.Nobs);
         Assert.Equal(new MyComparable(4.0m), g.Min);
         Assert.Equal(new MyComparable(4.0m), g.Max);

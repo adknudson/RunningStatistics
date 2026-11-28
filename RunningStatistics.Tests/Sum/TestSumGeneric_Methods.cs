@@ -310,7 +310,7 @@ public class TestSumGenericMethods_MyNum : TestSumGenericMethods<MyNum>
         bigFallback.Fit(new MyBigAddOnlyNum(3), powerOfTwo);
         Assert.Equal(powerOfTwo, bigFallback.Nobs);
         Assert.Equal(3m * powerOfTwo, delegateSum.Value.Value);
-        Assert.Equal(delegateSum.Value.Value, (decimal)bigFallback.Value.Value);
+        Assert.Equal(delegateSum.Value.Value, bigFallback.Value.Value);
 
         delegateSum = new Sum<MyNum>();
         delegateSum.Fit(From(-11), odd);
@@ -321,15 +321,15 @@ public class TestSumGenericMethods_MyNum : TestSumGenericMethods<MyNum>
         Assert.Equal(odd, bigFallback.Nobs);
         Assert.Equal(odd, smallFallback.Nobs);
         Assert.Equal(-11m * odd, delegateSum.Value.Value);
-        Assert.Equal(delegateSum.Value.Value, (decimal)bigFallback.Value.Value);
-        Assert.Equal(delegateSum.Value.Value, (decimal)smallFallback.Value.Value);
+        Assert.Equal(delegateSum.Value.Value, bigFallback.Value.Value);
+        Assert.Equal(delegateSum.Value.Value, smallFallback.Value.Value);
 
         delegateSum = new Sum<MyNum>();
         delegateSum.Fit(From(7), 1L);
         bigFallback = new Sum<MyBigAddOnlyNum>();
         bigFallback.Fit(new MyBigAddOnlyNum(7), 1L);
         Assert.Equal(1L, bigFallback.Nobs);
-        Assert.Equal(delegateSum.Value.Value, (decimal)bigFallback.Value.Value);
+        Assert.Equal(delegateSum.Value.Value, bigFallback.Value.Value);
     }
 }
 
@@ -349,7 +349,7 @@ public class TestSumGenericMethods_MyAddOnlyNum : TestSumGenericMethods<MyAddOnl
         var sum = new Sum<MyAddOnlyNum>();
         sum.Fit(From(3), count);
         Assert.Equal(count, sum.Nobs);
-        Assert.Equal(3L * count, (long)sum.Value.Value);
+        Assert.Equal(3L * count, sum.Value.Value);
     }
 }
 

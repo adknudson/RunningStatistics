@@ -12,6 +12,8 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
     private double _total, _correction;
 
 
+    public override long Nobs => _nobs;
+
     /// <summary>
     /// The current sum of the observations.
     /// </summary>
@@ -27,11 +29,15 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
     public double Mean => Nobs > 0 ? Value / Nobs : double.NaN;
 
 
-    protected override long GetNobs() => _nobs;
-
     public override void Fit(double value)
     {
         Require.Finite(value);
+        checked { _nobs += 1; }
+        Accumulate(value);
+    }
+
+    public override void UncheckedFit(double value)
+    {
         checked { _nobs += 1; }
         Accumulate(value);
     }
@@ -45,22 +51,10 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
         Accumulate(value * count);
     }
 
-    public override void Fit(IEnumerable<double> values)
+    public override void UncheckedFit(double value, long count)
     {
-        Require.NotNull(values);
-        
-        // The fold works on locals and commits to state only after the whole batch passed
-        // validation. A value rejected mid-batch therefore leaves the statistic exactly as it
-        // was, the all-or-nothing contract the materialize-and-validate pattern gave without
-        // the List allocation, the copy, or the extra pass.
-        var newSum = new Sum();
-        
-        foreach (var x in values)
-        {
-            newSum.Fit(x);
-        }
-
-        Merge(newSum);
+        checked { _nobs += count; }
+        Accumulate(value * count);
     }
 
     private void Accumulate(double x)
@@ -95,8 +89,6 @@ public sealed class Sum : RunningStatisticBase<double, Sum>
         if (sum.Nobs == 0) return;
         checked { _nobs += sum.Nobs; }
         Accumulate(sum._total);
-        // The other statistic's correction is one rounding step of its own total, so a
-        // plain addition folds it in; only the two-sum above contributes exact bits.
         _correction += sum._correction;
     }
 

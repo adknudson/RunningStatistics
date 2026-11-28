@@ -45,27 +45,46 @@ public interface IRunningStatistic
 public interface IRunningStatistic<TObs> : IRunningStatistic
 {
     /// <summary>
-    /// Fit a single observation.
+    /// Fits a single observation.
     /// </summary>
     public void Fit(TObs value);
 
     /// <summary>
-    /// Fit a single observation with an associated count. A <paramref name="count"/> greater than one
-    /// fits <paramref name="value"/> that many times individually.
+    /// Fits a single observation without without checking that the arguments are valid.
+    /// </summary>
+    public void UncheckedFit(TObs value);
+
+    /// <summary>
+    /// Fits an observed value with an associated count.
     /// </summary>
     public void Fit(TObs value, long count);
 
     /// <summary>
-    /// Fit a list of observations.
+    /// Fits an observed value with an associated count without checking that the arguments are valid.
+    /// </summary>
+    public void UncheckedFit(TObs value, long count);
+
+    /// <summary>
+    /// Fits a list of observations.
     /// </summary>
     public void Fit(IEnumerable<TObs> values);
 
     /// <summary>
-    /// Fit a list of observations with associated counts. Each key-value pair represents an observation
-    /// and the number of times to fit it. The count matches fitting the key that many times
-    /// individually.
+    /// Fits a list of observations without checking that the arguments or observations are valid.
     /// </summary>
+    public void UncheckedFit(IEnumerable<TObs> values);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="keyValuePairs"></param>
     public void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="keyValuePairs"></param>
+    public void UncheckedFit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs);
 
     /// <summary>
     /// Create a copy of the running statistic with the same internal parameters but with zero observations.

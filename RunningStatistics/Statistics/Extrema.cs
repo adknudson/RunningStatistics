@@ -1,5 +1,4 @@
-﻿// ReSharper disable CompareOfFloatsByEqualityOperator
-// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
+﻿using System.Collections.Generic;
 
 namespace RunningStatistics;
 
@@ -12,6 +11,9 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
     private double _max = double.NegativeInfinity;
     private long _minCount, _maxCount;
     private long _nobs;
+
+
+    public override long Nobs => _nobs;
 
     /// <summary>
     /// Gets the minimum value observed.
@@ -44,14 +46,17 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
     public double Range => Max - Min;
 
 
-    protected override long GetNobs() => _nobs;
-
     public override void Fit(double value)
     {
         Require.NotNaN(value);
         UncheckedFit(value, 1);
     }
-    
+
+    public override void UncheckedFit(double value)
+    {
+        UncheckedFit(value, 1);
+    }
+
     public override void Fit(double value, long count)
     {
         // A minimum and a maximum over infinite observations are defined, so an infinite value
@@ -62,7 +67,7 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
         UncheckedFit(value, count);
     }
 
-    internal void UncheckedFit(double value, long count)
+    public override void UncheckedFit(double value, long count)
     {
         if (_nobs == 0)
         {

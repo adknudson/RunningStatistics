@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -45,6 +44,8 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// <returns>The count of the specified key.</returns>
     // ReSharper disable once CanSimplifyDictionaryTryGetValueWithGetValueOrDefault
     public long this[TObs key] => _dict.TryGetValue(key, out var value) ? value : 0;
+
+    public override long Nobs => _nobs;
 
     /// <summary>
     /// The number of unique observations that the map fitted. Observations with a count of zero
@@ -153,9 +154,17 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// <returns>The median of the count map.</returns>
     public TObs Median => Quantile(0.5);
 
-    
-    protected override long GetNobs() => _nobs;
-    
+
+    public override void Fit(TObs value)
+    {
+        UncheckedFit(value);
+    }
+
+    public override void UncheckedFit(TObs value)
+    {
+        UncheckedFit(value, 1);
+    }
+
     public override void Fit(TObs value, long count)
     {
         Require.NonNegative(count);
@@ -163,18 +172,36 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
         UncheckedFit(value, count);
     }
     
-    private void UncheckedFit(TObs value, long count)
+    public override void UncheckedFit(TObs value, long count)
     {
         checked { _nobs += count; }
-        
-        // The checked total already bounds the per-key counts. The code still
-        // checks the per-key accumulation explicitly, so it reports overflow
-        // rather than wrapping quietly.
         ref var valueCount = ref CollectionsMarshal.GetValueRefOrAddDefault(_dict, value, out _);
         checked { valueCount += count; }
-    } 
-    
-    public override void Merge(CountMap<TObs> countMap) => Fit(countMap);
+    }
+
+    public override void Fit(IEnumerable<TObs> values)
+    {
+        foreach (var value in values)
+        {
+            Fit(value);
+        }
+    }
+
+    public override void UncheckedFit(IEnumerable<TObs> values)
+    {
+        foreach (var value in values)
+        {
+            UncheckedFit(value);
+        }
+    }
+
+    public override void Merge(CountMap<TObs> countMap)
+    {
+        foreach (var (key, count) in countMap)
+        {
+            UncheckedFit(key, count);
+        }
+    }
     
     public override void Reset()
     {

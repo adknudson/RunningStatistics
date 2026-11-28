@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Numerics;
 
@@ -13,7 +14,9 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
     where TObs : IAdditionOperators<TObs, TObs, TObs>, IAdditiveIdentity<TObs, TObs>
 {
     private long _nobs;
-    
+
+
+    public override long Nobs => _nobs;
     
     /// <summary>
     /// A precompiled routine that multiplies an observation by a whole-number count, when the
@@ -36,37 +39,27 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
     /// </summary>
     public TObs Value { get; private set; } = TObs.AdditiveIdentity;
     
-
-    protected override long GetNobs() => _nobs;
-
+    
     public override void Fit(TObs value)
+    {
+        UncheckedFit(value);
+    }
+
+    public override void UncheckedFit(TObs value)
     {
         checked { _nobs++; }
         Value += value;
     }
 
-    /// <summary>
-    /// Adds the given number of observations of the value at once. The method raises the
-    /// observation count in one checked step.
-    /// <para>
-    /// When the multiply delegate above is available, it multiplies the value by the count.
-    /// The fit adds that product to the running sum in one step. Otherwise the fit builds the
-    /// contribution bit by bit. It doubles the value once per bit position. It gathers the
-    /// blocks that belong to the set bits into an accumulator. The accumulator joins the running
-    /// sum once.
-    /// </para>
-    /// <para>
-    /// Caveat for floating-point-like observation types: the doubling path groups additions
-    /// differently than adding the value one observation at a time does. The result may differ
-    /// in the low bits from repeated single fits. Do not test bit-exact equality against
-    /// repeated addition for such types.
-    /// </para>
-    /// </summary>
     public override void Fit(TObs value, long count)
     {
         Require.NonNegative(count);
         if (count == 0) return;
+        UncheckedFit(value, count);
+    }
 
+    public override void UncheckedFit(TObs value, long count)
+    {
         if (MultiplyDelegate is not null)
         {
             // Fast path: the observation type multiplies directly by a whole-number count.

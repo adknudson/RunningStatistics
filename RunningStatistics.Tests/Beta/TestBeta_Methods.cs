@@ -22,13 +22,13 @@ public partial class TestBeta
             if (b) successes++;
         }
 
-        var failures = (long)bools.Count - successes;
+        var failures = bools.Count - successes;
 
         var loop = new RunningStatistics.Beta();
         foreach (var b in bools) loop.Fit(b);
         Assert.Equal(successes, loop.Successes);
         Assert.Equal(failures, loop.Failures);
-        Assert.Equal((long)bools.Count, loop.Nobs);
+        Assert.Equal(bools.Count, loop.Nobs);
 
         // The weighted overload must land where the single fits landed.
         var weighted = new RunningStatistics.Beta();
@@ -111,7 +111,7 @@ public partial class TestBeta
             // The mean is one division of exact integers, so it must sit within a few
             // machine epsilands of the same ratio computed independently.
             var n = (double)(s + f);
-            var alpha = (double)s / n;
+            var alpha = s / n;
             Assert.True(PropertyHelpers.Within(alpha, beta.Mean, 4 * PropertyHelpers.Epsilon),
                         PropertyHelpers.Describe($"mean at ({s},{f})", alpha, beta.Mean));
 
@@ -126,7 +126,7 @@ public partial class TestBeta
             // that and the exact ratio above it.
             if (s > 1 && f > 1)
             {
-                var refMode = (double)(s - 1) / (n - 2.0);
+                var refMode = (s - 1) / (n - 2.0);
                 Assert.True(PropertyHelpers.Within(refMode, beta.Mode, 4 * PropertyHelpers.Epsilon),
                             PropertyHelpers.Describe($"mode at ({s},{f})", refMode, beta.Mode));
             }

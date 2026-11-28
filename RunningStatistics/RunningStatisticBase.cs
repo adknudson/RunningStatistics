@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace RunningStatistics;
@@ -7,36 +8,60 @@ namespace RunningStatistics;
 /// The base class for all running statistics. This class provides default implementations when possible.
 /// </summary>
 public abstract class RunningStatisticBase<TObs, TSelf> : IRunningStatistic<TObs, TSelf>
-    where TSelf : IRunningStatistic<TObs, TSelf>
+    where TSelf : RunningStatisticBase<TObs, TSelf>
 {
-    public long Nobs => GetNobs();
+    public abstract long Nobs { get; }
 
+    public abstract void Fit(TObs value);
 
-    protected abstract long GetNobs();
-    
-    public virtual void Fit(TObs value)
-    {
-        Fit(value, 1);
-    }
+    public abstract void UncheckedFit(TObs value);
 
     public abstract void Fit(TObs value, long count);
     
+    public abstract void UncheckedFit(TObs value, long count);
+
     public virtual void Fit(IEnumerable<TObs> values)
     {
         Require.NotNull(values);
+        
+        var stat = CloneEmpty();
         foreach (var value in values)
         {
-            Fit(value);
+            stat.Fit(value);
         }
+        Merge(stat);
     }
-    
+
+    public virtual void UncheckedFit(IEnumerable<TObs> values)
+    {
+        var stat = CloneEmpty();
+        foreach (var value in values)
+        {
+            stat.UncheckedFit(value);
+        }
+        Merge(stat);
+    }
+
     public virtual void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs)
     {
         Require.NotNull(keyValuePairs);
-        foreach (var kvp in keyValuePairs)
+        
+        var stat = CloneEmpty();
+        foreach (var (x, k) in keyValuePairs)
         {
-            Fit(kvp.Key, kvp.Value);
+            stat.Fit(x, k);
         }
+        Merge(stat);
+    }
+
+    public virtual void UncheckedFit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs)
+    {
+        var stat = CloneEmpty();
+        foreach (var (x, k) in keyValuePairs)
+        {
+            stat.UncheckedFit(x, k);
+        }
+        Merge(stat);
     }
     
     public abstract void Reset();

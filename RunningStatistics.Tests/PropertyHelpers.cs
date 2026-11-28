@@ -35,7 +35,7 @@ internal static class PropertyHelpers
     {
         _state = _state * 6364136223846793005L + 1440329614744452433L;
         var u = (ulong)_state >> 11;
-        return (double)u / 9007199254740992.0;
+        return u / 9007199254740992.0;
     }
 
     /// Next standard-normal value (Box–Muller).

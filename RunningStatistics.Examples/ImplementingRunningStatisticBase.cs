@@ -8,6 +8,8 @@ public class UniqueObservations : RunningStatisticBase<int, UniqueObservations>
     private long _nobs;
     private readonly HashSet<int> _uniqueValues = [];
 
+
+    public override long Nobs => _nobs;
     
     /// <summary>
     /// The unique values observed.
@@ -18,19 +20,27 @@ public class UniqueObservations : RunningStatisticBase<int, UniqueObservations>
     /// The number of unique values observed.
     /// </summary>
     public int Count => _uniqueValues.Count;
+
+    public override void Fit(int value)
+    {
+        UncheckedFit(value, 1);
+    }
+
+    public override void UncheckedFit(int value)
+    {
+        UncheckedFit(value, 1);
+    }
     
-
-    protected override long GetNobs() => _nobs;
-
     public override void Fit(int value, long count)
     {
         if (count < 0)
-        {
             throw new ArgumentOutOfRangeException(nameof(count), "Count must be non-negative.");
-        }
-        
         if (count == 0) return;
-        
+        UncheckedFit(value, count);
+    }
+
+    public override void UncheckedFit(int value, long count)
+    {
         _nobs += count;
         _uniqueValues.Add(value);
     }

@@ -13,17 +13,25 @@ public sealed class StatsCollection<TObs> : Collection<IRunningStatistic<TObs>>,
 
     public void Fit(TObs value)
     {
-        Fit(value, 1);
+        UncheckedFit(value, 1);
+    }
+
+    public void UncheckedFit(TObs value)
+    {
+        UncheckedFit(value, 1);
     }
 
     public void Fit(TObs value, long count)
     {
         if (count < 0)
-        {
             throw new ArgumentOutOfRangeException(nameof(count), "Count cannot be negative");
-        }
 
-        Nobs += count;
+        UncheckedFit(value, count);
+    }
+    
+    public void UncheckedFit(TObs value, long count)
+    {
+        checked { Nobs += count; }
 
         foreach (var stat in Items)
         {
@@ -41,12 +49,37 @@ public sealed class StatsCollection<TObs> : Collection<IRunningStatistic<TObs>>,
             stat.Fit(xs);
         }
     }
+    
+    public void UncheckedFit(IEnumerable<TObs> values)
+    {
+        var xs = values.ToList();
+        Nobs += xs.Count;
 
+        foreach (var stat in Items)
+        {
+            stat.UncheckedFit(xs);
+        }
+    }
+    
     public void Fit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs)
     {
-        foreach (var keyValuePair in keyValuePairs)
+        var xs = keyValuePairs.ToList();
+        Nobs += xs.Count;
+
+        foreach (var stat in Items)
         {
-            Fit(keyValuePair.Key, keyValuePair.Value);
+            stat.Fit(xs);
+        }
+    }
+
+    public void UncheckedFit(IEnumerable<KeyValuePair<TObs, long>> keyValuePairs)
+    {
+        var xs = keyValuePairs.ToList();
+        Nobs += xs.Count;
+
+        foreach (var stat in Items)
+        {
+            stat.UncheckedFit(xs);
         }
     }
 

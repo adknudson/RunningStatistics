@@ -35,6 +35,8 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     }
 
 
+    public override long Nobs => _nobs;
+
     /// <summary>
     /// Gets the minimum value observed.
     /// </summary>
@@ -60,43 +62,7 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     public TObs Max => _nobs > 0
         ? _max!
         : throw new InvalidOperationException("No observations fitted yet. Use TryGetMax.");
-
-    /// <summary>
-    /// Stores the minimum value observed in the given reference and reports whether one exists.
-    /// </summary>
-    /// <param name="value">Receives the minimum value, or the default of the observation type when nothing was fitted.</param>
-    /// <returns>True when at least one observation was fitted, false when the statistic is empty.</returns>
-    public bool TryGetMin(out TObs value)
-    {
-        if (_nobs == 0)
-        {
-            // Every return must assign the out parameter. A caller who reads the false
-            // return never uses this default, so a null or zero value is safe here.
-            value = default!;
-            return false;
-        }
-
-        value = _min!;
-        return true;
-    }
-
-    /// <summary>
-    /// Stores the maximum value observed in the given reference and reports whether one exists.
-    /// </summary>
-    /// <param name="value">Receives the maximum value, or the default of the observation type when nothing was fitted.</param>
-    /// <returns>True when at least one observation was fitted, false when the statistic is empty.</returns>
-    public bool TryGetMax(out TObs value)
-    {
-        if (_nobs == 0)
-        {
-            value = default!;
-            return false;
-        }
-
-        value = _max!;
-        return true;
-    }
-
+        
     /// <summary>
     /// Gets the count of observations that have the minimum value.
     /// </summary>
@@ -108,23 +74,26 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
     public long MaxCount { get; private set; }
 
 
-    protected override long GetNobs() => _nobs;
+    
 
     public override void Fit(TObs value)
     {
-        Require.NotNull(value);
+        UncheckedFit(value, 1);
+    }
+
+    public override void UncheckedFit(TObs value)
+    {
         UncheckedFit(value, 1);
     }
 
     public override void Fit(TObs value, long count)
     {
-        Require.NotNull(value);
         Require.NonNegative(count);
         if (count == 0) return;
         UncheckedFit(value, count);
     }
     
-    private void UncheckedFit(TObs value, long count)
+    public override void UncheckedFit(TObs value, long count)
     {
         if (_nobs == 0)
         {
@@ -153,6 +122,22 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
         if (_cmp.Compare(value, _max) == 0)
         {
             MaxCount += count;
+        }
+    }
+
+    public override void Fit(IEnumerable<TObs> values)
+    {
+        foreach (var value in values)
+        {
+            Fit(value);
+        }
+    }
+
+    public override void UncheckedFit(IEnumerable<TObs> values)
+    {
+        foreach (var value in values)
+        {
+            UncheckedFit(value);
         }
     }
 
@@ -209,6 +194,42 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
             _max = other.Max;
             MaxCount = other.MaxCount;
         }
+    }
+    
+    /// <summary>
+    /// Stores the minimum value observed in the given reference and reports whether one exists.
+    /// </summary>
+    /// <param name="value">Receives the minimum value, or the default of the observation type when nothing was fitted.</param>
+    /// <returns>True when at least one observation was fitted, false when the statistic is empty.</returns>
+    public bool TryGetMin(out TObs value)
+    {
+        if (_nobs == 0)
+        {
+            // Every return must assign the out parameter. A caller who reads the false
+            // return never uses this default, so a null or zero value is safe here.
+            value = default!;
+            return false;
+        }
+
+        value = _min!;
+        return true;
+    }
+
+    /// <summary>
+    /// Stores the maximum value observed in the given reference and reports whether one exists.
+    /// </summary>
+    /// <param name="value">Receives the maximum value, or the default of the observation type when nothing was fitted.</param>
+    /// <returns>True when at least one observation was fitted, false when the statistic is empty.</returns>
+    public bool TryGetMax(out TObs value)
+    {
+        if (_nobs == 0)
+        {
+            value = default!;
+            return false;
+        }
+
+        value = _max!;
+        return true;
     }
 
     public override string ToString()

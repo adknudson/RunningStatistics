@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
-// ReSharper disable ConvertIfStatementToSwitchStatement
+﻿using System.Collections.Generic;
 
 namespace RunningStatistics;
 
@@ -36,6 +32,8 @@ public sealed partial class Beta : RunningStatisticBase<bool, Beta>
         _b = failures;
     }
 
+
+    public override long Nobs => _a + _b;
 
     /// <summary>
     /// The number of observed successes.
@@ -83,42 +81,37 @@ public sealed partial class Beta : RunningStatisticBase<bool, Beta>
         {
             var a_plus_b = (double)(_a + _b);
             return _a > 0 && _b > 0
-                ? (double)_a * _b / (a_plus_b * a_plus_b * (a_plus_b + 1))
+                ? (double)_a * _b / (a_plus_b * a_plus_b * (a_plus_b + 1.0))
                 : double.NaN;
         }
     }
-
-    protected override long GetNobs() => _a + _b;
     
     public override void Fit(bool value)
     {
+        UncheckedFit(value);
+    }
+
+    public override void UncheckedFit(bool value)
+    {
         checked
         {
-            if (value)
-            {
-                _a++;
-            }
-            else
-            {
-                _b++;
-            }
+            if (value) { _a++; }
+            else       { _b++; }
         }
     }
     
     public override void Fit(bool value, long count)
     {
         Require.NonNegative(count);
-        
+        UncheckedFit(value, count);
+    }
+
+    public override void UncheckedFit(bool value, long count)
+    {
         checked
         {
-            if (value)
-            {
-                _a += count;
-            }
-            else
-            {
-                _b += count;
-            }
+            if (value) { _a += count; }
+            else       { _b += count; }
         }
     }
 
@@ -141,11 +134,18 @@ public sealed partial class Beta : RunningStatisticBase<bool, Beta>
     
     public override void Fit(IEnumerable<bool> values)
     {
-        Require.NotNull(values);
-        var bs = values.ToList();
-        var n = bs.Count;
-        var s = bs.Count(b => b);
-        Fit(s, n - s);
+        foreach (var b in values)
+        {
+            Fit(b);
+        }
+    }
+
+    public override void UncheckedFit(IEnumerable<bool> values)
+    {
+        foreach (var b in values)
+        {
+            UncheckedFit(b);
+        }
     }
     
     public override void Reset()

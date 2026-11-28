@@ -33,7 +33,7 @@ internal static class Require
     /// <summary>
     /// Requires that the value is not null.
     /// </summary>
-    /// <exception cref="System.ArgumentNullException">When the value is null.</exception>
+    /// <exception cref="ArgumentNullException">When the value is null.</exception>
     public static void NotNull(object? value)
     {
         if (value is null)

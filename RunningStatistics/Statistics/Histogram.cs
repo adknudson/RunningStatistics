@@ -98,6 +98,8 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     }
 
 
+    public override long Nobs => _nobs;
+
     /// <summary>
     /// Gets the counts of values that are outside the bounds of the histogram bins.
     /// </summary>
@@ -141,7 +143,16 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
     public bool EndsClosed { get; }
 
 
-    protected override long GetNobs() => _nobs;
+    public override void Fit(double value)
+    {
+        Require.NotNaN(value);
+        UncheckedFit(value, 1);
+    }
+
+    public override void UncheckedFit(double value)
+    {
+        UncheckedFit(value, 1);
+    }
 
     public override void Fit(double value, long count)
     {
@@ -153,7 +164,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
         UncheckedFit(value, count);
     }
 
-    private void UncheckedFit(double value, long count)
+    public override void UncheckedFit(double value, long count)
     {
         checked { _nobs += count; }
 
