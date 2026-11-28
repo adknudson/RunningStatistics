@@ -1,6 +1,4 @@
-﻿#if NET7_0_OR_GREATER
-
-using System;
+﻿using System;
 
 namespace RunningStatistics;
 
@@ -45,5 +43,3 @@ public static class GenericSumExtensions
         throw new DivideByZeroException("Average is undefined when the number of observations is zero.");
     }
 }
-
-#endif

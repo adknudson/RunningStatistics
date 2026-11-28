@@ -1,6 +1,4 @@
-﻿#if NET7_0_OR_GREATER
-
-using System;
+﻿using System;
 using System.Numerics;
 
 namespace RunningStatistics;
@@ -13,5 +11,3 @@ public static class ExtremaExtensions
         return extrema.Max - extrema.Min;
     }
 }
-
-#endif

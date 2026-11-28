@@ -1,6 +1,4 @@
-﻿#if NET7_0_OR_GREATER
-
-using System;
+﻿using System;
 using System.Linq.Expressions;
 using System.Numerics;
 
@@ -154,5 +152,3 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
 
     public override string ToString() => base.ToString() + $" | Σ={Value}";
 }
-
-#endif
