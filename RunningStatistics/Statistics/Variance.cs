@@ -42,6 +42,12 @@ public sealed class Variance : RunningStatisticBase<double, Variance>
 
 
     protected override long GetNobs() => _nobs;
+
+    public override void Fit(double value)
+    {
+        Require.Finite(value);
+        UncheckedFit(value, 1);
+    }
     
     public override void Fit(double value, long count)
     {

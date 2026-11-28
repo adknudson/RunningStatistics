@@ -161,8 +161,11 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
     /// </summary>
     public double Pdf(double x)
     {
-        var d = (x - Mean) / StandardDeviation;
-        return Math.Exp(-0.5 * d * d) / (Constants.Sqrt2Pi * StandardDeviation);
+        // Read the standard deviation once: the getter carries a virtual count check
+        // and a square root, and both uses here want the same value.
+        var s = StandardDeviation;
+        var d = (x - Mean) / s;
+        return Math.Exp(-0.5 * d * d) / (Constants.Sqrt2Pi * s);
     }
 
     /// <summary>

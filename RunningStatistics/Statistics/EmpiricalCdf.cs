@@ -12,6 +12,12 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     private readonly double[] _buffer;
     private readonly double[] _values;
     private readonly Extrema _extrema;
+
+    // Where the next observation goes in the circular buffer. This is the observation
+    // count modulo the bin count, kept as a field so a single fit does not pay a
+    // virtual count read and a 64-bit division to find its slot. Every member that
+    // moves observations through the buffer advances this cursor in step.
+    private int _windowPos;
     
     /// <summary>
     /// Initializes a new instance of the <see cref="EmpiricalCdf"/> class with the specified number of bins.
@@ -99,11 +105,42 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
     {
         Require.Finite(value);
         Require.NonNegative(count);
-        
         if (count == 0) return;
-        
+        UncheckedFit(value, count);
+    }
+
+    private void UncheckedFit(double value)
+    {
+        var i = _windowPos;
+        var bufferCount = i + 1;
+        _buffer[i] = value;
+
+        _extrema.UncheckedFit(value, 1);
+
+        if (bufferCount < NumBins)
+        {
+            _windowPos = bufferCount;
+            return;
+        }
+
+        _windowPos = 0;
+        Array.Sort(_buffer);
+
+        // The flush fired only when the observation count reached a multiple of the
+        // bin count, so NumBins / Nobs is a weight in (0, 1]. The weight and the bin
+        // view are taken once for the whole blend instead of once per slot.
+        var valuesView = Values;
+        var alpha = (double) NumBins / Nobs;
+        for (var k = 0; k < NumBins; k++)
+        {
+            valuesView[k] = Utils.Smooth(valuesView[k], _buffer[k], alpha);
+        }
+    }
+
+    private void UncheckedFit(double value, long count)
+    {
         var numBins = NumBins;
-        var windowPos = (int)(Nobs % numBins);
+        var windowPos = _windowPos;
         var valuesView = Values;
         
         // Prefix: fill the rest of the current circular-buffer window with the value.
@@ -114,7 +151,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
             _buffer[s] = value;
         }
         
-        _extrema.Fit(value, prefix);
+        _extrema.UncheckedFit(value, prefix);
         count -= prefix;
         
         if (prefixEnd == numBins)
@@ -151,7 +188,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         if (windows > 0)
         {
             var flushed = Nobs;
-            _extrema.Fit(value, windows * numBins);
+            _extrema.UncheckedFit(value, windows * numBins);
             for (var j = 1L; j <= windows; j++)
             {
                 // The weight's denominator is flushed plus at least one window of
@@ -176,28 +213,12 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         {
             _buffer[s] = value;
         }
-        
-        _extrema.Fit(value, count);
-    }
 
-    private void UncheckedFit(double value)
-    {
-        var i = Nobs % NumBins;
-        var bufferCount = i + 1;
-        _buffer[i] = value;
-        
-        _extrema.Fit(value);
+        _extrema.UncheckedFit(value, count);
 
-        if (bufferCount < NumBins) return;
-        
-        Array.Sort(_buffer);
-        
-        // The flush fired only when the observation count reached a multiple of the
-        // bin count, so NumBins / Nobs is a weight in (0, 1].
-        for (var k = 0; k < NumBins; k++)
-        {
-            Values[k] = Utils.Smooth(Values[k], _buffer[k], (double) NumBins / Nobs);
-        }
+        // The window left count slots filled when the last window closed on the
+        // prefix boundary; otherwise the window stopped at prefixEnd.
+        _windowPos = prefixEnd == numBins ? (int)count : prefixEnd;
     }
 
     public override void Reset()
@@ -209,6 +230,7 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
         }
 
         _extrema.Reset();
+        _windowPos = 0;
     }
     
     public override EmpiricalCdf CloneEmpty() => new(NumBins);
@@ -287,6 +309,10 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
                 Values[k] = Utils.Smooth(Values[k], _buffer[k], (double) NumBins / Nobs);
             }
         }
+
+        // The replay placed the source's tail at the merged stream's tail positions,
+        // so the next single fit belongs at the merged count's slot.
+        _windowPos = (int)(Nobs % NumBins);
     }
 
     /// <summary>
@@ -383,6 +409,10 @@ public sealed class EmpiricalCdf : RunningStatisticBase<double, EmpiricalCdf>
                 Values[k] = Utils.Smooth(Values[k], _buffer[k], (double)NumBins / Nobs);
             }
         }
+
+        // The replay placed the source's tail at the merged stream's tail positions,
+        // so the next single fit belongs at the merged count's slot.
+        _windowPos = (int)(Nobs % NumBins);
     }
 
     /// <summary>
