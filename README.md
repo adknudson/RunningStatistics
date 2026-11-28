@@ -8,7 +8,7 @@ This package is [available on NuGet](https://www.nuget.org/packages/RunningStati
 dotnet add package RunningStatistics
 ```
 
-Supports .NET Standard 2.0
+Supports .NET 10+. If you need support for an older framework, use version 3 of the library.
 
 ## Statistics
 
@@ -112,52 +112,6 @@ for (var i = 0; i < 1000; i++)
 mean1.Merge(mean2);
 var q1 = ecdf.Quantile(0.25);
 ```
-
-## Notes
-
-- Readout getters return `NaN` when there are too few observations. `Variance` returns `NaN`
-  while `Nobs < 2`, `EmpiricalCdf.Quantile`, `Cdf` and `Median` return `NaN` until every bin
-  holds observations, and other statistics have their own thresholds. One exception: `Sum.Value`
-  returns 0 when nothing is fitted, because an empty sum is defined.
-- Statistics over generic observation types have no `NaN` to return. `Extrema<T>.Min` and
-  `Max` throw `InvalidOperationException`, and `CountMap<T>.MinKey` and `MaxKey` throw
-  `KeyNotFoundException` when nothing is fitted. `TryGetMin`/`TryGetMax` and `TryGetMinKey`/`TryGetMaxKey`
-  read the same values without throwing.
-- Input guards differ by statistic, and the difference is deliberate. `Mean`, `Sum`, `Variance`,
-  `Normal`, `Moments` and `EmpiricalCdf` require every observation to be finite: `NaN` or ±Infinity
-  throws `ArgumentException`. `Extrema` and `Histogram` take ±Infinity, because a minimum, a
-  maximum and an out-of-bounds count are defined there, and throw `ArgumentException` only for `NaN`.
-  The generic `Extrema<T>` rejects a null observation.
-- A `null` collection is rejected with `ArgumentNullException` before anything is fitted.
-- `Histogram.Bin` is a nested supporting type. A `Histogram` iterates as `Bin`s, each with
-  `Lower`, `Upper` and `Nobs`. `Histogram.OutOfBoundsCounts` reports observations below or above
-  the bins as a `(long Lower, long Upper)` tuple.
-- A readout that takes no argument is a property: `Sum.Mean`, `Extrema.Range`, `Beta.Mean`,
-  `CountMap.MinKey`, `MaxKey`, `Mode` and `Median` read as properties, and `Sum.Value` sits
-  beside them. A readout that takes an argument stays a method, because it has to: `Quantile(p)`,
-  `Pdf(x)` and `Variance(mean, corrected)` pass what they need.
-- The `Extensions` classes keep only the generic arithmetic reads — `Extrema<T>.Range` and the
-  `CountMap<T>` `Sum`, `Mean`, `Variance`, `StandardDeviation`, `Skewness`, `Kurtosis` and
-  `ExcessKurtosis`. Each of those needs an operator constraint (`T` must subtract, divide, add)
-  that its class does not declare, and a member cannot carry a constraint the class lacks. Putting
-  the constraint on the class would rule out ordinary uses such as `Extrema<MyComparable>`, so those
-  reads stay extension methods and only the constraint-free reads moved inside.
-- `GenericSumExtensions.Mean` covers `Sum<int>`, `Sum<long>`, `Sum<double>` and `Sum<decimal>`,
-  the types the library can divide by a count without inventing an operator. There is no average
-  for an arbitrary observation type: a count is not a quantity of the measured thing, so the
-  library cannot ask a type to divide a total by one. A caller writes the average it wants,
-  `sum.Value / sum.Nobs` when the type divides by a `long`, or `(double)sum.Value / sum.Nobs`
-  when the answer should be a `double`.
-- `CountMap` orders its keys by the comparer you built it with. `MinKey`, `MaxKey`, `Median` and
-  `Quantile(p)` use that comparer; `TryGetMinKey(comparer, out key)`, `TryGetMaxKey(comparer, out key)`
-  and `Quantile(p, comparer)` take a different one, and `Keys.Min(comparer)` gets the same answer
-  through LINQ.
-
-## Development
-
-Contributors and automated agents should read `AGENTS.md`, which carries the
-algorithm-improvement workflow, and `DEVELOPERS.md`, which defines the
-vocabulary the tests and plans use ("gate", "bench fact", "band", "κ-sweep").
 
 ## Credits
 
