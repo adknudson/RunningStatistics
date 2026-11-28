@@ -134,6 +134,116 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
         _mean -= s;
     }
 
+    // The batch route mirrors the sibling classes Variance and Normal: validate the whole
+    // batch before touching state, then fold it once into its own batch mean and batch
+    // central sums, and join the running state with the same pairwise update Merge and
+    // UncheckedFit(value, count) use. A batch fitted to a fresh statistic ends in the
+    // two-pass shape, so its readouts track the two-pass reference at any condition
+    // number, while the replay loop's error grows with the condition number.
+    public override void Fit(IEnumerable<double> values)
+    {
+        // A List is re-iterable, so the two passes and the validation walk can use the
+        // caller's own storage. Any other iterable may be a one-shot generator, and the
+        // fold cannot take deviations about the batch mean before it has seen every
+        // value twice, so only those get buffered.
+        var ys = values.ToList();
+        if (ys.Count == 0) return;
+        ys.ForEach(Require.Finite);
+        UncheckedFit(ys);
+    }
+
+    // The unchecked twin: the caller vouches for the values, so the batch goes straight
+    // into the compensated fold without the validation pass.
+    public override void UncheckedFit(IEnumerable<double> values)
+    {
+        UncheckedFit([.. values]);
+    }
+
+    // The batch plays the role of the constant block in the pairwise update: its mean is
+    // the batch average and its central sums are the sums about that mean. The shifts
+    // measure how far each side's mean sits from the combined mean.
+    internal void UncheckedFit(List<double> values)
+    {
+        checked { _nobs += values.Count; }
+
+        var mean = BatchAverage(values);
+        var c2 = 0.0;
+        var c3 = 0.0;
+        var c4 = 0.0;
+        for (var i = 0; i < values.Count; i++)
+        {
+            var dx = values[i] - mean;
+            var dx2 = dx * dx;
+            c2 += dx2;
+            c3 += dx2 * dx;
+            c4 += dx2 * dx2;
+        }
+
+        // The batch is the whole count, so the statistic was fresh: keep the batch state
+        // directly, the way the constant-block route does for the first observations.
+        var nA = (double)(_nobs - values.Count);
+        if (nA == 0)
+        {
+            _mean = mean;
+            _c2 = c2;
+            _c3 = c3;
+            _c4 = c4;
+            return;
+        }
+
+        var nB = (double)values.Count;
+        var n = (double)_nobs;
+        var invN = 1.0 / n;
+
+        var d = mean - _mean;
+        var s = -d * nB * invN;
+        var t = d * nA * invN;
+
+        var s2 = s * s;
+        var s3 = s2 * s;
+        var t2 = t * t;
+        var t3 = t2 * t;
+
+        _c4 += c4 + 4.0 * t * c3 + 6.0 * t2 * c2 + nB * t2 * t2
+             + 4.0 * s * _c3 + 6.0 * s2 * _c2 + nA * s2 * s2;
+        _c3 += c3 + 3.0 * t * c2 + nB * t3 + 3.0 * s * _c2 + nA * s3;
+        _c2 += c2 + nB * t2 + nA * s2;
+        _mean -= s;
+    }
+
+    /// <summary>
+    /// The average of the batch that the batch route folds. The fold keeps a correction
+    /// beside its total, the same Knuth two-sum fold the Mean class batch route and
+    /// the Normal batch route use, so a batch of canceling terms keeps the ones a plain
+    /// fold would drop. The central sums are taken about this mean.
+    /// </summary>
+    internal static double BatchAverage(List<double> values)
+    {
+        var total = 0.0;
+        var correction = 0.0;
+
+        foreach (var x in values)
+        {
+            var t = total + x;
+            // A saturated total would send infinities through the two-sum below and turn the
+            // batch average into NaN, so the collection step is skipped there and the
+            // infinity stays, the way the plain fold averaged it before.
+            if (Math.Abs(t) < double.PositiveInfinity)
+            {
+                // Knuth two-sum: these six operations return exactly the bits that the
+                // rounded addition above lost. The branch-free form matters on mixed-magnitude
+                // batches, where picking a formula by magnitude mispredicts often.
+                var bvirt = t - total;
+                var aver = t - bvirt;
+                correction += (total - aver) + (x - bvirt);
+            }
+
+            total = t;
+        }
+
+        return (total + correction) / values.Count;
+    }
+
     public override void Reset()
     {
         _nobs = 0;
