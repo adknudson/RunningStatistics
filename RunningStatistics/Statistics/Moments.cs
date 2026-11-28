@@ -193,7 +193,7 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     /// <summary>
     /// The average of the batch that the batch route folds. The fold keeps a correction
     /// beside its total, the same Knuth two-sum fold the Mean class batch route and
-    /// Normal.BatchAverage use, so a batch of canceling terms keeps the ones a plain
+    /// the Normal batch route use, so a batch of canceling terms keeps the ones a plain
     /// fold would drop. The central sums are taken about this mean.
     /// </summary>
     internal double BatchAverage(List<double> values)
