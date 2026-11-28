@@ -117,14 +117,14 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// the highest count, exactly as it did while this read was the
     /// <c>CountMapExtensions.Mode</c> extension method.
     /// </remarks>
-    /// <exception cref="Exception">Thrown when the count map has no observations. The mode does not exist.</exception>
+    /// <exception cref="KeyNotFoundException">Thrown when the count map has no observations, or when the mode cannot be found.</exception>
     public TObs Mode
     {
         get
         {
             if (Nobs == 0)
             {
-                throw new Exception("Nobs = 0. The mode does not exist.");
+                throw new KeyNotFoundException("Nobs == 0. The mode does not exist.");
             }
 
             TObs? mode = default;
@@ -137,7 +137,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
                 maxCount = kvp.Value;
             }
 
-            return mode ?? throw new NullReferenceException();
+            return mode ?? throw new KeyNotFoundException("No mode was found.");
         }
     }
     
@@ -309,14 +309,14 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
     /// <param name="comparer">The comparer to use for ordering the keys.
     /// If null, the method uses the default comparer.</param>
     /// <returns>The p-th quantile of the count map.</returns>
-    /// <exception cref="Exception">
+    /// <exception cref="KeyNotFoundException">
     /// Thrown if the count map is empty or if the quantile cannot be found.
     /// </exception>
     public TObs Quantile(double p, IComparer<TObs>? comparer)
     {
         if (Nobs == 0)
         {
-            throw new Exception("The count map is empty. The quantile does not exist.");
+            throw new KeyNotFoundException("The count map is empty. The quantile does not exist.");
         }
 
         // The end keys come through the non-throwing helpers rather than through the MinKey
@@ -344,7 +344,7 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
         }
 
         // This should be unreachable...
-        throw new Exception($"Not able to find the {p} quantile of the count map.");
+        throw new KeyNotFoundException($"Not able to find the {p} quantile of the count map.");
     }
 
     /// <summary>

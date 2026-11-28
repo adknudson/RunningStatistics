@@ -485,9 +485,13 @@ public partial class TestExtrema
     // "NaN (n=0)".
     //
     // Generic side: no sentinel value could stand in for a missing extreme of an arbitrary
-    // type, so the generic Extrema throws from Min and Max when empty, with the message
-    // "Nobs must be greater than 0". TryGetMin and TryGetMax give callers a non-throwing read;
-    // their facts live in the generic test files. The range extension subtracts the two
+    // type, so the generic Extrema throws from Min and Max when empty. Each message names
+    // the empty state and points at the non-throwing read that answers it, so a caller
+    // seeing the throw knows what to call next. The assertions below pin that wording, so a
+    // rewording shows up as a red gate rather than as a silent drift. TryGetMin and TryGetMax
+    // give callers a non-throwing read; their facts live in the generic test files. The range
+    // extension subtracts the two accessors, so it propagates the same throw. That extension
+    // only exists for types that support subtraction, such as MyNum but not MyComparable.
     // accessors, so it propagates the same throw. That extension only exists for types
     // that support subtraction, such as MyNum but not MyComparable.
     //
@@ -512,8 +516,9 @@ public partial class TestExtrema
         Assert.Equal(0, comparable.MinCount);
         Assert.Equal(0, comparable.MaxCount);
         var minThrow = Assert.Throws<InvalidOperationException>(() => comparable.Min);
-        Assert.Equal("Nobs must be greater than 0", minThrow.Message);
-        Assert.Throws<InvalidOperationException>(() => comparable.Max);
+        Assert.Equal("No observations fitted yet. Use TryGetMin.", minThrow.Message);
+        var maxThrow = Assert.Throws<InvalidOperationException>(() => comparable.Max);
+        Assert.Equal("No observations fitted yet. Use TryGetMax.", maxThrow.Message);
 
         var num = new RunningStatistics.Extrema<MyNum>();
         Assert.Equal(0, num.Nobs);

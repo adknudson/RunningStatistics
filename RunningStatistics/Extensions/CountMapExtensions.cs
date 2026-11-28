@@ -490,10 +490,4 @@ public static partial class CountMapExtensions
         var variance = countMap.Variance(mean, false);
         return countMap.ExcessKurtosis(mean, variance);
     }
-    
-    // The order statistics Mode, Median and Quantile are not here. They now live as
-    // instance members of CountMap, where they read the map they were called on. Only
-    // the arithmetic reads stay extension methods, because they need operator
-    // constraints (IAdditionOperators and friends) that an instance member of the
-    // generic CountMap cannot carry.
 }
