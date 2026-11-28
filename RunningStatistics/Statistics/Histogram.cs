@@ -172,7 +172,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
             return;
         }
 
-        if (value.Equals(lastBin.Upper))
+        if (value == lastBin.Upper)
         {
             if (lastBin.ClosedRight)
             {
@@ -185,7 +185,7 @@ public sealed class Histogram : RunningStatisticBase<double, Histogram>, IEnumer
             return;
         }
 
-        if (value.Equals(firstBin.Lower))
+        if (value == firstBin.Lower)
         {
             if (firstBin.ClosedLeft)
             {

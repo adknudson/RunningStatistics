@@ -538,7 +538,7 @@ public partial class TestExtrema
         // throw propagates through it. Extrema of MyComparable has no Range() at all,
         // because MyComparable does not support subtraction.
         var num = new RunningStatistics.Extrema<MyNum>();
-        Assert.Throws<InvalidOperationException>(() => num.Range());
+        Assert.Throws<InvalidOperationException>(() => num.Range);
     }
 
     [Fact]

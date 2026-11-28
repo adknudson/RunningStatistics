@@ -45,6 +45,12 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
 
 
     protected override long GetNobs() => _nobs;
+
+    public override void Fit(double value)
+    {
+        Require.NotNaN(value);
+        UncheckedFit(value, 1);
+    }
     
     public override void Fit(double value, long count)
     {
@@ -56,7 +62,7 @@ public sealed class Extrema : RunningStatisticBase<double, Extrema>
         UncheckedFit(value, count);
     }
 
-    private void UncheckedFit(double value, long count)
+    internal void UncheckedFit(double value, long count)
     {
         if (_nobs == 0)
         {

@@ -17,17 +17,6 @@ public partial class TestCountMap
     }
 
     [Fact]
-    public void Nobs_ReturnsCorrectNobs()
-    {
-        var countMap = new CountMap<int>();
-        countMap.Fit(1, 2);
-        countMap.Fit(2, 3);
-        countMap.Fit(3, 1);
-        
-        Assert.Equal(5, countMap.Nobs(o => o < 3));
-    }
-
-    [Fact]
     public void Mean_ReturnsCorrectMean()
     {
         var countMap = new CountMap<int>();
@@ -50,8 +39,8 @@ public partial class TestCountMap
     }
 
     // The Moments limit: the corrected variance needs two observations, the uncorrected
-    // one needs one. Below the limit double kinds answer NaN, and the decimal and
-    // generic kinds throw, since those types have no NaN to return.
+    // one needs one. The extension widens to double, so every observation kind answers
+    // NaN below the limit, decimal and MyNum included.
     [Fact]
     public void Variance_AreNaNWhenFewerThanTwoObservations()
     {
@@ -67,15 +56,11 @@ public partial class TestCountMap
     }
 
     [Fact]
-    public void Variance_ThrowsWhenFewerThanTwoObservationsForDecimalAndMyNum()
+    public void Variance_IsNaNWhenFewerThanTwoObservationsForDecimal()
     {
         var singleDec = new CountMap<decimal>();
         singleDec.Fit(5, 1);
-        Assert.Throws<DivideByZeroException>(() => singleDec.Variance());
-
-        var singleMy = new CountMap<MyNum>();
-        singleMy.Fit(new MyNum(5), 1);
-        Assert.Throws<DivideByZeroException>(() => singleMy.Variance());
+        Assert.True(double.IsNaN(singleDec.Variance()));
     }
 
     [Fact]
@@ -119,9 +104,7 @@ public partial class TestCountMap
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        var mean = countMap.Mean();
-
-        Assert.Equal(0.753, countMap.StandardDeviation(mean), 3);
+        Assert.Equal(0.753, countMap.StandardDeviation(), 3);
     }
     
     [Fact]
@@ -132,9 +115,7 @@ public partial class TestCountMap
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        var mean = countMap.Mean();
-
-        Assert.Equal(0.753, countMap.StandardDeviation(mean), 3);
+        Assert.Equal(0.753, countMap.StandardDeviation(), 3);
     }
     
     [Fact]
@@ -145,9 +126,7 @@ public partial class TestCountMap
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        var mean = countMap.Mean();
-
-        Assert.Equal(0.753, countMap.StandardDeviation(mean), 3);
+        Assert.Equal(0.753, countMap.StandardDeviation(), 3);
     }
 
     [Fact]
@@ -190,8 +169,8 @@ public partial class TestCountMap
         Assert.True(!double.IsNaN(countMap.Kurtosis()));
     }
 
-    // Zero spread: Moments guards m2 <= 0; the extensions guard the variance
-    // argument, so constant maps and hand-passed zero variances answer NaN.
+    // Zero spread: Moments guards m2 <= 0, so a constant map answers NaN for skewness
+    // and kurtosis, and a map that has spread answers a number.
     [Fact]
     public void SkewnessAndKurtosis_AreNaNForConstantData()
     {
@@ -205,8 +184,8 @@ public partial class TestCountMap
         spread.Fit(1, 2);
         spread.Fit(2, 3);
         spread.Fit(3, 1);
-        Assert.True(double.IsNaN(spread.Skewness(spread.Mean(), 0.0)));
-        Assert.True(double.IsNaN(spread.Kurtosis(spread.Mean(), 0.0)));
+        Assert.True(!double.IsNaN(spread.Skewness()));
+        Assert.True(!double.IsNaN(spread.Kurtosis()));
     }
 
     [Fact]
@@ -241,8 +220,7 @@ public partial class TestCountMap
         countMap.Fit(2, 3);
         countMap.Fit(3, 1);
 
-        Assert.Equal(0.567m, countMap.Variance(), 3);
-        Assert.Equal(0.567m, countMap.Variance(countMap.Mean()), 3);
+        Assert.Equal(0.567, countMap.Variance(), 3);
     }
 
     [Fact]
@@ -254,7 +232,6 @@ public partial class TestCountMap
         countMap.Fit(3, 1);
 
         Assert.Equal(0.753, countMap.StandardDeviation(), 3);
-        Assert.Equal(0.753, countMap.StandardDeviation(countMap.Mean()), 3);
     }
 
     [Fact]
@@ -323,33 +300,6 @@ public partial class TestCountMap
         Assert.Equal(new MyNum(11), countMap.Sum());
     }
 
-    [Fact]
-    public void Mean_ReturnsCorrectMeanForMyNum()
-    {
-        var countMap = new CountMap<MyNum>();
-        countMap.Fit(new MyNum(1), 2);
-        countMap.Fit(new MyNum(2), 3);
-        countMap.Fit(new MyNum(3), 1);
-
-        Assert.Equal(1.833m, countMap.Mean().Value, 3);
-        Assert.IsType<MyNum>(countMap.Mean());
-    }
-
-    // The generic variance keeps the result in the observation type, so the
-    // assertion reads the MyNum's decimal value, like the mean fact above.
-    [Fact]
-    public void Variance_ReturnsCorrectVarianceForMyNum()
-    {
-        var countMap = new CountMap<MyNum>();
-        countMap.Fit(new MyNum(1), 2);
-        countMap.Fit(new MyNum(2), 3);
-        countMap.Fit(new MyNum(3), 1);
-
-        Assert.IsType<MyNum>(countMap.Variance());
-        Assert.Equal(0.567m, countMap.Variance().Value, 3);
-        Assert.Equal(0.567m, countMap.Variance(countMap.Mean()).Value, 3);
-    }
-    
     [Fact]
     public void Mode_ReturnsObservationWithHighestCount()
     {

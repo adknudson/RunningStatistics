@@ -74,10 +74,19 @@ public sealed partial class Beta : RunningStatisticBase<bool, Beta>
     /// The variance of the Beta distribution. Exists when there is at least one observed success
     /// and at least one observed failure.
     /// </summary>
-    public double Variance => _a > 0 && _b > 0
-        ? (double)_a * _b / (Math.Pow(_a + _b, 2) * (_a + _b + 1)) 
-        : double.NaN;
-
+    // Squaring the sum by one multiply costs far less than a call to Math.Pow
+    // with exponent 2. The multiply is the correctly rounded square; Math.Pow
+    // can land one ulp away on the largest counts.
+    public double Variance
+    {
+        get
+        {
+            var a_plus_b = (double)(_a + _b);
+            return _a > 0 && _b > 0
+                ? (double)_a * _b / (a_plus_b * a_plus_b * (a_plus_b + 1))
+                : double.NaN;
+        }
+    }
 
     protected override long GetNobs() => _a + _b;
     

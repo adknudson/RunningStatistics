@@ -1,6 +1,4 @@
-﻿#if NET7_0_OR_GREATER
-
-using System;
+﻿using System;
 using System.Linq.Expressions;
 using System.Numerics;
 
@@ -14,6 +12,9 @@ namespace RunningStatistics;
 public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>> 
     where TObs : IAdditionOperators<TObs, TObs, TObs>, IAdditiveIdentity<TObs, TObs>
 {
+    private long _nobs;
+    
+    
     /// <summary>
     /// A precompiled routine that multiplies an observation by a whole-number count, when the
     /// observation type supports that multiplication. If the type implements multiplication by
@@ -30,54 +31,11 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
     /// </summary>
     internal static readonly Func<TObs, long, TObs>? MultiplyDelegate = TryCreateMultiplyDelegate();
 
-    private static Func<TObs, long, TObs>? TryCreateMultiplyDelegate()
-    {
-        // Try the multiplier types in priority order. Multiplying by double and by
-        // decimal widens the whole-number count implicitly. Multiplying by float
-        // narrows the count and loses precision for counts above roughly 16.7
-        // million. The code still accepts float to give sums of float values a
-        // fast path.
-        return TryCreate<long>()
-            ?? TryCreate<double>()
-            ?? TryCreate<decimal>()
-            ?? TryCreate<float>();
-
-        Func<TObs, long, TObs>? TryCreate<TMultiplier>()
-        {
-            // Do not use MakeGenericType here: the multiply-operator interface carries a
-            // self-referential constraint that the runtime enforces even at reflection
-            // time. Scanning the interfaces the type already implements avoids that
-            // enforcement, because those interfaces already passed validation.
-            var hasMultiply = Array.Exists(typeof(TObs).GetInterfaces(), i =>
-                i.IsGenericType &&
-                i.GetGenericTypeDefinition() == typeof(IMultiplyOperators<,,>) &&
-                i.GenericTypeArguments[0] == typeof(TObs) &&
-                i.GenericTypeArguments[1] == typeof(TMultiplier) &&
-                i.GenericTypeArguments[2] == typeof(TObs));
-
-            if (!hasMultiply) return null;
-
-            var valueParam = Expression.Parameter(typeof(TObs), "value");
-            var countParam = Expression.Parameter(typeof(long), "count");
-
-            // Insert an implicit widening conversion when the operator does not take long directly.
-            Expression multiplierExpr = typeof(TMultiplier) == typeof(long)
-                ? countParam
-                : Expression.Convert(countParam, typeof(TMultiplier));
-
-            var body = Expression.Multiply(valueParam, multiplierExpr);
-            return Expression.Lambda<Func<TObs, long, TObs>>(body, valueParam, countParam).Compile();
-        }
-    }
-
-    private long _nobs;
-    
-    
     /// <summary>
     /// The current sum of the observations.
     /// </summary>
     public TObs Value { get; private set; } = TObs.AdditiveIdentity;
-
+    
 
     protected override long GetNobs() => _nobs;
 
@@ -153,6 +111,44 @@ public sealed class Sum<TObs> : RunningStatisticBase<TObs, Sum<TObs>>
     public static explicit operator TObs(Sum<TObs> sum) => sum.Value;
 
     public override string ToString() => base.ToString() + $" | Σ={Value}";
-}
+    
+    private static Func<TObs, long, TObs>? TryCreateMultiplyDelegate()
+    {
+        // Try the multiplier types in priority order. Multiplying by double and by
+        // decimal widens the whole-number count implicitly. Multiplying by float
+        // narrows the count and loses precision for counts above roughly 16.7
+        // million. The code still accepts float to give sums of float values a
+        // fast path.
+        return TryCreate<long>()
+            ?? TryCreate<double>()
+            ?? TryCreate<decimal>()
+            ?? TryCreate<float>();
 
-#endif
+        static Func<TObs, long, TObs>? TryCreate<TMultiplier>()
+        {
+            // Do not use MakeGenericType here: the multiply-operator interface carries a
+            // self-referential constraint that the runtime enforces even at reflection
+            // time. Scanning the interfaces the type already implements avoids that
+            // enforcement, because those interfaces already passed validation.
+            var hasMultiply = Array.Exists(typeof(TObs).GetInterfaces(), i =>
+                i.IsGenericType &&
+                i.GetGenericTypeDefinition() == typeof(IMultiplyOperators<,,>) &&
+                i.GenericTypeArguments[0] == typeof(TObs) &&
+                i.GenericTypeArguments[1] == typeof(TMultiplier) &&
+                i.GenericTypeArguments[2] == typeof(TObs));
+
+            if (!hasMultiply) return null;
+
+            var valueParam = Expression.Parameter(typeof(TObs), "value");
+            var countParam = Expression.Parameter(typeof(long), "count");
+
+            // Insert an implicit widening conversion when the operator does not take long directly.
+            Expression multiplierExpr = typeof(TMultiplier) == typeof(long)
+                ? countParam
+                : Expression.Convert(countParam, typeof(TMultiplier));
+
+            var body = Expression.Multiply(valueParam, multiplierExpr);
+            return Expression.Lambda<Func<TObs, long, TObs>>(body, valueParam, countParam).Compile();
+        }
+    }
+}

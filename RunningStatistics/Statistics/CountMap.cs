@@ -2,9 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-#if NET5_0_OR_GREATER
 using System.Runtime.InteropServices;
-#endif
 
 namespace RunningStatistics;
 
@@ -172,19 +170,8 @@ public sealed class CountMap<TObs> : RunningStatisticBase<TObs, CountMap<TObs>>,
         // The checked total already bounds the per-key counts. The code still
         // checks the per-key accumulation explicitly, so it reports overflow
         // rather than wrapping quietly.
-#if NET5_0_OR_GREATER
         ref var valueCount = ref CollectionsMarshal.GetValueRefOrAddDefault(_dict, value, out _);
         checked { valueCount += count; }
-#else
-        if (_dict.TryGetValue(value, out var oldCount))
-        {
-            checked { _dict[value] = oldCount + count; }
-        }
-        else
-        {
-            _dict[value] = count;
-        }
-#endif
     } 
     
     public override void Merge(CountMap<TObs> countMap) => Fit(countMap);

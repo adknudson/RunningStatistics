@@ -72,31 +72,14 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
     {
         checked { _nobs += values.Count; }
 
-        var mean = values.Average();
-        var variance = ComputeVariance(values, mean);
-        var blended = BatchAverage(values);
-        var g = (double)values.Count / Nobs;
-        var delta = _varianceMean - mean;
-
-        _mean = Utils.Smooth(_mean, blended, g);
-        _varianceMean = Utils.Smooth(_varianceMean, mean, g);
-        _variance = Utils.Smooth(_variance, variance, g) + delta * delta * g * (1 - g);
-    }
-
-    /// <summary>
-    /// The average of the batch that the batch path blends into the exposed
-    /// mean. The fold keeps a correction beside its total, and updates that
-    /// correction one observation at a time. A canceling batch keeps the
-    /// ones a plain fold would drop, once the running total's spacing
-    /// exceeds them. The fold matches the Mean class batch fold to the last
-    /// bit.
-    /// </summary>
-    internal double BatchAverage(List<double> values)
-    {
+        // One traversal carries both averages. Its running total is the plain fold, and the
+        // correction held beside that total is what makes the other one compensated, so the
+        // two folds share the total instead of walking the batch twice.
         var total = 0.0;
         var correction = 0.0;
-        foreach (var x in values)
+        for (var i = 0; i < values.Count; i++)
         {
+            var x = values[i];
             var t = total + x;
             // A saturated total would send infinities through the two-sum below and turn the
             // batch average into NaN, so the collection step is skipped there and the
@@ -114,15 +97,33 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
             total = t;
         }
 
-        return (total + correction) / values.Count;
+        var mean = total / values.Count;
+        var blended = (total + correction) / values.Count;
+        var variance = ComputeVariance(values, mean);
+        var g = (double)values.Count / Nobs;
+        var delta = _varianceMean - mean;
+
+        _mean = Utils.Smooth(_mean, blended, g);
+        _varianceMean = Utils.Smooth(_varianceMean, mean, g);
+        _variance = Utils.Smooth(_variance, variance, g) + delta * delta * g * (1 - g);
     }
 
     // The method returns the population variance of the batch. The mean
     // argument is the plain batch average. This matches the batch
-    // variance path of the Variance class.
+    // variance path of the Variance class. The fold is written out because the
+    // LINQ form drives a delegate once per observation, about seven times the cost of the
+    // arithmetic below.
     private static double ComputeVariance(List<double> xs, double mean)
     {
-        return xs.Average(s => (s - mean) * (s - mean));
+        var total = 0.0;
+        var n = xs.Count;
+        for (var i = 0; i < n; i++)
+        {
+            var d = xs[i] - mean;
+            total += d * d;
+        }
+
+        return total / n;
     }
 
     public override void Reset()
@@ -160,8 +161,11 @@ public sealed class Normal : RunningStatisticBase<double, Normal>
     /// </summary>
     public double Pdf(double x)
     {
-        var d = (x - Mean) / StandardDeviation;
-        return Math.Exp(-0.5 * d * d) / (Constants.Sqrt2Pi * StandardDeviation);
+        // Read the standard deviation once: the getter carries a virtual count check
+        // and a square root, and both uses here want the same value.
+        var s = StandardDeviation;
+        var d = (x - Mean) / s;
+        return Math.Exp(-0.5 * d * d) / (Constants.Sqrt2Pi * s);
     }
 
     /// <summary>

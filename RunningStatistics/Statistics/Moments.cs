@@ -77,6 +77,12 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
 
     protected override long GetNobs() => _nobs;
 
+    public override void Fit(double value)
+    {
+        Require.Finite(value);
+        UncheckedFit(value, 1);
+    }
+
     public override void Fit(double value, long count)
     {
         Require.Finite(value);
@@ -193,13 +199,14 @@ public sealed class Moments : RunningStatisticBase<double, Moments>
     /// <summary>
     /// The average of the batch that the batch route folds. The fold keeps a correction
     /// beside its total, the same Knuth two-sum fold the Mean class batch route and
-    /// Normal.BatchAverage use, so a batch of canceling terms keeps the ones a plain
+    /// the Normal batch route use, so a batch of canceling terms keeps the ones a plain
     /// fold would drop. The central sums are taken about this mean.
     /// </summary>
-    internal double BatchAverage(List<double> values)
+    internal static double BatchAverage(List<double> values)
     {
         var total = 0.0;
         var correction = 0.0;
+        
         foreach (var x in values)
         {
             var t = total + x;

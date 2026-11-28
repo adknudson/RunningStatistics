@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace RunningStatistics;
 
@@ -6,12 +7,33 @@ namespace RunningStatistics;
 /// Represents a running statistic that tracks the minimum and maximum values observed for a generic type.
 /// </summary>
 /// <typeparam name="TObs">The type of the observations.
-/// Must implement <see cref="IComparable{TObs}"/>.</typeparam>
+/// The statistic orders observations with an <see cref="IComparer{TObs}"/>: the one
+/// given to a constructor, or <see cref="Comparer{TObs}.Default"/> when none is.
+/// A type with no default ordering needs a comparer.</typeparam>
 public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
-    where TObs : IComparable<TObs>
 {
     private TObs? _min, _max;
     private long _nobs;
+    private readonly IComparer<TObs> _cmp;
+
+
+    /// <summary>
+    /// Initialize a new Extrema statistic.
+    /// </summary>
+    public Extrema()
+    {
+        _cmp = Comparer<TObs>.Default;
+    }
+
+    /// <summary>
+    /// Initialize a new Extrema statistic with the specified comparer.
+    /// </summary>
+    /// <param name="comparer"></param>
+    public Extrema(IComparer<TObs> comparer)
+    {
+        _cmp = comparer;
+    }
+
 
     /// <summary>
     /// Gets the minimum value observed.
@@ -110,24 +132,25 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
         }
         
         checked { _nobs += count; }
+
         
-        if (value.CompareTo(_min!) < 0)
+        if (_cmp.Compare(value, _min) < 0)
         {
             _min = value;
             MinCount = 0;
         }
-        else if (value.CompareTo(_max!) > 0)
+        else if (_cmp.Compare(value, _max) > 0)
         {
             _max = value;
             MaxCount = 0;
         }
         
-        if (value.CompareTo(_min!) == 0)
+        if (_cmp.Compare(value, _min) == 0)
         {
             MinCount += count;
         }
         
-        if (value.CompareTo(_max!) == 0)
+        if (_cmp.Compare(value, _max) == 0)
         {
             MaxCount += count;
         }
@@ -167,21 +190,21 @@ public sealed class Extrema<TObs> : RunningStatisticBase<TObs, Extrema<TObs>>
         
         checked { _nobs += other.Nobs; }
         
-        if (Min.CompareTo(other.Min) == 0)
+        if (_cmp.Compare(Min, other.Min) == 0)
         {
             MinCount += other.MinCount;
         }
-        else if (other.Min.CompareTo(Min) < 0)
+        else if (_cmp.Compare(other.Min, Min) < 0)
         {
             _min = other.Min;
             MinCount = other.MinCount;
         }
         
-        if (Max.CompareTo(other.Max) == 0)
+        if (_cmp.Compare(Max, other.Max) == 0)
         {
             MaxCount += other.MaxCount;
         }
-        else if (other.Max.CompareTo(Max) > 0)
+        else if (_cmp.Compare(other.Max, Max) > 0)
         {
             _max = other.Max;
             MaxCount = other.MaxCount;
